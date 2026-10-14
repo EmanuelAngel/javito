@@ -1,0 +1,7 @@
+# Finales de línea: el repositorio guarda LF y el checkout no los convierte.
+#
+# Sin esto, `core.autocrlf=true` (el valor por defecto de Git para Windows) escribe CRLF
+# en el árbol de trabajo. Prettier exige LF, así que `pnpm lint` fallaba según la
+# plataforma y no según el código: alcanzaba con que git volviera a tocar un archivo.
+# Ver odd/tasks/ui-toolchain.md, L8.
+* text=auto eol=lf
