@@ -1,0 +1,20 @@
+{
+    "flow-icons.folders.associations": {
+        "docs": "docs",
+        "backend": "server",
+        "frontend": "windows",
+        "scripts": "console",
+        "Controllers": "api",
+        "Repositories": "base",
+        "Models": "type",
+        "Dto": "keys",
+        "Auth": "user",
+        "wwwroot": "resources"
+    },
+    "flow-icons.folders.replacements": {
+        "Controllers": "api"
+    },
+    "flow-icons.files.associations": {
+        "database.sql": "database"
+    }
+}

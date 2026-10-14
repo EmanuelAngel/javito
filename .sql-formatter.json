@@ -1,0 +1,9 @@
+{
+  "language": "mysql",
+  "tabWidth": 4,
+  "useTabs": false,
+  "keywordCase": "upper",
+  "dataTypeCase": "upper",
+  "functionCase": "upper",
+  "linesBetweenQueries": 2
+}

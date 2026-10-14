@@ -1,0 +1,59 @@
+## Entorno
+
+.env
+.env.*
+!.env.example
+
+## .NET
+
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+mono_crash.*
+.vs/
+
+## Node / SvelteKit
+
+node_modules/
+build/
+dist/
+.svelte-kit/
+out/
+.npm/
+*.tsbuildinfo
+.eslintcache
+coverage/
+
+## Archivos subidos en tiempo de ejecución
+
+backend/**/wwwroot/uploads/
+frontend/**/static/uploads/
+
+## Editor y sistema
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.obsidian/
+*.swp
+
+## Herramientas de agente
+
+.agents/skills/
+.atl/
+
+## Sistema operativo
+
+.DS_Store
+Thumbs.db
+Desktop.ini
