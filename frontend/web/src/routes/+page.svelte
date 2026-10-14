@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { API_URL as apiUrl } from '../lib/config';
+	import { API_URL as apiUrl } from '$lib/config';
 
 	type RespuestaDeSalud = { estado: string; servicio: string };
 
