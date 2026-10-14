@@ -3,9 +3,22 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
-	"description": "Hooks de Git del monorepo Javito: lint-staged y commitlint.",
+	"description": "Raíz del monorepo Javito: hooks de Git (lint-staged, commitlint) y punto de entrada único de comandos.",
 	"scripts": {
-		"prepare": "husky"
+		"prepare": "husky",
+		"dev:api": "dotnet run --project backend/Javito.Api --launch-profile http",
+		"dev:web": "pnpm --dir frontend/web dev",
+		"check:api": "dotnet build backend/Javito.slnx --nologo && dotnet test backend/Javito.slnx --nologo",
+		"check:web": "pnpm --dir frontend/web check",
+		"check": "pnpm check:api && pnpm check:web",
+		"lint:api": "dotnet format backend/Javito.slnx --verify-no-changes",
+		"lint:web": "pnpm --dir frontend/web lint",
+		"lint": "pnpm lint:api && pnpm lint:web",
+		"format:api": "dotnet format backend/Javito.slnx",
+		"format:web": "pnpm --dir frontend/web format",
+		"format": "pnpm format:api && pnpm format:web",
+		"test:web": "pnpm --dir frontend/web exec vitest run",
+		"build:web": "pnpm --dir frontend/web build"
 	},
 	"devDependencies": {
 		"@commitlint/cli": "^21.2.3",

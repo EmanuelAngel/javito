@@ -13,38 +13,51 @@ Alcance completo, cronograma y consignas: `docs/`. Los documentos de trabajo en 
 | `backend/Javito.slnx` | solución .NET |
 | `backend/Javito.Api/` | WebAPI: `Program.cs`, `Controllers/` |
 | `backend/Javito.Api.Tests/` | xUnit + `Microsoft.AspNetCore.Mvc.Testing` |
-| `backend/scripts/` | `check.sh`, `format.sh`, `lint.sh` |
+| `backend/scripts/` | `check.sh`, `format.sh`, `lint.sh` (bash; ver nota abajo) |
 | `frontend/web/` | SPA SvelteKit con `adapter-static` |
 | `database.sql` | estructura + datos semilla (S2, pendiente) |
 | `docs/` | consignas de cátedra, propuesta, cronograma, brief de UX |
 | `odd/tasks/` | documentos de feature del trabajo trackeado |
+| `package.json` (raíz) | punto de entrada único de comandos: `pnpm <script>` |
 
 ## Comandos
 
-```sh
-# Backend
-./backend/scripts/check.sh                                  # dotnet build + dotnet test
-./backend/scripts/format.sh                                 # aplica formato
-./backend/scripts/lint.sh                                   # verifica formato sin escribir
-dotnet run --project backend/Javito.Api --launch-profile http
+Punto de entrada único, desde la raíz. `pnpm run` lista todo.
 
-# Frontend
-pnpm --dir frontend/web dev                                 # http://localhost:5173
-pnpm --dir frontend/web check                               # svelte-check
-pnpm --dir frontend/web lint                                # prettier --check + eslint
-pnpm --dir frontend/web format                              # prettier --write
-pnpm --dir frontend/web test:unit                           # vitest (watch)
-pnpm --dir frontend/web exec vitest run                     # vitest una vez
-pnpm --dir frontend/web build
+```sh
+pnpm dev:api        # WebAPI en http://localhost:5256 (dotnet run, perfil http)
+pnpm dev:web        # SPA en http://localhost:5173
+
+pnpm check          # check:api + check:web
+pnpm check:api      # dotnet build + dotnet test
+pnpm check:web      # svelte-check
+
+pnpm lint           # lint:api + lint:web
+pnpm lint:api       # dotnet format --verify-no-changes
+pnpm lint:web       # prettier --check + eslint
+
+pnpm format         # format:api + format:web
+pnpm format:api     # dotnet format
+pnpm format:web     # prettier --write
+
+pnpm test:web       # vitest una vez
+pnpm build:web      # build estático (adapter-static -> frontend/web/build)
 ```
+
+Los `pnpm <script>` **no** llaman a los `.sh` de `backend/scripts/`: pnpm ejecuta los scripts con
+`cmd.exe` en Windows, y `./backend/scripts/check.sh` falla ahí con `"." no se reconoce como un comando
+interno o externo`. Los `.sh` siguen siendo válidos invocados desde bash.
 
 Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
 playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que llega con S2. Los
 navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
 
+`pnpm test:web` **hoy falla con exit 1** (`No test files found`): el frontend no tiene archivos de prueba
+todavía. Sin `--passWithNoTests` a propósito, para que un glob roto no pase por verde.
+
 Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged,
-y `lint-staged` delega en el prettier del frontend. Por eso no hay `.prettierrc` en la raíz ni scripts
-de formato propios.
+y `lint-staged` delega en el prettier del frontend. Por eso no hay `.prettierrc` en la raíz: los scripts
+de la raíz solo delegan.
 
 ## Puertos y vínculo entre capas
 
