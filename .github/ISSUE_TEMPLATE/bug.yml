@@ -1,0 +1,66 @@
+name: Bug
+description: Algo que debería funcionar de cierta manera y no lo hace.
+title: 'fix(<área>): '
+labels: ['type:bug']
+body:
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: Qué pasa
+      description: El defecto en una o dos oraciones.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduccion
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Ir a ...
+        2. Hacer click en ...
+        3. Ver el error
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado-vs-obtenido
+    attributes:
+      label: Esperado vs obtenido
+      placeholder: |
+        Esperado: ...
+        Obtenido: ...
+    validations:
+      required: true
+
+  - type: input
+    id: donde
+    attributes:
+      label: Dónde
+      description: Endpoint, ruta de la SPA o comando afectado.
+      placeholder: POST /api/auth/login
+    validations:
+      required: true
+
+  - type: input
+    id: entorno
+    attributes:
+      label: Entorno y commit
+      description: Dónde lo viste y sobre qué commit.
+      placeholder: localhost:5256, commit 3634203
+
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Evidencia
+      description: Respuesta HTTP, stack trace, captura o GIF.
+
+  - type: textarea
+    id: causa-probable
+    attributes:
+      label: Causa probable
+      description: Opcional. Si ya sabés por dónde viene, el próximo paso arranca más arriba.
+
+  - type: markdown
+    attributes:
+      value: |
+        Acordate del label de área: `api`, `web`, `db` o `docs`.

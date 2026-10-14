@@ -1,0 +1,50 @@
+name: Feature (historia de usuario)
+description: Funcionalidad visible para el usuario. Un issue = un card del Kanban.
+title: 'feat(<área>): '
+labels: ['type:feature']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Una feature se especifica desde el usuario, no desde el código.
+        Si no podés nombrar el rol que la usa, todavía no está lista para ser un issue.
+
+  - type: input
+    id: rol
+    attributes:
+      label: Rol
+      description: Quién la usa. En Javito los roles son Administrador, Usuario y Visitante.
+      placeholder: Visitante
+    validations:
+      required: true
+
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      description: 'Como <rol> quiero <acción> para <beneficio>.'
+      placeholder: Como Visitante quiero registrarme con mi email para no perder mis hábitos entre dispositivos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Una regla verificable por línea. Esto es lo que se tilda para cerrar el issue.
+      placeholder: |
+        - [ ] El email se guarda en minúsculas
+        - [ ] Un email ya registrado devuelve 409
+    validations:
+      required: true
+
+  - type: textarea
+    id: fuera-de-alcance
+    attributes:
+      label: Fuera de alcance
+      description: Qué NO entra. Es la sección que evita que el issue crezca mientras lo trabajás.
+
+  - type: markdown
+    attributes:
+      value: |
+        Acordate del label de área: `api`, `web`, `db` o `docs`.
