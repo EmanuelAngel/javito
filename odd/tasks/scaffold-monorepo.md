@@ -223,3 +223,44 @@ puertos, CORS y la nota del build estático. Además se actualizó lo que el sca
 árbol del repositorio, la nota de estado, la tabla "Estado del proyecto" y el casillero del `.gitignore`
 en los requisitos para promocionar. `database.sql` y las credenciales siguen marcados **Pendiente**
 (S2 y S11).
+
+### L19 — Verificación independiente acotada: NO VERIFICABLE, y qué se hizo con eso
+
+El reintento acotado a una sola afirmación volvió en **9 llamadas a herramientas y sin ejecutar un solo
+build**, contra las 84 llamadas del intento anterior. Lección de alcance, no de mecanismo.
+
+Veredicto en el punto decisivo: **NO VERIFICABLE**. No hay decompilador disponible y PowerShell 5.1 no
+puede reflexionar sobre un ensamblado `net10` (`GetTypes()` devolvió 0 tipos), así que no pudo leer la
+lógica real de `CorsService`. El verificador **se negó a afirmar de memoria** que una política sin
+orígenes sea denegatoria. Conducta correcta: un verificador que inventa el veredicto es peor que uno que
+admite no poder darlo.
+
+Lo que sí confirmó, con evidencia:
+
+- Con la lista vacía no se invoca **ningún** configurador sobre `CorsPolicyBuilder` (ni `WithOrigins` ni
+  `AllowAnyOrigin`), pero `app.UseCors("SpaJavito")` se aplica igual (`Program.cs:27`).
+- `appsettings.json` **no tiene sección `Cors`**: la lista queda vacía en todo entorno que no sea
+  Development. Development es el único con un origen.
+- **Brecha real**: la única prueba de CORS corría con `UseEnvironment("Development")` y `Origin:
+  http://localhost:5173`, así que sólo ejercitaba la rama **con** origen. La rama vacía —la que corre en
+  producción— no estaba cubierta por ninguna prueba.
+
+### L20 — La brecha se cierra con una prueba, no con más verificación
+
+La respuesta correcta a "no puedo determinar la semántica leyendo el ensamblado" no es más ceremonia: es
+ejecutarla. Se agregó `CORS_no_habilita_ningun_origen_cuando_la_lista_esta_vacia`, que levanta la app con
+`UseEnvironment("Production")` (sin sección `Cors`) y afirma dos efectos observables: `200 OK` y ausencia
+de la cabecera `Access-Control-Allow-Origin` para un origen cruzado.
+
+Resultado: **1/1 pasa** (prueba aislada) y **3/3** la suite completa. Si la política vacía fuese
+permisiva, la prueba falla y el agujero queda al descubierto.
+
+Efectos: la afirmación fail-closed deja de apoyarse en un comentario y pasa a estar probada por
+ejecución y cubierta por una prueba que falla si alguien la rompe. La aserción de `200 OK` prueba además
+que `UseHttpsRedirection` no intercepta la petición en el `TestServer` (no hubo 307), así que la prueba
+ejercita el camino real hacia el controlador.
+
+Queda honestamente sin verificar de forma independiente: la semántica de CORS **con** orígenes
+configurados (cubierta sólo por evidencia propia: servidores reales y navegador headless) y la
+conveniencia de las dependencias agregadas (`Risk` item 5). Se dejan registradas como propias, no como
+independientes.

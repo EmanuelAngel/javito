@@ -44,6 +44,28 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory)
             "La respuesta no incluye la cabecera Access-Control-Allow-Origin");
         Assert.Equal(OrigenSpa, Assert.Single(origenes));
     }
+
+    [Fact]
+    public async Task CORS_no_habilita_ningun_origen_cuando_la_lista_esta_vacia()
+    {
+        // Fuera de Development, appsettings.json no define `Cors:AllowedOrigins`, así que el
+        // constructor de política queda sin ningún configurador: ni WithOrigins ni AllowAnyOrigin.
+        // Es la rama que corre en cualquier entorno que no sea Development, y ninguna otra prueba
+        // la ejercita. Si la política vacía fuese permisiva, esta prueba lo delata.
+        using var fabrica = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+        using var cliente = fabrica.CreateClient();
+
+        var peticion = new HttpRequestMessage(HttpMethod.Get, "/api/health");
+        peticion.Headers.Add("Origin", OrigenSpa);
+
+        var respuesta = await cliente.SendAsync(peticion);
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.False(
+            respuesta.Headers.Contains("Access-Control-Allow-Origin"),
+            "Sin orígenes configurados la política CORS no debe habilitar ninguno");
+    }
 }
 
 internal sealed record RespuestaDeSalud(string Estado, string Servicio);
