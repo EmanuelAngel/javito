@@ -48,38 +48,112 @@ Monorepo: backend y frontend viven juntos porque forman una sola entrega y compa
 
 ```
 javito/
+├── .husky/                           # hooks: lint-staged y commitlint
+├── .pi/mcp.json                      # MCP de Svelte del proyecto
+├── AGENTS.md                         # convenciones para agentes
+├── package.json                      # tooling: commitlint, lint-staged, husky, prettier
 ├── backend/
 │   ├── Javito.slnx                   # solución
 │   ├── Javito.Api/                   # ASP.NET Core WebAPI (.NET 10)
-│   │   ├── Controllers/  Repositories/  Models/  Dtos/  Auth/
+│   │   ├── Controllers/              # Repositories/ Models/ Dtos/ Auth/ llegan con S3
 │   │   └── appsettings.Development.json
 │   ├── Javito.Api.Tests/             # pruebas del backend
 │   └── scripts/                      # check / format / lint del backend
 ├── frontend/
 │   └── web/                          # SPA SvelteKit (adapter-static)
 ├── docs/                             # contexto, consignas, cronograma y DER
+├── odd/tasks/                        # documentos de feature del trabajo trackeado
 ├── database.sql                      # estructura + datos de prueba
 ├── format-sql.sh                     # formateo de archivos .sql
 └── README.md
 ```
 
-> **Estado:** la estructura de carpetas todavía no está scaffoldeada. Es el primer ítem del
-> [cronograma](docs/proyecto/cronograma.md). Hasta entonces, este árbol es el contrato del layout, no un hecho;
-> los nombres definitivos de proyectos y carpetas se fijan ahí, siguiendo el layout ya practicado en
-> `~/dev/inmobiliaria-webapi` (solución + proyecto + tests dentro de `backend/`).
+> **Estado:** el scaffold del monorepo (`S1` del cronograma) está hecho: `backend/` con la solución y el
+> proyecto WebAPI, `frontend/web/` con la SPA en `adapter-static`, y el repositorio Git inicializado con un
+> solo commit raíz. Los directorios de dominio del backend (`Repositories/`, `Models/`, `Dtos/`, `Auth/`) y
+> `database.sql` llegan con `S2` y `S3`. Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).
 
 ---
 
 ## Puesta en marcha
 
-**Pendiente.** Esta sección se completa al cerrar el hito de Setup (`S1`/`S2` del cronograma), cuando existan
-el proyecto, el script SQL y las credenciales de prueba. Contemplará:
+### Requisitos
 
-1. Requisitos: .NET SDK 10, Node LTS + pnpm, MySQL 8.0.
-2. Creación de la base y carga de `database.sql` (estructura + datos semilla).
-3. Cadena de conexión en `backend/appsettings.Development.json`.
-4. Ejecución del backend y del frontend, con sus puertos y la configuración de CORS.
-5. Credenciales de los usuarios de prueba, una por rol.
+| Herramienta | Versión verificada |
+|---|---|
+| .NET SDK | 10.0.302 |
+| Node | 24.20.0 |
+| pnpm | 10.26.1 |
+| MySQL | 8.0.46 |
+
+### 1. Herramientas de la raíz
+
+```sh
+pnpm install
+```
+
+Instala `commitlint`, `lint-staged`, `husky` y `prettier`, y activa los hooks de Git mediante el script
+`prepare`. Si los hooks no se disparan, corré `pnpm run prepare`.
+
+### 2. Backend
+
+```sh
+dotnet run --project backend/Javito.Api --launch-profile http
+```
+
+Queda escuchando en `http://localhost:5256`. Verificación:
+
+```sh
+curl http://localhost:5256/api/health
+# {"estado":"ok","servicio":"Javito.Api"}
+```
+
+Con el perfil `http` el documento OpenAPI queda en `http://localhost:5256/openapi/v1.json`.
+
+Pruebas y formato:
+
+```sh
+./backend/scripts/check.sh     # dotnet build + dotnet test
+./backend/scripts/lint.sh      # verifica el formato sin escribir
+./backend/scripts/format.sh    # aplica el formato
+```
+
+### 3. Frontend
+
+```sh
+pnpm --dir frontend/web install
+pnpm --dir frontend/web dev
+```
+
+Queda en `http://localhost:5173`. La pantalla inicial consulta `GET /api/health` y muestra
+*"Conectado a Javito.Api"* cuando el vínculo entre capas funciona.
+
+El backend habilita exactamente ese origen desde `Cors:AllowedOrigins`
+(`backend/Javito.Api/appsettings.Development.json`). La política es **fail-closed**: sin orígenes
+configurados no habilita ninguno. La URL de la API vive en un único lugar:
+`frontend/web/src/lib/config.ts`.
+
+Otros comandos:
+
+```sh
+pnpm --dir frontend/web check   # svelte-check
+pnpm --dir frontend/web build
+```
+
+> Con SvelteKit 3, `pnpm build` puede pasar con `pnpm check` en rojo. Corré los dos.
+
+### 4. Base de datos y credenciales de prueba
+
+**Pendiente** (`S2` y `S11` del cronograma): `database.sql` con las 7 tablas y los datos semilla, la
+cadena de conexión en `backend/appsettings.Development.json` y las credenciales por rol.
+
+### Nota sobre el build estático
+
+`pnpm --dir frontend/web build` genera la salida desplegable en `frontend/web/build/`, con `index.html`
+como fallback de la SPA. `pnpm preview` **no** sirve esa carpeta: previsualiza `.svelte-kit/output/` y
+resuelve el HTML por SSR, así que una ruta que todavía no existe devuelve 404. Para probar `build/` hace
+falta un servidor estático que aplique la regla de fallback; en desarrollo, `pnpm dev` ya maneja el ruteo
+del cliente.
 
 ---
 
@@ -107,7 +181,7 @@ Documento obligatorio de la consigna. Se completa a medida que cada hito del cro
 
 ### Requisitos adicionales para promocionar
 
-- [ ] `.gitignore` específico y sin artefactos de compilación
+- [x] `.gitignore` específico y sin artefactos de compilación
 - [ ] Diagrama Entidad-Relación adjunto
 - [ ] `README.md` con descripción y guía paso a paso
 - [ ] `database.sql` con estructura y datos de prueba precargados
@@ -148,8 +222,8 @@ notificaciones push ni temporizadores en tiempo real · requiere conexión a int
 | Hito | Estado |
 |---|---|
 | Propuesta aprobada por la cátedra | Cumplido |
-| Repositorio y contexto documental | En curso |
-| Scaffold del monorepo | Pendiente |
+| Repositorio y contexto documental | Cumplido |
+| Scaffold del monorepo | Cumplido |
 | Resto de los hitos | Ver [cronograma](docs/proyecto/cronograma.md) |
 
 ## Documentación

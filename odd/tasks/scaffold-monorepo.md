@@ -181,3 +181,45 @@ Decisiones de alcance del hook:
 
 Se corrigieron las líneas divergentes, no las mayoritarias. Verificado por grep: no queda ninguna
 aparición de `backend/src` ni de "Javito define **8**".
+
+### L15 — Verificación end-to-end de T5
+
+Con la API real escuchando en `http://localhost:5256` (`dotnet run --launch-profile http`) y el SPA
+servido en `http://localhost:5173`. Sin `WebApplicationFactory`.
+
+| Comprobación | Resultado |
+| :--- | :--- |
+| `GET /api/health` | `{"estado":"ok","servicio":"Javito.Api"}`, 200 |
+| Preflight `OPTIONS` con `Origin: http://localhost:5173` | 204 + `Access-Control-Allow-Origin` + `Access-Control-Allow-Methods: GET` |
+| `GET` con origen permitido | 200 + `Access-Control-Allow-Origin` |
+| `GET` con origen **no** permitido | 200 **sin** `Access-Control-Allow-Origin` → fail-closed verificado |
+| Navegador headless (Edge, `--headless=new --dump-dom`) | renderizó **"Conectado a"** → el `fetch` real con CORS funcionó |
+
+### L16 — Corrección de una lectura equivocada mía
+
+La comprobación `GET /habits` devolvió **404** y lo reporté como defecto del fallback SPA. **Era falso.**
+La ruta `/habits` no existe todavía en la app (sólo se scaffoldeó `/`), así que el 404 es correcto. La
+comprobación de consistencia es `GET /` → 200 (ruta existente) contra `GET /habits` → 404 (ruta
+inexistente).
+
+Se detectó leyendo `node_modules/@sveltejs/kit/src/exports/vite/preview/index.js` en vez de "arreglar"
+el supuesto fallo, que habría sido el error real.
+
+### L17 — Hallazgo: `pnpm preview` no previsualiza la salida estática
+
+Del mismo archivo: el servidor de preview sirve los assets desde `.svelte-kit/output/client` y resuelve
+el HTML por SSR (`output/server`) o por páginas prerenderizadas, **nunca desde `build/`**. Verificado:
+`.svelte-kit/output/client` no contiene `index.html`, y no existe `.svelte-kit/output/prerendered/`,
+así que `build/index.html` es el fallback SPA de `adapter-static`.
+
+Consecuencia documentada en el README: `pnpm preview` no es una previsualización fiel del despliegue;
+para probar `build/` hace falta un servidor estático con regla de fallback. En desarrollo `pnpm dev`
+maneja el ruteo del cliente.
+
+### L18 — README de T5
+
+Se completó "Puesta en marcha" con los comandos verificados, requisitos con versiones reales,
+puertos, CORS y la nota del build estático. Además se actualizó lo que el scaffold dejó obsoleto: el
+árbol del repositorio, la nota de estado, la tabla "Estado del proyecto" y el casillero del `.gitignore`
+en los requisitos para promocionar. `database.sql` y las credenciales siguen marcados **Pendiente**
+(S2 y S11).
