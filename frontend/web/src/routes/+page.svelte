@@ -8,6 +8,11 @@
 	let servicio = $state('');
 	let detalle = $state('');
 
+	function alternarTema() {
+		const oscuro = document.documentElement.classList.toggle('dark');
+		localStorage.setItem('tema', oscuro ? 'oscuro' : 'claro');
+	}
+
 	async function consultarSalud() {
 		estado = 'cargando';
 
@@ -34,83 +39,51 @@
 	<title>Javito · vínculo SPA-API</title>
 </svelte:head>
 
-<main>
-	<h1>Javito</h1>
-	<p class="subtitulo">Vínculo entre el SPA y la WebAPI desacoplada.</p>
+<main class="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10">
+	<header class="flex items-start justify-between gap-4">
+		<div class="flex flex-col gap-1">
+			<h1 class="text-3xl font-semibold tracking-tight">Javito</h1>
+			<p class="text-sm text-muted-foreground">Vínculo entre el SPA y la WebAPI desacoplada.</p>
+		</div>
+		<button
+			type="button"
+			onclick={alternarTema}
+			aria-label="Alternar entre tema claro y oscuro"
+			class="rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+		>
+			Cambiar tema
+		</button>
+	</header>
 
-	<section>
+	<section class="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
 		{#if estado === 'cargando'}
-			<p>Consultando <code>{apiUrl}/api/health</code>…</p>
+			<p>
+				Consultando <code class="rounded bg-muted px-1.5 py-0.5 text-sm">{apiUrl}/api/health</code>…
+			</p>
 		{:else if estado === 'conectado'}
-			<p class="ok">Conectado a <strong>{servicio}</strong> en <code>{apiUrl}</code>.</p>
-			<p class="nota">CORS y desacoplamiento verificados de punta a punta.</p>
+			<p>
+				Conectado a <strong>{servicio}</strong> en
+				<code class="rounded bg-muted px-1.5 py-0.5 text-sm">{apiUrl}</code>.
+			</p>
+			<p class="text-sm text-muted-foreground">
+				CORS y desacoplamiento verificados de punta a punta.
+			</p>
 		{:else}
-			<p class="error">No se pudo consultar la WebAPI: {detalle}</p>
-			<p class="nota">
+			<p class="text-destructive">No se pudo consultar la WebAPI: {detalle}</p>
+			<p class="text-sm text-muted-foreground">
 				Levantá el backend con
-				<code>dotnet run --project backend/Javito.Api --launch-profile http</code>.
+				<code class="rounded bg-muted px-1.5 py-0.5 text-sm"
+					>dotnet run --project backend/Javito.Api --launch-profile http</code
+				>.
 			</p>
 		{/if}
 
-		<button onclick={consultarSalud}>Volver a consultar</button>
+		<button
+			type="button"
+			onclick={consultarSalud}
+			class="mt-1 w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+		>
+			Volver a consultar
+		</button>
 	</section>
 </main>
-
-<style>
-	main {
-		max-width: 32rem;
-		margin: 0 auto;
-		padding: 2rem 1.25rem;
-		font-family: system-ui, sans-serif;
-		line-height: 1.5;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: 1.75rem;
-	}
-
-	.subtitulo {
-		margin-top: 0.25rem;
-		color: #52525b;
-	}
-
-	section {
-		margin-top: 1.5rem;
-		padding: 1.25rem;
-		border: 1px solid #e4e4e7;
-		border-radius: 0.75rem;
-		background: #fff;
-		box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
-	}
-
-	.ok {
-		color: #15803d;
-	}
-
-	.error {
-		color: #b91c1c;
-	}
-
-	.nota {
-		color: #52525b;
-		font-size: 0.875rem;
-	}
-
-	code {
-		padding: 0.125rem 0.375rem;
-		border-radius: 0.25rem;
-		background: #f4f4f5;
-		font-size: 0.875em;
-	}
-
-	button {
-		margin-top: 0.5rem;
-		padding: 0.5rem 1rem;
-		border: 1px solid #d4d4d8;
-		border-radius: 0.5rem;
-		background: #fafafa;
-		font: inherit;
-		cursor: pointer;
-	}
-</style>
