@@ -1,0 +1,6 @@
+@Javito.Api_HostAddress = http://localhost:5256
+
+GET {{Javito.Api_HostAddress}}/api/health
+Accept: application/json
+
+###

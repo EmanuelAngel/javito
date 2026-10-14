@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Javito.Api.Tests/Javito.Api.Tests.csproj" />
+  <Project Path="Javito.Api/Javito.Api.csproj" />
+</Solution>
