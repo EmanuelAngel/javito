@@ -107,3 +107,46 @@ El proyecto no tenía código, así que no había convención que extender. Se a
 nombres de prueba, comentarios y el contrato JSON de la API (`estado`, `servicio`), coherente con el
 dominio en español del DER (`Usuario`, `Habito`, `titulo`) y con la defensa oral; **inglés** para los
 identificadores que siguen convenciones del framework (`HealthController`, `Program`). Reversible.
+
+### L9 — Hallazgos de SvelteKit 3 durante T2
+
+El build pasaba, pero `svelte-check` quedaba en rojo. Con SvelteKit 3 eso son dos cosas distintas y
+hay que correr las dos. Tres cambios de API, ninguno obvio en la doc:
+
+1. **`$lib` fue eliminado.** Error literal: `SvelteKit error: module_removed_lib` — "`$lib` has been
+   removed. Use `#lib` instead". El reemplazo son subpath imports de Node en `package.json`:
+   `{"#lib": "./src/lib/index.js", "#lib/*": "./src/lib/*"}`.
+2. **`$env/*` fue reemplazado** por una declaración explícita en `src/env.ts` con `defineEnvVars` de
+   `@sveltejs/kit/env`, expuesta desde `$app/env/public`. El módulo viejo, `$env/dynamic/public`,
+   sobrevive como shim que emite `env_module_deprecated` en runtime y **ya no recibe tipos**.
+3. **El patrón `#lib/*` no resuelve en TypeScript sin extensión en el especificador.**
+   `#lib/assets/favicon.svg` funcionaba porque la extensión estaba en el import; `#lib/config` lo
+   resuelve el bundler pero no `tsc`.
+
+Además: `svelte.config.js` ya no existe. `sv create` deja el adapter dentro de `vite.config.ts`, en
+`sveltekit({ adapter })`, y el fallback SPA se activa con `adapter({ fallback: 'index.html' })`.
+
+### L10 — Decisión sobre variables de entorno del SPA
+
+SvelteKit 3 ya no tiene una forma de entorno tipada y verificable para este caso sin adoptar
+`src/env.ts`. Se intentó esa vía y **se descartó para el scaffold**: la forma exacta del módulo
+`$app/env/public` sólo se pudo confirmar por código generado, y la verificación real requiere un
+navegador.
+
+Decisión: la URL de la API queda en `src/lib/config.ts` como **único punto de cambio**, documentada
+con la nota de migración. No se acopla el scaffold a una API cuya forma no está verificada, y la
+migración se evalúa en el hito de interfaz, cuando se pueda verificar el valor en el navegador.
+
+### L11 — `.env.example` bloqueado por política
+
+Se intentó crear `frontend/web/.env.example`. La política de seguridad bloquea esa ruta por patrón,
+y **el bloqueo persistió aun con autorización explícita del usuario**: no es falta de consentimiento,
+es una restricción de herramienta. No se rodeó el guardrail por otra vía.
+
+El archivo quedó **innecesario**: al no adoptarse la API de entorno de SvelteKit 3, no hay variables
+que documentar. La configuración vive en `src/lib/config.ts`.
+
+### L12 — Evidencia de T2
+
+`pnpm check`: `svelte-check found 0 errors and 0 warnings` (exit 0). `pnpm build`: `Wrote site to
+"build"` (exit 0), con `build/index.html` como fallback SPA y el bundle en `build/_app`.
