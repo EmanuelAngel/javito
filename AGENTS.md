@@ -55,6 +55,12 @@ navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:
 `pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los
 `*.svelte.test.ts` al project `client`, que necesita los navegadores de playwright.
 
+`lint:web` y `check:web` cachean a disco: `prettier --cache` (en `node_modules/.cache/prettier`),
+`eslint --cache` (`frontend/web/.eslintcache`) y `svelte-check --incremental` (en `.svelte-kit`). Todo
+eso está ignorado por git. Si una caché quedó mintiendo, borrá el archivo y volvé a correr. `vitest run`
+no gana nada con `--cache` (medido), y `dotnet format` **no tiene caché**: `pnpm lint:api` tarda ~10s
+siempre.
+
 Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged.
 Por eso no hay `.prettierrc` en la raíz: los scripts de la raíz solo delegan.
 
