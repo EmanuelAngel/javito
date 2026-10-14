@@ -71,16 +71,19 @@ de formato propios.
 
 ## Interfaz y estilo
 
-- **Tokens Kanagawa** en `frontend/web/src/routes/layout.css`: capa de marca con la paleta cruda y capa
-  semántica con los roles de shadcn, mapeados a utilidades en `@theme inline`. Claro (Lotus) en `:root`
-  y oscuro (Dragon) en `.dark`. **No usar colores sueltos** (`bg-blue-500`): usar los tokens
-  (`bg-background`, `text-muted-foreground`, `border-border`, …).
+- **Temas Rosé Pine** en `frontend/web/src/routes/layout.css`, copiados de Pomody: capa de marca con la
+  paleta cruda y capa semántica con los roles de shadcn, mapeados a utilidades en `@theme inline`. Claro
+  (Dawn) en `:root` y oscuro (OLED) en `.dark`. **No usar colores sueltos** (`bg-blue-500`): usar los
+  tokens (`bg-background`, `text-muted-foreground`, `border-border`, …).
 - `frontend/web/src/lib/componentes/ui/` es **vendorizada** de shadcn-svelte: la escribe el CLI. Queda
   fuera de prettier y de eslint, pero **sí** entra en `svelte-check`. No la reformatees a mano.
 - Las utilidades y variantes que esos componentes necesitan llegan por
   `@import 'shadcn-svelte/tailwind.css'`. No crees un segundo archivo global de CSS.
-- El claro/oscuro se resuelve con el script previo al pintado de `frontend/web/src/app.html` y un botón
-  en la página. No se usa `mode-watcher`.
+- **Modo claro/oscuro con `mode-watcher`**: `<ModeWatcher />` en `+layout.svelte` aplica y saca la clase
+  `.dark` en el `<html>`, sigue la preferencia del sistema operativo y la persiste. El botón de la página
+  usa `toggleMode`. No hay script propio en `app.html`.
+- **Íconos: Lucide** (`@lucide/svelte`, con `"iconLibrary": "lucide"` en `components.json`). Un solo pack,
+  sin shim ni alias.
 
 ## Trampas conocidas de SvelteKit 3
 

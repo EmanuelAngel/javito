@@ -1,10 +1,10 @@
-# Toolchain de UI y sistema de tokens Kanagawa — EN PAUSA
+# Toolchain de UI y temas de Pomody
 
-Feature sobre la rama `feat/ui-toolchain`. **Detenida por pedido del usuario**: queda planteada para
-retomarla en otra sesión. Este documento es la fuente de verdad para retomar.
+Feature sobre la rama `feat/ui-toolchain`, en curso. Se detuvo una vez (L5) y se retomó en L6. Este
+documento es la fuente de verdad.
 
-Estado del árbol al detenerse: **hay cambios sin commitear** (del `sv add` que corrió el usuario) y un
-archivo basura en la raíz. Ver "Estado actual verificado".
+Último cambio de requisitos: **L10** — los temas salen de Pomody y los maneja ModeWatcher, los íconos son
+Lucide (se cae el shim de Solar) y no hay tests de tokens.
 
 ## Specs
 
@@ -12,18 +12,19 @@ archivo basura en la raíz. Ver "Estado actual verificado".
   plugins `typography` y `forms`.
 - **S2 — shadcn-svelte** bajo `src/lib/componentes/ui`. `ui/` es vendorizada: se excluye de prettier
   y de eslint, **no** de `svelte-check` (decisión del usuario).
-- **S3 — Íconos: opción B.** Un módulo propio que re-exporta los íconos de `@solar-icons/svelte` bajo
-  los nombres que shadcn-svelte espera, mapeado por alias. `ui/` queda intacto y `shadcn update` no lo
-  revierte. Un solo pack de íconos.
-- **S4 — Tokens Kanagawa**, claro/oscuro, con la estructura de Pomody (`~/dev/pomody/src/app.css`):
-  capa de marca, capa semántica de shadcn, `@theme inline`, `@layer base`. Sin la indirección
-  `data-theme` de Pomody (un solo tema: `:root` + `.dark`). Dragon para oscuro, Lotus para claro, del
-  repo oficial `rebelot/kanagawa.nvim`. Los roles semánticos se mapean al miembro de la paleta que
-  **pasa AA**, no al que usa el tema de neovim.
+- **S3 — Íconos: Lucide.** Se usa `@lucide/svelte`, que es lo que `components.json` ya declara
+  (`"iconLibrary": "lucide"`). Sin shim, sin alias y sin un segundo pack de íconos. `ui/` queda intacto y
+  `shadcn update` no puede romper nada. Reemplaza a la opción B de Solar Icons (L10).
+- **S4 — Temas de Pomody** (`~/dev/pomody/src/app.css`), con su estructura: capa de marca, capa semántica
+  de shadcn, `@theme inline` y `@layer base`. Dos paletas, no tres: **Rosé Pine Dawn en `:root`** (claro)
+  y **Rosé Pine OLED en `.dark`** (oscuro). Se descartan la tercera paleta (Rosé Pine base) y la
+  indirección `data-theme`: el modo lo maneja **ModeWatcher** con la clase `.dark`.
 - **S5 — Interfaz en español**, incluidos aria-labels.
 - **S6 — Prettier se muda al frontend.** La raíz conserva husky, commitlint y lint-staged.
 - **S7 — Base color de shadcn: `stone`** (inmutable después del `init`).
-- **S8 — Vitest** sólo `unit` al principio. **Playwright** sin demo.
+- **S8 — Vitest** sólo `unit` al principio. **Playwright** sin demo. **Sin tests de tokens** (L10): el CSS
+  es declarativo y se verifica con `pnpm lint`, `pnpm check` y `pnpm build`. Ya se había borrado el spec en
+  L9; L10 lo confirma como decisión, no como deuda.
 
 ## Estado actual verificado
 
@@ -168,75 +169,35 @@ Para prettier, va en `frontend/web/.prettierignore`.
 - Comando que funcionó: `pnpm dlx sv@latest add 'tailwindcss=plugins:typography,forms'`
   (que es lo que terminó corriendo el usuario, más los otros cuatro add-ons).
 
-## Diseño del tema Kanagawa (calculado, listo para escribir)
+## Tema: qué se copia de Pomody
 
-Ratios WCAG medidos sobre la paleta oficial. Regla aplicada: **se mantiene el rol de Kanagawa donde
-pasa AA; se desvía sólo donde falla, documentando el motivo.**
+Fuente: `~/dev/pomody/src/app.css`. De sus tres paletas se copian dos, mapeadas al modo que ModeWatcher
+maneja (L10):
 
-### Oscuro — Dragon, fondo `#181616`
+| Bloque de Pomody | Dónde va | Por qué |
+| :--- | :--- | :--- |
+| `[data-theme='dawn']` | `:root` | Es la paleta clara: **Dawn**. |
+| `[data-theme='oled']` | `.dark` | Es la oscura de la elección del usuario: **OLED**. |
+| `:root` / `[data-theme='dark']` (Rosé Pine base) | no se copia | ModeWatcher sólo distingue claro de oscuro. |
 
-| Token | Valor | Fuente | Ratio |
-| :--- | :--- | :--- | :--- |
-| `--background` | `#181616` | dragonBlack3 | — |
-| `--foreground` | `#c5c9c5` | dragonWhite | **10.76** ✓ |
-| `--card` | `#393836` | dragonBlack5 | **1.54** vs fondo (único escalón perceptible) |
-| `--card-foreground` | `#c5c9c5` | — | 6.99 ✓ |
-| `--popover` / `--secondary` / `--muted` | `#282727` | dragonBlack4 | 1.21 vs fondo |
-| `--accent` | `#393836` | dragonBlack5 | — |
-| `--muted-foreground` | `#a6a69c` | dragonGray | **7.34** ✓ (sobre card 4.77 ✓) |
-| `--primary` | `#8ba4b0` | dragonBlue2 | 6.90 ✓ |
-| `--primary-foreground` | `#181616` | — | 6.90 ✓ |
-| `--destructive` | `#c4746e` | dragonRed | 5.21 ✓ |
-| `--destructive-foreground` | `#181616` | — | 5.21 ✓ |
-| `--border` / `--input` | `#54546D` | sumiInk6 | **1.60 contra la tarjeta**, 2.46 vs fondo (el "borde nítido") |
-| `--ring` | `#8ba4b0` | — | — |
-| `--chart-1..5` | `#8ba4b0` `#8a9a7b` `#c4b28a` `#a292a3` `#b6927b` | dragonBlue2, dragonGreen2, dragonYellow, dragonPink, dragonOrange | todos ≥ 6 ✓ |
-| `--sidebar` | bg `#12120f`, fg `#c5c9c5`, border `#393836`, accent `#393836`, ring/primary `#8ba4b0` | dragonBlack1 | — |
+Se copia lo que Pomody define en cada tema: la capa de marca (`--bg-base`, `--bg-surface`, `--bg-overlay`,
+`--text-muted`, `--text-subtle`, `--text-primary`, `--accent-love/rose/pine/foam/iris/gold`), la capa
+semántica de shadcn, `--radius: 0.625rem` y el mapeo de `@theme inline`.
 
-**Desvío 1 (oscuro):** el tema oficial de Kanagawa usa `dragonAsh #737c73` para comentarios →
-**4.17:1, no pasa AA** para texto normal. Se usa `dragonGray #a6a69c` (7.34:1).
+No se copia, y por qué:
 
-### Claro — Lotus, fondo `#f2ecbc`
+- Los tres `--mode-*-text` (focus, short-break, long-break): son tokens del dominio de pomodoro de Pomody.
+- `@import 'tw-animate-css'`: no está instalado y no hace falta.
+- `user-select: none` en `body`: Pomody es un temporizador; en Javito copiar texto es legítimo.
+- `chart-1..5` y `sidebar-*`: los definía la paleta Kanagawa que se reemplaza; las paletas de Pomody no los
+  traen. Se agregan el día que se instale `Chart` o `Sidebar`.
 
-| Token | Valor | Fuente | Ratio |
-| :--- | :--- | :--- | :--- |
-| `--background` | `#f2ecbc` | lotusWhite3 | — |
-| `--foreground` | `#545464` | lotusInk1 | **6.19** ✓ (sobre tarjeta 7.28 ✓) |
-| `--card` / `--popover` | `#fffdf2` | blanco cálido, fuera de la paleta | 1.18 vs fondo |
-| `--secondary` / `--muted` | `#e7dba0` | lotusWhite4 | — |
-| `--accent` / `--border` / `--input` | `#d5cea3` | lotusWhite0 | border vs tarjeta 1.56 |
-| `--muted-foreground` | `#5f5c51` | lotusGray2 oscurecido | **5.58** ✓ (sobre tarjeta 6.56) |
-| `--primary` | `#4d699b` | lotusBlue4 (oficial) | 4.59 ✓ |
-| `--primary-foreground` | `#f2ecbc` | — | 4.59 ✓ |
-| `--destructive` | `#b0353f` | lotusRed oscurecido | **5.11** ✓ |
-| `--destructive-foreground` | `#f2ecbc` | — | 5.11 ✓ |
-| `--warning` | `#8a5514` | lotusOrange2 oscurecido | **5.16** ✓ |
-| `--ring` | `#4d699b` | — | — |
-| `--chart-1..5` | `#4d699b` `#6f894e` `#b35b79` `#4e8ca2` `#624c83` | lotusBlue4, lotusGreen, lotusPink, lotusTeal1, lotusViolet4 | todos ≥ 3 ✓ |
-| `--sidebar` | bg `#e7dba0`, fg `#545464`, border `#d5cea3`, accent `#d5cea3`, ring/primary `#4d699b` | — | — |
+Se mantienen `@custom-variant dark (&:is(.dark *))`, las tipografías Inter Variable + JetBrains Mono
+Variable vía `@fontsource-variable/*` (L6) y el scrollbar fino de `@layer base`.
 
-La tarjeta clara no gana por superficie (1.18:1, todas las candidatas de la paleta dan 1.1–1.33) sino
-**por contraste de texto**: con `#dcd5ac` el texto quedaba en 5.0 y el muted rozando 4.51, con
-`#fffdf2` suben a 7.28 y 6.56.
-
-**Desvíos (claro):**
-
-| Token | Oficial | Ratio | Reemplazo | Ratio |
-| :--- | :--- | :--- | :--- | :--- |
-| muted-foreground | `lotusGray2 #716e61` | 4.26 ✗ | `#5f5c51` | 5.58 ✓ |
-| destructive | `lotusRed #c84053` | 4.06 ✗ | `#b0353f` | 5.11 ✓ |
-| warning | `lotusOrange2 #e98a00` | 2.16 ✗ | `#8a5514` | 5.16 ✓ |
-
-### Comunes
-
-- `--radius: 0.625rem` (como Pomody).
-- `@custom-variant dark (&:is(.dark *))`, `@theme inline` con las dos capas mapeadas, y `@layer base`
-  con `@apply border-border outline-ring/50` y el scrollbar fino, como Pomody.
-- **Tipografías: Inter Variable + JetBrains Mono Variable**, vía `@fontsource-variable/inter` y
-  `@fontsource-variable/jetbrains-mono`. Es el precedente de Pomody y se decidió en L6.
-- El claro/oscuro **no usa `mode-watcher`**: un script propio en `app.html` resuelve el tema antes del
-  primer pintado y un botón en la página lo alterna, guardando la preferencia en `localStorage`. Para un
-  SPA estático son unas pocas líneas y una dependencia menos (L9).
+El modo lo resuelve **ModeWatcher** (`mode-watcher@1.1.0`, peer `svelte ^5.27`): aplica y saca `.dark` en
+el `<html>`, arranca con la preferencia del sistema operativo y la persiste. Reemplaza al script propio
+anti-FOUC que vivía en `app.html`.
 
 ## Tasks (replanteadas sobre el estado real)
 
@@ -248,27 +209,31 @@ Orden vigente desde L6. El commit de cada unidad de trabajo va en la rama `feat/
 | T8 | **Limpieza + commit del toolchain.** Borrar `src/routes/demo/`, `src/lib/vitest-examples/` y el `DemoLinks` de `+layout.svelte`; commitear el estado del `sv add`. Absorbe el T9 original: era un commit de dos líneas y el toolchain debe llegar sin andamios de demo | **Hecho** en `e6b2cab`, junto con T3 y T9 |
 | T3 | eslint y prettier en el frontend: efectivo, borrar el prettier de la raíz, que lint-staged delegue, y `ignores` de `ui/` en eslint + `.prettierignore` | **Hecho dentro de T8** (L7): sin esto no se podía commitear nada del SPA |
 | T6 | vitest y playwright: arreglar `playwright.config.ts` (pnpm, puerto, no reinstalar navegadores a cada corrida) | **Hecho** en `5ea34e4` (L8) |
-| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el de Kanagawa | **Hecho** en `b4e6a61` (L8), con una parte pendiente: el `init` no pudo cerrarse sin TTY |
-| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + claro/oscuro + reescribir `+page.svelte` con tokens. Valores ya calculados arriba | **Hecho** en `905b0c1`. Sin `mode-watcher` y **sin spec de tokens** (L9) |
-| T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | Pendiente |
-| T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | **Hecho** (L9) |
+| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el del tema | **Hecho** en `b4e6a61` (L8), con una parte pendiente: el `init` no pudo cerrarse sin TTY |
+| T2 | Sistema de tokens en `src/routes/layout.css` + claro/oscuro + reescribir `+page.svelte` con tokens | **Hecho** en `905b0c1` y **reemplazado por T10**: la paleta Kanagawa se descartó en L10 |
+| T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | **Cancelada** en L10: los íconos son Lucide, no hay nada que mapear |
+| T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | **Hecho** (L9). `AGENTS.md` se vuelve a tocar en T11 por L10 |
 | T9 | — | **Absorbido por T8** (L6) |
+| T10 | Temas de Pomody (Dawn en `:root`, OLED en `.dark`) + ModeWatcher + íconos Lucide en el botón de tema. Reemplaza a T2 y cierra T5 | **Hecho** en la cadena de L11 |
+| T11 | Documentación de L10: `AGENTS.md` y este documento | **Hecho** en la cadena de L11 |
 
-`T5` queda **bloqueada a propósito**: hasta que un componente generado por el CLI importe un ícono no
-existe conjunto de nombres que mapear, y un shim parcial tiene más chances de romper el primer `add`
-que de servir. Primer paso, cuando llegue ese momento: instalar `@solar-icons/svelte`, crear un módulo
-bajo `src/lib/` que re-exporte los íconos con los nombres que usa el componente generado y aliñar
-`@lucide/svelte/icons/*` a ese módulo desde `vite.config.ts`, sin tocar `ui/`.
+Lo que queda pendiente de verdad, después de T2, T5 y T10:
+
+- **`pnpm exec vitest run` sale 1 con `No test files found`.** No hay ningún spec en `frontend/web` y por
+  L10 tampoco lo va a haber para los tokens. Es estado preexistente: no lo introduce T10.
+- **Pruebas de e2e: no existe ninguna.** El e2e contra el backend real necesita MySQL, que llega con S2.
+- **La parte pendiente de T4** (el `init` sin TTY) quedó cubierta por diseño: `layout.css` importa
+  `shadcn-svelte/tailwind.css` en vez de copiar el bloque. Al primer `add`, el CLI va a pedir
+  `tailwind-variants` (L8).
 
 ## Decisiones pendientes
 
-1. **`$lib` deprecado** (Hallazgo 1): ¿mantener el alias deprecado o migrar los alias de shadcn a
-   `#lib`? Recomiendo mantener por ahora y documentarlo; migrar cuando SvelteKit lo exija, porque el
-   CLI de shadcn todavía espera `$lib`.
-2. **De dónde sale `paths` en `tsconfig.json`** (Hallazgo 2): hay que resolverlo antes de T4.
-3. **Tipografías** del tema (Hallazgo del diseño): ¿Inter + JetBrains Mono como Pomody, u otras?
-4. **Datos de producto ya decididos que no cambian:** interfaz en español, `ui/` fuera de formato y
-   lint pero con typecheck, base color `stone`, íconos por shim, contraste por encima de fidelidad.
+Ninguna abierta. Resueltas: el alias `$lib` deprecado → se mantiene y se documenta (L8); los `paths` de
+`tsconfig.json` → bloque propio en `tsconfig.json` (L8); las tipografías → Inter Variable + JetBrains Mono
+Variable (L6); los íconos → Lucide, sin shim (L10); las paletas → Dawn en claro y OLED en oscuro (L10).
+
+Datos de producto vigentes: interfaz en español (incluidos los aria-label), `ui/` fuera de prettier y
+eslint pero con typecheck, y base color `stone`.
 
 ## Log
 
@@ -435,3 +400,75 @@ Qué se cambió:
 
 Verificación observada de T2 (`905b0c1`): `pnpm run lint` exit 0 · `pnpm check` 0 errores / 0
 advertencias · `pnpm build` exit 0. Nada más: así lo pidió el usuario.
+
+### L10 — Pedido del usuario: vuelta a los temas de Pomody, Lucide, y ModeWatcher adentro
+
+Pedido verbatim:
+
+> Me arrepentí sobre los temas y los íconos.
+>
+> - Para los temas: copiá los 3 temas de pomody (~/dev/pomody/src/app.css). Creo que shadcn-svelte recomienda usar ModeWatcher, que no sé qué es, pero si lo recomienda y es fácil de implementar, hazlo.
+> - Respecto a los íconos: usemos Lucide.
+> - Sin tests de tokens.
+
+Antes de escribir se verificaron las tres afirmaciones que el pedido apoya, porque dos son falsas y una es
+cierta:
+
+1. **shadcn-svelte sí recomienda `mode-watcher`** para el modo oscuro (`docs/dark-mode/svelte`: instalar
+   `mode-watcher`, `<ModeWatcher />` en el layout raíz, `toggleMode`/`setMode` en el botón). Es fácil.
+2. **`mode-watcher` no puede expresar 3 temas.** Su API sólo conoce `light`, `dark` y `system`
+   (`userPrefersMode`), y aplica o saca la clase `.dark` en el `<html>`. Pomody, en cambio, maneja sus tres
+   paletas con un atributo `data-theme` propio (`dark`, `dawn`, `oled`) y no usa `mode-watcher`.
+3. **`components.json` ya declara Lucide** (`"iconLibrary": "lucide"`): la decisión de íconos no requiere
+   tocar nada de configuración.
+
+Se le planteó el choque al usuario con el mecanismo verificado y eligió: **`mode-watcher`, con Dawn para
+Light y OLED para Dark**. Consecuencias, aplicadas en S3, S4 y S8:
+
+- Se copian **dos** de las tres paletas de Pomody, y se descarta la tercera (Rosé Pine base) junto con la
+  indirección `data-theme`. El modo claro/oscuro lo manejan la clase `.dark` y ModeWatcher.
+- El script anti-FOUC de `app.html` se borra: pasa a ser responsabilidad de la dependencia.
+- El botón de tema pasa a `toggleMode` de ModeWatcher, con íconos Sol/Luna de `@lucide/svelte`.
+- T5 (shim de Solar) queda cancelada: no hay nada que mapear.
+- El spec de tokens sigue sin existir, ahora como decisión explícita (L9 lo había borrado; L10 lo confirma).
+
+### L11 — T10 y T11 ejecutados: temas, ModeWatcher y Lucide
+
+**T10** (`4d730dc`, `feat(web): adoptar los temas de Pomody con ModeWatcher e íconos Lucide`):
+
+| Archivo | Qué cambió |
+| :--- | :--- |
+| `src/routes/layout.css` | Reescrito. Se va la paleta Kanagawa completa (dos capas, `chart-1..5` y `sidebar-*`) y entran las dos paletas de Pomody: Dawn en `:root` y OLED en `.dark`, con su capa de marca y su mapeo de `@theme inline`. |
+| `src/routes/+layout.svelte` | `<ModeWatcher />`. |
+| `src/app.html` | Se elimina el script anti-FOUC propio. |
+| `src/routes/+page.svelte` | El botón de tema pasa a `toggleMode` de ModeWatcher, con los íconos `sun` y `moon` de `@lucide/svelte`. |
+| `frontend/web/package.json` | `mode-watcher@1.1.0` y `@lucide/svelte@1.57.0` en `dependencies`. |
+
+**Hallazgo: el toggle no se puede medir en el instante siguiente al clic.** La primera medición leyó la clase
+sin cambios justo después de hacer clic. No era un defecto: ModeWatcher aplica la clase en un efecto de
+Svelte, que corre después del evento. Medido de nuevo esperando el cambio, la clase cambia siempre. Sin esa
+distinción habría reportado un bug inexistente.
+
+**Verificación observada de T10.** `pnpm dev` en 5173 y Edge headless vía `playwright` (canal `msedge`,
+script temporal fuera del repo, descartado después):
+
+| Comprobación | Resultado |
+| :--- | :--- |
+| `pnpm lint` / `pnpm check` / `pnpm build`, sobre el árbol y después sobre el commit | 0 · 0 errores y 0 advertencias · 0 |
+| Sistema en claro y sin preferencia guardada | Dawn: `--bg-base #faf4ed`, `--accent-love #b4637a`, fondo `rgb(250,244,237)` |
+| Sistema en oscuro y sin preferencia guardada | OLED: `--bg-base #000000`, `--accent-love #eb6f92`, fondo `rgb(0,0,0)` |
+| Clic en el botón (desde claro) | pasa a `.dark`, fondo `rgb(0,0,0)`, guarda `"dark"` |
+| Clic en el botón (desde oscuro) | vuelve a claro, fondo `rgb(250,244,237)`, guarda `"light"` |
+| Seguimiento del sistema | con la clave ausente quedaba `"system"` y la paleta siguió al `prefers-color-scheme` simulado |
+
+**Lo que se pierde al sacar el script de `app.html`, medido y no supuesto.** Con `ssr = false` no hay HTML del
+servidor que le lleve a ModeWatcher su script: la clase llega con el bundle. Cronología medida en `dev` (modo
+oscuro): primer pintado del lienzo vacío a **344 ms**, la clase `.dark` a **362 ms**, primer pintado con
+contenido a **424 ms**. Es decir: el contenido visible ya sale oscuro —no hay destello del tema—, pero el
+lienzo vacío del arranque puede pintarse blanco unos milisegundos antes. En localhost no se percibe; si alguna
+vez importara, se resuelve con unas líneas en `app.html` que lean la misma clave antes del pintado.
+
+**T11.** `AGENTS.md`: sección "Interfaz y estilo" actualizada (temas Rosé Pine, `mode-watcher`, íconos Lucide).
+
+**Riesgo declarado.** `Risk` item 5 (dependencias): `mode-watcher` y `@lucide/svelte` son dependencias nuevas
+de ejecución. Sin verificación independiente, por la restricción vigente de L3/L6.
