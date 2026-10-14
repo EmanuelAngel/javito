@@ -31,10 +31,20 @@ dotnet run --project backend/Javito.Api --launch-profile http
 # Frontend
 pnpm --dir frontend/web dev                                 # http://localhost:5173
 pnpm --dir frontend/web check                               # svelte-check
+pnpm --dir frontend/web lint                                # prettier --check + eslint
+pnpm --dir frontend/web format                              # prettier --write
+pnpm --dir frontend/web test:unit                           # vitest (watch)
+pnpm --dir frontend/web exec vitest run                     # vitest una vez
 pnpm --dir frontend/web build
 ```
 
-Las pruebas del backend usan `dotnet test`; el frontend no tiene runner todavía.
+Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
+playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que llega con S2. Los
+navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
+
+Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged,
+y `lint-staged` delega en el prettier del frontend. Por eso no hay `.prettierrc` en la raíz ni scripts
+de formato propios.
 
 ## Puertos y vínculo entre capas
 
@@ -59,12 +69,33 @@ Las pruebas del backend usan `dotnet test`; el frontend no tiene runner todavía
   y su documentación.
 - **Sin ORM**: acceso a datos con ADO.NET puro (`MySqlConnector`), SQL a mano.
 
+## Interfaz y estilo
+
+- **Tokens Kanagawa** en `frontend/web/src/routes/layout.css`: capa de marca con la paleta cruda y capa
+  semántica con los roles de shadcn, mapeados a utilidades en `@theme inline`. Claro (Lotus) en `:root`
+  y oscuro (Dragon) en `.dark`. **No usar colores sueltos** (`bg-blue-500`): usar los tokens
+  (`bg-background`, `text-muted-foreground`, `border-border`, …).
+- `frontend/web/src/lib/componentes/ui/` es **vendorizada** de shadcn-svelte: la escribe el CLI. Queda
+  fuera de prettier y de eslint, pero **sí** entra en `svelte-check`. No la reformatees a mano.
+- Las utilidades y variantes que esos componentes necesitan llegan por
+  `@import 'shadcn-svelte/tailwind.css'`. No crees un segundo archivo global de CSS.
+- El claro/oscuro se resuelve con el script previo al pintado de `frontend/web/src/app.html` y un botón
+  en la página. No se usa `mode-watcher`.
+
 ## Trampas conocidas de SvelteKit 3
 
 Verificado a golpes en este repo; no está en la doc evidente.
 
-- **`$lib` no existe.** El error es `module_removed_lib`. El alias es `#lib`, declarado como subpath
-  imports en `frontend/web/package.json`.
+- **`$lib` fue eliminado.** El error es `module_removed_lib`. Este repo lo conserva con la opción
+  `alias: { $lib: 'src/lib' }` del plugin de SvelteKit en `vite.config.ts`, que el propio kit documenta
+  en ese error y que está **deprecada a propósito**: sacarla rompe el build y shadcn-svelte importa
+  `$lib` en todo lo que genera. Las advertencias `config_option_deprecated_alias` y `tsconfig_invalid`
+  de `pnpm check` y `pnpm build` son consecuencia esperada de esa decisión, no un error a arreglar.
+  `$lib` también está mapeado en `paths` de `tsconfig.json`, que es donde el CLI de shadcn lo resuelve
+  (no hay `svelte.config.js`).
+- **El alias `#lib`** (subpath imports de `frontend/web/package.json`) existe para los assets, pero
+  `#lib/*` no resuelve en TypeScript si el especificador no lleva extensión. Para módulos `.ts`, usá
+  import relativo.
 - **El patrón `#lib/*` no resuelve en TypeScript** si el especificador no lleva extensión.
   `#lib/assets/favicon.svg` funciona porque la tiene; para un módulo `.ts`, usá import relativo.
 - **`$env/*` fue reemplazado** por `src/env.ts` + `defineEnvVars`, expuesto desde `$app/env/public`.

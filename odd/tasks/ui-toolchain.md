@@ -232,9 +232,11 @@ La tarjeta clara no gana por superficie (1.18:1, todas las candidatas de la pale
 - `--radius: 0.625rem` (como Pomody).
 - `@custom-variant dark (&:is(.dark *))`, `@theme inline` con las dos capas mapeadas, y `@layer base`
   con `@apply border-border outline-ring/50` y el scrollbar fino, como Pomody.
-- **Tipografías: a definir.** Pomody usa Inter Variable + JetBrains Mono Variable vía
-  `@fontsource-variable/*`. Es el precedente a copiar salvo que se prefiera otra cosa.
-- Falta `mode-watcher` (`~1.1.0`) para el toggle claro/oscuro que recomienda shadcn.
+- **Tipografías: Inter Variable + JetBrains Mono Variable**, vía `@fontsource-variable/inter` y
+  `@fontsource-variable/jetbrains-mono`. Es el precedente de Pomody y se decidió en L6.
+- El claro/oscuro **no usa `mode-watcher`**: un script propio en `app.html` resuelve el tema antes del
+  primer pintado y un botón en la página lo alterna, guardando la preferencia en `localStorage`. Para un
+  SPA estático son unas pocas líneas y una dependencia menos (L9).
 
 ## Tasks (replanteadas sobre el estado real)
 
@@ -247,10 +249,16 @@ Orden vigente desde L6. El commit de cada unidad de trabajo va en la rama `feat/
 | T3 | eslint y prettier en el frontend: efectivo, borrar el prettier de la raíz, que lint-staged delegue, y `ignores` de `ui/` en eslint + `.prettierignore` | **Hecho dentro de T8** (L7): sin esto no se podía commitear nada del SPA |
 | T6 | vitest y playwright: arreglar `playwright.config.ts` (pnpm, puerto, no reinstalar navegadores a cada corrida) | **Hecho** en `5ea34e4` (L8) |
 | T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el de Kanagawa | **Hecho** en `b4e6a61` (L8), con una parte pendiente: el `init` no pudo cerrarse sin TTY |
-| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + `mode-watcher` + reescribir `+page.svelte` con tokens + un spec que fije el contrato de tokens (presencia de cada token en `:root` y `.dark`, y contraste AA de los pares documentados). Valores ya calculados arriba | Pendiente. **Decisión abierta:** si se incorpora acá el bloque de utilidades y variantes (`data-*`, `no-scrollbar`, keyframes) que el `init` quería escribir en `layout.css` y no escribió (L8) |
+| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + claro/oscuro + reescribir `+page.svelte` con tokens. Valores ya calculados arriba | **Hecho** en `905b0c1`. Sin `mode-watcher` y **sin spec de tokens** (L9) |
 | T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | Pendiente |
-| T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | Pendiente |
+| T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | **Hecho** (L9) |
 | T9 | — | **Absorbido por T8** (L6) |
+
+`T5` queda **bloqueada a propósito**: hasta que un componente generado por el CLI importe un ícono no
+existe conjunto de nombres que mapear, y un shim parcial tiene más chances de romper el primer `add`
+que de servir. Primer paso, cuando llegue ese momento: instalar `@solar-icons/svelte`, crear un módulo
+bajo `src/lib/` que re-exporte los íconos con los nombres que usa el componente generado y aliñar
+`@lucide/svelte/icons/*` a ese módulo desde `vite.config.ts`, sin tocar `ui/`.
 
 ## Decisiones pendientes
 
@@ -399,3 +407,31 @@ no escucha en 4173.
 lo avisó) y las utilidades de `shadcn-svelte/tailwind.css` tienen que estar importadas en
 `layout.css`. Si ese import diera problemas de resolución, el plan B es copiar el bloque con una nota
 de procedencia.
+
+### L9 — Corrección del usuario: menos ceremonia, y `mode-watcher` afuera
+
+El usuario cortó la delegación de T2 enojado, y tiene razón. Sus palabras, citadas en lo sustantivo y
+sin repetir los insultos personales (esto se commitea en el repo de la cátedra):
+
+> ¿qué mierda es mode watcher? ¿una dependencia para observar el cambio de tema?
+
+> Estoy viendo que hizo un test... ¿¡para los tokens de color!? [...] ¡mantené las cosas simples! ¡no
+> puede ser que tardes tanto en hacer 8 tareas de mierda!
+
+Qué se cambió:
+
+- **Fuera el spec de tokens.** Yo había delegado a un worker un `src/lib/tokens.spec.ts` con chequeos de
+  contraste WCAG de los pares documentados. Se borró. Es CSS estático y su contrato se lee mejor en el
+  propio archivo: acá la verificación útil es `pnpm lint`, `pnpm check` y `pnpm build`. Inventar una
+  prueba para un archivo declarativo fue ceremonia, no cobertura.
+- **Fuera `mode-watcher`.** Era una dependencia para poner y sacar la clase `.dark`. Se reemplazó por un
+  script en `frontend/web/src/app.html` que resuelve el tema antes del primer pintado —para que no haya
+  destello del tema equivocado— y un botón en `+page.svelte` que alterna la clase y guarda la
+  preferencia en `localStorage`. S4 queda corregida en consecuencia.
+- **Fuera la forense del CLI.** T4 se llevó la mayor parte del tiempo: reimplementar el `encodePreset`
+  en base62 para poder pasar un preset y averiguar por qué `init` no cierra sin TTY. El resultado sirve
+  y está en L8, pero costó mucho más de lo que valía para una feature de cátedra. **Lección:** frente a
+  una herramienta de terceros, dos intentos y después camino alternativo documentado; no arqueología.
+
+Verificación observada de T2 (`905b0c1`): `pnpm run lint` exit 0 · `pnpm check` 0 errores / 0
+advertencias · `pnpm build` exit 0. Nada más: así lo pidió el usuario.

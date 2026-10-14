@@ -51,7 +51,7 @@ javito/
 ├── .husky/                           # hooks: lint-staged y commitlint
 ├── .pi/mcp.json                      # MCP de Svelte del proyecto
 ├── AGENTS.md                         # convenciones para agentes
-├── package.json                      # tooling: commitlint, lint-staged, husky, prettier
+├── package.json                      # tooling: commitlint, lint-staged, husky
 ├── backend/
 │   ├── Javito.slnx                   # solución
 │   ├── Javito.Api/                   # ASP.NET Core WebAPI (.NET 10)
@@ -92,8 +92,9 @@ javito/
 pnpm install
 ```
 
-Instala `commitlint`, `lint-staged`, `husky` y `prettier`, y activa los hooks de Git mediante el script
-`prepare`. Si los hooks no se disparan, corré `pnpm run prepare`.
+Instala `commitlint`, `lint-staged` y `husky`, y activa los hooks de Git mediante el script
+`prepare`. Si los hooks no se disparan, corré `pnpm run prepare`. El formato y el lint del SPA viven en
+el frontend: la raíz ya no tiene prettier, y `lint-staged` delega en el prettier del frontend.
 
 ### 2. Backend
 
@@ -137,6 +138,8 @@ Otros comandos:
 
 ```sh
 pnpm --dir frontend/web check   # svelte-check
+pnpm --dir frontend/web lint    # prettier --check + eslint
+pnpm --dir frontend/web test:unit
 pnpm --dir frontend/web build
 ```
 
