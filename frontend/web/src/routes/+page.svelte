@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import MoonIcon from '@lucide/svelte/icons/moon';
+	import SunIcon from '@lucide/svelte/icons/sun';
+	import { toggleMode } from 'mode-watcher';
 	import { API_URL as apiUrl } from '$lib/config';
 
 	type RespuestaDeSalud = { estado: string; servicio: string };
@@ -7,11 +10,6 @@
 	let estado = $state<'cargando' | 'conectado' | 'error'>('cargando');
 	let servicio = $state('');
 	let detalle = $state('');
-
-	function alternarTema() {
-		const oscuro = document.documentElement.classList.toggle('dark');
-		localStorage.setItem('tema', oscuro ? 'oscuro' : 'claro');
-	}
 
 	async function consultarSalud() {
 		estado = 'cargando';
@@ -47,11 +45,16 @@
 		</div>
 		<button
 			type="button"
-			onclick={alternarTema}
+			onclick={toggleMode}
 			aria-label="Alternar entre tema claro y oscuro"
-			class="rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-accent"
+			class="relative grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground hover:bg-accent"
 		>
-			Cambiar tema
+			<SunIcon
+				class="col-start-1 row-start-1 size-4 scale-100 rotate-0 transition-transform dark:scale-0 dark:-rotate-90"
+			/>
+			<MoonIcon
+				class="col-start-1 row-start-1 size-4 scale-0 rotate-90 transition-transform dark:scale-100 dark:rotate-0"
+			/>
 		</button>
 	</header>
 

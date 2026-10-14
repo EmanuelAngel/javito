@@ -4,16 +4,6 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
-		<script>
-			// El tema se resuelve antes del primer pintado: sin esto se ve un destello del
-			// tema equivocado mientras hidrata el SPA. Guarda la preferencia en localStorage
-			// y, si no hay ninguna, arranca con la del sistema operativo.
-			const guardado = localStorage.getItem('tema');
-			const oscuro = guardado
-				? guardado === 'oscuro'
-				: window.matchMedia('(prefers-color-scheme: dark)').matches;
-			document.documentElement.classList.toggle('dark', oscuro);
-		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

@@ -8,144 +8,109 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Tokens Kanagawa (S4, odd/tasks/ui-toolchain.md).
+ * Temas Rosé Pine, copiados de Pomody (~/dev/pomody/src/app.css) — S4, odd/tasks/ui-toolchain.md.
  *
- * Dos capas: la de marca define la paleta cruda con los nombres de la fuente
- * (reboot/kanagawa.nvim), y la semántica mapea los roles de shadcn. Un solo tema claro/oscuro con `:root`
- * (Lotus) y `.dark` (Dragon), sin indirección `data-theme`.
- *
- * Los valores son los de las tablas «Diseño del tema Kanagawa» del documento.
- * Los desvíos de la paleta oficial (muted-foreground, destructive y warning en
- * claro) ya están justificados ahí por contraste WCAG AA.
+ * Dos capas: la de marca define la paleta cruda, y la semántica mapea los roles de shadcn.
+ * Dos paletas, una por modo: Dawn en `:root` (claro) y OLED en `.dark` (oscuro). El modo lo maneja
+ * ModeWatcher, que aplica y saca esa clase en el <html>. No hay indirección `data-theme`.
  */
 
-/* Capa de marca — paleta Kanagawa cruda. Sufijo = tema de origen, para que
-   Lotus y Dragon puedan convivir sin colisiones. */
+/* Capa de marca — Rosé Pine Dawn (claro). */
 :root {
-	/* Lotus (claro). */
-	--kanagawa-lotus-white0: #d5cea3;
-	--kanagawa-lotus-white3: #f2ecbc;
-	--kanagawa-lotus-white4: #e7dba0;
-	--kanagawa-lotus-ink1: #545464;
-	--kanagawa-lotus-gray2-oscurecido: #5f5c51;
-	--kanagawa-lotus-blue4: #4d699b;
-	--kanagawa-lotus-rojo-oscurecido: #b0353f;
-	--kanagawa-lotus-naranja2-oscurecido: #8a5514;
-	--kanagawa-lotus-verde: #6f894e;
-	--kanagawa-lotus-rosa: #b35b79;
-	--kanagawa-lotus-teal1: #4e8ca2;
-	--kanagawa-lotus-violeta4: #624c83;
+	color-scheme: light;
 
-	/* Dragon (oscuro). */
-	--kanagawa-dragon-black1: #12120f;
-	--kanagawa-dragon-black3: #181616;
-	--kanagawa-dragon-black4: #282727;
-	--kanagawa-dragon-black5: #393836;
-	--kanagawa-dragon-white: #c5c9c5;
-	--kanagawa-dragon-gray: #a6a69c;
-	--kanagawa-dragon-blue2: #8ba4b0;
-	--kanagawa-dragon-green2: #8a9a7b;
-	--kanagawa-dragon-yellow: #c4b28a;
-	--kanagawa-dragon-pink: #a292a3;
-	--kanagawa-dragon-orange: #b6927b;
-	--kanagawa-dragon-red: #c4746e;
-	--kanagawa-sumi-ink6: #54546d;
-}
+	--bg-base: #faf4ed;
+	--bg-surface: #fffaf3;
+	--bg-overlay: #f2e9e1;
+	--text-muted: #9893a5;
+	--text-subtle: #797593;
+	--text-primary: #575279;
+	--accent-love: #b4637a;
+	--accent-rose: #d7827e;
+	--accent-pine: #286983;
+	--accent-foam: #56949f;
+	--accent-iris: #907aa9;
+	--accent-gold: #ea9d34;
 
-/* Capa semántica — tema claro, Kanagawa Lotus. */
-:root {
-	--background: var(--kanagawa-lotus-white3);
-	--foreground: var(--kanagawa-lotus-ink1);
-	--card: #fffdf2;
-	--card-foreground: var(--kanagawa-lotus-ink1);
-	--popover: #fffdf2;
-	--popover-foreground: var(--kanagawa-lotus-ink1);
-	--primary: var(--kanagawa-lotus-blue4);
-	--primary-foreground: var(--kanagawa-lotus-white3);
-	--secondary: var(--kanagawa-lotus-white4);
-	--secondary-foreground: var(--kanagawa-lotus-ink1);
-	--muted: var(--kanagawa-lotus-white4);
-	--muted-foreground: var(--kanagawa-lotus-gray2-oscurecido);
-	--accent: var(--kanagawa-lotus-white0);
-	--accent-foreground: var(--kanagawa-lotus-ink1);
-	--destructive: var(--kanagawa-lotus-rojo-oscurecido);
-	--destructive-foreground: var(--kanagawa-lotus-white3);
-	--warning: var(--kanagawa-lotus-naranja2-oscurecido);
-	--border: var(--kanagawa-lotus-white0);
-	--input: var(--kanagawa-lotus-white0);
-	--ring: var(--kanagawa-lotus-blue4);
+	/* Capa semántica — roles de shadcn. */
+	--background: #faf4ed;
+	--foreground: #575279;
+	--card: #fffaf3;
+	--card-foreground: #575279;
+	--popover: #fffaf3;
+	--popover-foreground: #575279;
+	--primary: #d7827e;
+	--primary-foreground: #faf4ed;
+	--secondary: #f2e9e1;
+	--secondary-foreground: #575279;
+	--muted: #f2e9e1;
+	--muted-foreground: #797593;
+	--accent: #f2e9e1;
+	--accent-foreground: #d7827e;
+	--destructive: #b4637a;
+	--border: #f2e9e1;
+	--input: #f2e9e1;
+	--ring: #d7827e;
 
 	--radius: 0.625rem;
 }
 
-/* Capa semántica — tema oscuro, Kanagawa Dragon. */
+/* Capa de marca — Rosé Pine OLED (oscuro). */
 .dark {
-	--background: var(--kanagawa-dragon-black3);
-	--foreground: var(--kanagawa-dragon-white);
-	--card: var(--kanagawa-dragon-black5);
-	--card-foreground: var(--kanagawa-dragon-white);
-	--popover: var(--kanagawa-dragon-black4);
-	--popover-foreground: var(--kanagawa-dragon-white);
-	--primary: var(--kanagawa-dragon-blue2);
-	--primary-foreground: var(--kanagawa-dragon-black3);
-	--secondary: var(--kanagawa-dragon-black4);
-	--secondary-foreground: var(--kanagawa-dragon-white);
-	--muted: var(--kanagawa-dragon-black4);
-	--muted-foreground: var(--kanagawa-dragon-gray);
-	--accent: var(--kanagawa-dragon-black5);
-	--accent-foreground: var(--kanagawa-dragon-white);
-	--destructive: var(--kanagawa-dragon-red);
-	--destructive-foreground: var(--kanagawa-dragon-black3);
-	--border: var(--kanagawa-sumi-ink6);
-	--input: var(--kanagawa-sumi-ink6);
-	--ring: var(--kanagawa-dragon-blue2);
+	color-scheme: dark;
+
+	--bg-base: #000000;
+	--bg-surface: #0e0d15;
+	--bg-overlay: #171523;
+	--text-muted: #7d789c;
+	--text-subtle: #a39ec4;
+	--text-primary: #eceaf6;
+	--accent-love: #eb6f92;
+	--accent-rose: #ebbcba;
+	--accent-pine: #3e8fb0;
+	--accent-foam: #9ccfd8;
+	--accent-iris: #c4a7e7;
+	--accent-gold: #f6c177;
+
+	/* Capa semántica — roles de shadcn. */
+	--background: #000000;
+	--foreground: #eceaf6;
+	--card: #0e0d15;
+	--card-foreground: #eceaf6;
+	--popover: #0e0d15;
+	--popover-foreground: #eceaf6;
+	--primary: #ebbcba;
+	--primary-foreground: #000000;
+	--secondary: #171523;
+	--secondary-foreground: #eceaf6;
+	--muted: #171523;
+	--muted-foreground: #a39ec4;
+	--accent: #171523;
+	--accent-foreground: #ebbcba;
+	--destructive: #eb6f92;
+	--border: #232038;
+	--input: #232038;
+	--ring: #ebbcba;
 
 	--radius: 0.625rem;
-}
-
-/* Serie de gráficos (chart-1..5), Kanagawa en ambos temas. */
-:root {
-	--chart-1: var(--kanagawa-lotus-blue4);
-	--chart-2: var(--kanagawa-lotus-verde);
-	--chart-3: var(--kanagawa-lotus-rosa);
-	--chart-4: var(--kanagawa-lotus-teal1);
-	--chart-5: var(--kanagawa-lotus-violeta4);
-}
-
-.dark {
-	--chart-1: var(--kanagawa-dragon-blue2);
-	--chart-2: var(--kanagawa-dragon-green2);
-	--chart-3: var(--kanagawa-dragon-yellow);
-	--chart-4: var(--kanagawa-dragon-pink);
-	--chart-5: var(--kanagawa-dragon-orange);
-}
-
-/* Barra lateral, Kanagawa en ambos temas. */
-:root {
-	--sidebar: var(--kanagawa-lotus-white4);
-	--sidebar-foreground: var(--kanagawa-lotus-ink1);
-	--sidebar-primary: var(--kanagawa-lotus-blue4);
-	--sidebar-primary-foreground: var(--kanagawa-lotus-white3);
-	--sidebar-accent: var(--kanagawa-lotus-white0);
-	--sidebar-accent-foreground: var(--kanagawa-lotus-ink1);
-	--sidebar-border: var(--kanagawa-lotus-white0);
-	--sidebar-ring: var(--kanagawa-lotus-blue4);
-}
-
-.dark {
-	--sidebar: var(--kanagawa-dragon-black1);
-	--sidebar-foreground: var(--kanagawa-dragon-white);
-	--sidebar-primary: var(--kanagawa-dragon-blue2);
-	--sidebar-primary-foreground: var(--kanagawa-dragon-black3);
-	--sidebar-accent: var(--kanagawa-dragon-black5);
-	--sidebar-accent-foreground: var(--kanagawa-dragon-white);
-	--sidebar-border: var(--kanagawa-dragon-black5);
-	--sidebar-ring: var(--kanagawa-dragon-blue2);
 }
 
 /* Mapeo a utilidades de Tailwind: inline resuelve las referencias a var() en
    tiempo de compilado y habilita bg-card, text-muted-foreground, … */
 @theme inline {
+	--color-bg-base: var(--bg-base);
+	--color-bg-surface: var(--bg-surface);
+	--color-bg-overlay: var(--bg-overlay);
+	--color-text-muted: var(--text-muted);
+	--color-text-subtle: var(--text-subtle);
+	--color-text-primary: var(--text-primary);
+	--color-accent-love: var(--accent-love);
+	--color-accent-rose: var(--accent-rose);
+	--color-accent-pine: var(--accent-pine);
+	--color-accent-foam: var(--accent-foam);
+	--color-accent-iris: var(--accent-iris);
+	--color-accent-gold: var(--accent-gold);
+
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -161,35 +126,20 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
-	--color-destructive-foreground: var(--destructive-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-ring: var(--sidebar-ring);
 
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) + 4px);
+	--radius-xl: calc(var(--radius) * 1.4);
 
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', monospace;
 }
 
-/* Base: borde y anillo por defecto, fondo con el tema activo, scrollbar fino
-   (precedente de Pomody). */
+/* Base: borde y anillo por defecto, fondo con el tema activo, scrollbar fino. */
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
