@@ -150,3 +150,34 @@ que documentar. La configuración vive en `src/lib/config.ts`.
 
 `pnpm check`: `svelte-check found 0 errors and 0 warnings` (exit 0). `pnpm build`: `Wrote site to
 "build"` (exit 0), con `build/index.html` como fallback SPA y el bundle en `build/_app`.
+
+### L13 — Evidencia de T3
+
+Instalado en la raíz: husky 9.1.7, lint-staged 17.6.0, @commitlint/cli 21.2.3,
+@commitlint/config-conventional 21.2.3, prettier 3.9.10, prettier-plugin-svelte 4.1.1.
+
+`pnpm add` **no ejecuta el script `prepare` del proyecto raíz**, así que husky no se inicializó solo:
+hubo que correr `pnpm run prepare` a mano para generar `.husky/_`. `.husky/_/` se auto-ignora con su
+propio `.gitignore` (`*`) y no entra al repo, que es el diseño de husky v9.
+
+Commitlint verificado en los dos sentidos: mensaje válido `exit=0`, mensaje inválido `exit=1`.
+Los hooks corrieron en el commit real y se ve en la salida: `lint-staged` ejecutó
+`prettier --write` sobre los archivos staged y re-stageó los cambios.
+
+Decisiones de alcance del hook:
+
+- `.prettierignore` excluye `backend/` (el C# se formatea con `dotnet format`) y la documentación en
+  español, que está cortada a mano y prettier rearmaría. También excluye los lockfiles generados.
+- El `pre-commit` **no** corre `dotnet format`: haría lento cada commit por un `dotnet build`
+  completo. Queda en `backend/scripts/lint.sh` para correr a mano.
+
+### L14 — Correcciones de T4
+
+- `docs/consignas/consigna-y-definiciones.md`: la tabla de reconciliación decía "Javito define
+  **8**" → **7**, consistente con `README.md`, `propuesta.md` y la ficha técnica.
+- `README.md`, filas 2 y 3 de la Matriz de Evidencias: `backend/src/Auth` y `backend/src/Controllers`
+  → `backend/Javito.Api/Auth` y `backend/Javito.Api/Controllers`, consistente con el árbol del propio
+  README y con el layout ya scaffoldeado.
+
+Se corrigieron las líneas divergentes, no las mayoritarias. Verificado por grep: no queda ninguna
+aparición de `backend/src` ni de "Javito define **8**".

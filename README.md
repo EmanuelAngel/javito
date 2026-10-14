@@ -98,8 +98,8 @@ Documento obligatorio de la consigna. Se completa a medida que cada hito del cro
 | # | Requerimiento mínimo | Estado | Dónde se implementa (previsto) | Evidencia |
 |---|---|---|---|---|
 | 1 | Modelo de datos: 6+ tablas relacionadas, con 1:N y N:M | Pendiente | `database.sql` · `docs/der.md` | DER adjunto |
-| 2 | Seguridad: login/logout, roles, funcionalidad por rol y avatar | Pendiente | `backend/src/Auth` · CRUD de Categorías y Artículos (solo Admin) | Captura de perfil con avatar |
-| 3 | Manejo de archivos adicional al avatar | Pendiente | Imagen de portada de Artículos (`backend/src/Controllers`) | GIF de subida |
+| 2 | Seguridad: login/logout, roles, funcionalidad por rol y avatar | Pendiente | `backend/Javito.Api/Auth` · CRUD de Categorías y Artículos (solo Admin) | Captura de perfil con avatar |
+| 3 | Manejo de archivos adicional al avatar | Pendiente | Imagen de portada de Artículos (`backend/Javito.Api/Controllers`) | GIF de subida |
 | 4 | ABM/CRUD completo vía AJAX, sin recargar la página | Pendiente | SPA SvelteKit consumiendo la WebAPI | GIF del ABM dinámico |
 | 5 | Paginado por servidor en los listados principales | Pendiente | Historial de registros y catálogo de artículos | Captura de red con `page=2` |
 | 6 | Búsqueda asíncrona de entidades relacionadas | Pendiente | Selector de categorías en hábitos y artículos | GIF de la búsqueda en el desplegable |

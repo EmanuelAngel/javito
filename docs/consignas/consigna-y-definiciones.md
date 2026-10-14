@@ -8,7 +8,7 @@ Documento base que unifica la consigna oficial de la cátedra con las aclaracion
 >
 > | Punto | Decía | Vale |
 > | :--- | :--- | :--- |
-> | Cantidad de tablas | Mínimo 4 | **Mínimo 6** (consigna final). Javito define **8**. |
+> | Cantidad de tablas | Mínimo 4 | **Mínimo 6** (consigna final). Javito define **7**. |
 > | Nombres de rol | `Admin`, `Operador` | **`Administrador`, `Usuario`** (propuesta aprobada). |
 > | Fecha de entrega | 06/11/2026 | **`2026-11-05`**. |
 
