@@ -65,10 +65,22 @@ The `config.alias` option is deprecated, and will be removed in a future version
 Use subpath imports instead: https://svelte.dev/docs/kit/$lib
 ```
 
-La restauración de `$lib` **funciona hoy** y es lo que el propio SvelteKit sugiere en el error
-`module_removed_lib`, pero está en camino de salida. Decisión pendiente: mantenerla (funciona, avisa) o
-migrar los alias de shadcn a `#lib` (durable, pero **el CLI de shadcn resuelve alias leyendo
-`svelte.config.js`, que ya no existe** — hay que verificar si acepta subpath imports).
+**Resuelto en la reanudación, con dos experimentos.** La restauración de `$lib` no es opcional:
+
+- Sacando la línea `alias: { $lib: 'src/lib' }` de `vite.config.ts`, el **build falla**:
+`SvelteKit error: module_removed_lib` → *"`$lib` has been removed. Use `#lib` instead… To keep using
+`$lib`, add `alias: { '$lib': 'src/lib' }` to your SvelteKit config."* (exit 1)
+- Con la línea puesta: `pnpm check` 0 errores / 0 advertencias y `pnpm build` exit 0.
+
+SvelteKit 3 también **borra el alias `$lib` del tsconfig generado** cuando la opción no está, así que
+`alias` es el único puente vigente. La alternativa `#lib` (subpath imports de `package.json`) queda
+descartada por ahora: `#lib/*` no resuelve en TypeScript si el especificador no lleva extensión
+(trampa ya documentada en `AGENTS.md`) y los componentes de shadcn-svelte se importan entre sí con
+especificadores sin extensión.
+
+**Decisión (L8):** mantener `alias` y convivir con `config_option_deprecated_alias`. Es la ruta que
+el propio kit documenta. Migrar a `#lib` cuando SvelteKit quite la opción o cuando el CLI de shadcn
+acepte subpath imports.
 
 ### 2. `tsconfig.json` perdió `paths`
 
@@ -78,24 +90,32 @@ Found issues while validating `tsconfig.json`:
   - "paths" was overwritten. Imports from "$lib" may not typecheck
 ```
 
-El `tsconfig.json` actual **no tiene bloque `paths`**. `svelte-check` pasa, pero el aviso dice que el
-typecheck de `$lib` es frágil. Hay que decidir de dónde debe salir ese `paths` (el propio plugin de
-SvelteKit o uno explícito) y verificarlo.
+**No era fragilidad del typecheck: era el precio del `alias` deprecado.** Lo verificado:
 
-Dato nuevo de la reanudación: **`.svelte-kit/tsconfig.json` ya no existe**. SvelteKit 3 abandonó ese
-archivo generado; el `tsconfig.json` del proyecto extiende `$app/tsconfig` (un subpath del paquete
-`@sveltejs/kit`, no un archivo en el repo). Es decir, no hay un `paths` generado que copiar: el
-`$lib` se resuelve por la opción `alias` del plugin, y el aviso anticipa el día que esa opción no
-esté. Con `alias` deprecado y sin `paths`, el typecheck de `$lib` depende de una sola pieza.
+- El tsconfig que el proyecto hereda **no vive en el repo**: SvelteKit 3 escribe
+`node_modules/$app/tsconfig.json` con los `paths` de `$lib` y `$lib/*` **generados desde la opción
+`alias`** (`path.resolve(root, 'src/lib')`). `.svelte-kit/tsconfig.json` ya no existe.
+- Por eso `svelte-check` pasaba y sigue pasando: el typecheck de `$lib` **no** depende de nuestro
+`tsconfig.json`.
+- El aviso lo emite el validador del propio kit (`core/sync/write_tsconfig/validate.js`), que compara
+los `paths` que espera contra los resueltos. **Sacando la opción `alias`, el aviso desaparece** — junto
+con `config_option_deprecated_alias`. Es decir: `tsconfig_invalid` es consecuencia de la deprecación y
+no de una mala configuración nuestra.
+- Agregar `paths` a nuestro `tsconfig.json` **no** borra el aviso (comprobado), pero sí aporta algo
+valioso: con el `alias` quitado, `$lib` sigue tipando (0 errores). Es la mitad durable del puente y es
+además el lugar estándar donde un CLI externo busca cómo resolver `$lib`.
 
-### 2b. El CLI de shadcn espera `svelte.config.js` (evidencia de la doc oficial)
+**Decisión (L8):** se agrega el bloque `paths` a `tsconfig.json` y se acepta el aviso
+`tsconfig_invalid` mientras dure la deprecación.
+
+### 2b. El CLI de shadcn espera `svelte.config.js`
 
 La doc de `components.json` dice, textual: *"The CLI uses these values and the `alias` config from
 your `svelte.config.js` file to place generated components in the correct location. Path aliases have
 to be set up in your `svelte.config.js` file."* En este proyecto **no hay `svelte.config.js`** (en
-SvelteKit 3 la configuración vive en el plugin `sveltekit()` de `vite.config.ts`), así que el supuesto
-del CLI no se cumple. Esto es lo primero que hay que verificar en T4, contra el CLI real y no contra
-la doc.
+SvelteKit 3 la configuración vive en el plugin `sveltekit()` de `vite.config.ts`), así que ese supuesto
+del CLI no se cumple. Lo resuelve el bloque `paths` de `tsconfig.json`, que es el otro lugar donde el
+CLI mira.
 
 ### 3. El archivo global es `src/routes/layout.css`, no `src/app.css`
 
@@ -109,10 +129,18 @@ webServer: { command: 'npm run build && npm run preview', port: 4173 },
 testMatch: '**/*.e2e.{ts,js}'
 ```
 
-- Usa `npm` en un proyecto `pnpm`.
-- El puerto 4173 es el de `vite preview`, no el 5173 del SPA.
-- El script `test:e2e` corre `playwright install` en cada ejecución (baja navegadores).
-- Y el e2e contra el backend real necesita MySQL, que llega con S2.
+- Usa `npm` en un proyecto `pnpm`. → **corregido**.
+- El puerto 4173 es el de `vite preview`, no el 5173 del SPA. → **el motivo real es más fuerte:** la
+política CORS del backend es fail-closed y sólo autoriza `http://localhost:5173`
+(`Cors:AllowedOrigins`), así que desde 4173 toda prueba contra la API real fallaría por CORS y no por
+la aplicación. El servidor de e2e se sirve en 5173 y el config expone `baseURL`.
+- El script `test:e2e` corre `playwright install` en cada ejecución (baja navegadores). → se separó en
+`test:e2e:install`, que se corre una vez.
+- El e2e contra el backend real necesita MySQL, que llega con S2. **Sigue pendiente y por eso todavío
+no hay pruebas de e2e.**
+
+**Resuelto en `5ea34e4`.** Evidencia: `pnpm preview --port 5173` responde 200 en 5173 y no escucha en
+4173; `playwright test --list` carga el config (0 tests); `pnpm lint` y `pnpm check` en verde.
 
 ### 5. Duplicación de prettier, y las dos configs NO son equivalentes
 
@@ -217,9 +245,9 @@ Orden vigente desde L6. El commit de cada unidad de trabajo va en la rama `feat/
 | T1 | Tailwind con `typography` + `forms` | Hecho (se commitea en T8) |
 | T8 | **Limpieza + commit del toolchain.** Borrar `src/routes/demo/`, `src/lib/vitest-examples/` y el `DemoLinks` de `+layout.svelte`; commitear el estado del `sv add`. Absorbe el T9 original: era un commit de dos líneas y el toolchain debe llegar sin andamios de demo | **Hecho** en `e6b2cab`, junto con T3 y T9 |
 | T3 | eslint y prettier en el frontend: efectivo, borrar el prettier de la raíz, que lint-staged delegue, y `ignores` de `ui/` en eslint + `.prettierignore` | **Hecho dentro de T8** (L7): sin esto no se podía commitear nada del SPA |
-| T6 | vitest y playwright: arreglar `playwright.config.ts` (pnpm, puerto, no reinstalar navegadores a cada corrida) | Deps instaladas; limpieza pendiente |
-| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el de Kanagawa | Pendiente (resolver Hallazgos 1 y 2 antes) |
-| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + `mode-watcher` + reescribir `+page.svelte` con tokens. Valores ya calculados arriba | Pendiente |
+| T6 | vitest y playwright: arreglar `playwright.config.ts` (pnpm, puerto, no reinstalar navegadores a cada corrida) | **Hecho** en `5ea34e4` (L8) |
+| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el de Kanagawa | **Hecho** en `b4e6a61` (L8), con una parte pendiente: el `init` no pudo cerrarse sin TTY |
+| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + `mode-watcher` + reescribir `+page.svelte` con tokens + un spec que fije el contrato de tokens (presencia de cada token en `:root` y `.dark`, y contraste AA de los pares documentados). Valores ya calculados arriba | Pendiente. **Decisión abierta:** si se incorpora acá el bloque de utilidades y variantes (`data-*`, `no-scrollbar`, keyframes) que el `init` quería escribir en `layout.css` y no escribió (L8) |
 | T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | Pendiente |
 | T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | Pendiente |
 | T9 | — | **Absorbido por T8** (L6) |
@@ -326,3 +354,48 @@ Lo cubre T2 con el spec del contrato de tokens.
 Nota de higiene: `git status` muestra archivos del frontend como modificados aunque su md5 coincida
 exactamente con el blob de HEAD. Es la caché de stat de `core.autocrlf=true`, no un cambio real;
 `git add` de esos paths lo normaliza.
+
+### L8 — T6, T4 y la letra chica del CLI de shadcn
+
+**Higiene de finales de línea (`dc632e4`).** `pnpm lint` empezó a fallar en `layout.css`, un archivo que
+no se había tocado. Causa medida: quedaba con **CRLF** en el árbol de trabajo y prettier exige LF. No
+era prettier, era **git**: con `core.autocrlf=true` (el valor por defecto en Windows) y sin
+`.gitattributes`, `git checkout` reescribe el archivo con CRLF. Verificado en dos pasos: `prettier
+--write` lo deja en LF y un `git checkout` posterior lo devuelve a CRLF. Se agrega `.gitattributes`
+(`* text=auto eol=lf`); `git check-attr` confirma `text: auto`, `eol: lf` y el checkout forzado ya
+entrega LF. Sin esto, el lint del frontend dependía de qué archivo hubiera vuelto a tocar git.
+
+**Hallazgos 1 y 2: cerrados con evidencia.** El detalle está en sus apartados; el resumen es que el
+`alias` deprecado es obligatorio (sin él el build muere con `module_removed_lib`) y que
+`tsconfig_invalid` lo emite el validador del propio kit contra los `paths` que él mismo genera. La
+mitad durable —el bloque `paths` en `tsconfig.json`— queda puesta.
+
+**T6 (`5ea34e4`).** Además de lo que decía el Hallazgo 4, el motivo de peso para no usar 4173 es el CORS
+fail-closed del backend. Comprobado levantando `vite preview` con `--port 5173`: responde 200 en 5173 y
+no escucha en 4173.
+
+**T4 (`b4e6a61`) y la letra chica del CLI.** Lo que costó averiguar y no conviene volver a averiguar:
+
+- `shadcn-svelte init` **no puede completarse sin TTY**. Tiene dos confirmaciones encadenadas —
+  *"Updates to your src/routes/layout.css are required… Continue?"* y *"Would you like to overwrite
+  all existing files?"*— y **ningún flag las saltea**: `--skip-preflight` no alcanza, y con stdin por
+  pipe el CLI imprime el prompt y aborta. Alcanzó a escribir `components.json` y `src/lib/utils.ts`.
+- Los presets **no son nombres**: `--preset nova` responde *"is not a valid preset"*. Son configs
+  empaquetadas por bits en base62 con prefijo `b` (`encodePreset`/`decodePreset` de `dist/preset`). El
+  que se usó es `bJMSkfJo` = nova + stone + stone + stone + lucide + inter + inherit + radius medium,
+  verificado por round-trip con el decodificador del mismo paquete.
+- **`add` no toca `layout.css`.** Comprobado con `add --yes --no-deps badge`: instaló el componente y
+  el CSS quedó intacto. El bloque de utilidades y variantes sólo lo escribe `init`.
+- Pero **no hace falta copiarlo**. `dist/utils/css.mjs` muestra el mecanismo previsto: la plantilla
+  global que el CLI crea es `@import "tailwindcss";` + `@custom-variant dark (&:is(.dark *));`, y las
+  utilidades y variantes se traen con `@import "shadcn-svelte/tailwind.css"`, que el paquete exporta
+  como `./tailwind.css`. Por eso `shadcn-svelte@1.7.0` queda como dependencia de desarrollo del
+  frontend: fija la versión del CLI ya validada y habilita ese import sin meter 15 KB de CSS ajeno en
+  el repositorio de la cátedra. **T2 escribe `layout.css` con esa forma.**
+- El CLI **validó los alias** (*"Alias paths validated"*) leyendo el bloque `paths` de `tsconfig.json`.
+  Es el reemplazo del `svelte.config.js` que la doc supone y que este proyecto no tiene.
+
+**Abierto, para no perderlo:** con el primer componente, `add` va a pedir `tailwind-variants` (el CLI
+lo avisó) y las utilidades de `shadcn-svelte/tailwind.css` tienen que estar importadas en
+`layout.css`. Si ese import diera problemas de resolución, el plan B es copiar el bloque con una nota
+de procedencia.
