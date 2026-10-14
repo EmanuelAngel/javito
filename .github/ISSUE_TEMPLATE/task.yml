@@ -1,0 +1,41 @@
+name: Task (trabajo técnico)
+description: Trabajo de soporte que no ve el usuario final. CI, migración, tooling, datos de prueba.
+title: 'chore(<área>): '
+labels: ['type:task']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Una task no la pide el usuario: la pide el sistema.
+        Si aporta valor visible hacia afuera, es una feature, no una task.
+
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Objetivo
+      description: Qué queda resuelto cuando esto se cierre, en una o dos oraciones.
+    validations:
+      required: true
+
+  - type: textarea
+    id: por-que-ahora
+    attributes:
+      label: Por qué ahora
+      description: Qué desbloquea, o qué se rompe si no se hace.
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Una regla verificable por línea.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        Acordate del label de área: `api`, `web`, `db` o `docs`.

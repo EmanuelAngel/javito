@@ -12,3 +12,7 @@ El resumen del proyecto vive en el [README raíz](../README.md).
 - [Propuesta completa (aprobada)](./proyecto/propuesta.md) — narrativa, DER, ficha técnica, alcance y vistas de la SPA.
 - [Brief de interfaz y UX](./proyecto/ux-brief.md) — dirección visual, topología de navegación y anatomía de las tarjetas.
 - [Cronograma](./proyecto/cronograma.md) — fases, hitos y fechas.
+
+## Proceso
+
+- [Metodología de issue-tracking](./proceso/issue-tracking.md) — niveles, labels, campos del tablero, reglas duras y Definition of Done.
