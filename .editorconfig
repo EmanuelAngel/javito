@@ -1,0 +1,16 @@
+root = true
+
+# El repositorio guarda y hace checkout en LF (ver .gitattributes). Sin esta regla,
+# `dotnet format` escribe CRLF en las líneas que corrige, deja el archivo con finales
+# de línea mezclados y `git status` lo reporta sucio para siempre: git lo normaliza a
+# LF al indexar, así que el cambio no se puede commitear.
+[*]
+end_of_line = lf
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+[*.{csproj,slnx,props,targets}]
+indent_style = space
+indent_size = 2

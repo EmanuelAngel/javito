@@ -1,3 +1,0 @@
-{
-	"frontend/web/**/*.{ts,js,svelte,json,yml,yaml}": "pnpm --dir frontend/web exec prettier --write"
-}
