@@ -36,7 +36,9 @@ dos advertencias de contenido importante (ver Hallazgos).
   `pnpm build` porque `+page.svelte` importa `$lib/config`. → **pero ver Hallazgo 1: está deprecado.**
 - Este documento de feature.
 
-**Sin commitear** — todo esto lo dejó el `sv add` que corrió el usuario:
+**Commiteado en `e6b2cab`** (`chore(web): agregar el toolchain de lint, formato y pruebas del SPA`),
+verificado con `pnpm lint` (**exit 0**), `pnpm check` (**0 errores, 0 advertencias, exit 0**) y
+`pnpm build` (**exit 0**):
 
 | Área | Estado |
 | :--- | :--- |
@@ -46,14 +48,10 @@ dos advertencias de contenido importante (ver Hallazgos).
 | vitest | `vitest@4`, `vitest-browser-svelte`, `@vitest/browser-playwright`; configuración **dentro de** `vite.config.ts` (dos projects: `client` y `server`) |
 | playwright | `playwright@1.60`, `playwright.config.ts` |
 | scripts nuevos | `lint`, `format`, `test:unit`, `test`, `test:e2e` en `frontend/web/package.json` |
-
-**Lo que `sv add` dejó de más y hay que borrar:** `src/routes/demo/` (DemoLinks, playwright/+page.svelte,
-page.svelte.e2e.ts), `src/lib/vitest-examples/`, y el `import DemoLinks` + `<DemoLinks />` en
-`src/routes/+layout.svelte`.
-
-**Archivo basura en la raíz del repo:** `pi-session-2026-10-14T02-56-49-716Z_01a13857-…html`. Es una
-exportación de sesión de Pi que quedó tirada en el proyecto. **Borrarlo** (o ignorarlo) antes de
-cualquier commit: no debe entrar al repo de la cátedra.
+| limpieza | `src/routes/demo/`, `src/lib/vitest-examples/` y el `DemoLinks` de `+layout.svelte` borrados. El `pi-session-*.html` de la raíz ya no está: alguien lo sacó antes de retomar |
+| prettier en la raíz | **eliminado**: dependencias, `.prettierrc`, `.prettierignore` y los scripts `format`/`check:format`. `lint-staged` delega en `pnpm --dir frontend/web exec prettier --write` |
+| `ui/` | excluido de prettier (`frontend/web/.prettierignore`) y de eslint (`ignores` en `eslint.config.js`), **no** de `svelte-check` |
+| pendiente | `pnpm exec vitest run` sale **1 con "No test files found"**: los únicos specs eran los de demo. T2 agrega el spec del contrato de tokens |
 
 ## Hallazgos que cambian el plan
 
@@ -83,6 +81,21 @@ Found issues while validating `tsconfig.json`:
 El `tsconfig.json` actual **no tiene bloque `paths`**. `svelte-check` pasa, pero el aviso dice que el
 typecheck de `$lib` es frágil. Hay que decidir de dónde debe salir ese `paths` (el propio plugin de
 SvelteKit o uno explícito) y verificarlo.
+
+Dato nuevo de la reanudación: **`.svelte-kit/tsconfig.json` ya no existe**. SvelteKit 3 abandonó ese
+archivo generado; el `tsconfig.json` del proyecto extiende `$app/tsconfig` (un subpath del paquete
+`@sveltejs/kit`, no un archivo en el repo). Es decir, no hay un `paths` generado que copiar: el
+`$lib` se resuelve por la opción `alias` del plugin, y el aviso anticipa el día que esa opción no
+esté. Con `alias` deprecado y sin `paths`, el typecheck de `$lib` depende de una sola pieza.
+
+### 2b. El CLI de shadcn espera `svelte.config.js` (evidencia de la doc oficial)
+
+La doc de `components.json` dice, textual: *"The CLI uses these values and the `alias` config from
+your `svelte.config.js` file to place generated components in the correct location. Path aliases have
+to be set up in your `svelte.config.js` file."* En este proyecto **no hay `svelte.config.js`** (en
+SvelteKit 3 la configuración vive en el plugin `sveltekit()` de `vite.config.ts`), así que el supuesto
+del CLI no se cumple. Esto es lo primero que hay que verificar en T4, contra el CLI real y no contra
+la doc.
 
 ### 3. El archivo global es `src/routes/layout.css`, no `src/app.css`
 
@@ -197,17 +210,19 @@ La tarjeta clara no gana por superficie (1.18:1, todas las candidatas de la pale
 
 ## Tasks (replanteadas sobre el estado real)
 
+Orden vigente desde L6. El commit de cada unidad de trabajo va en la rama `feat/ui-toolchain`.
+
 | ID | Tarea | Estado |
 | :--- | :--- | :--- |
-| T1 | Tailwind con `typography` + `forms` | **Hecho, sin commitear** |
-| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + `mode-watcher` + reescribir `+page.svelte` con tokens. Valores ya calculados arriba | Pendiente |
-| T3 | eslint y prettier en el frontend: efectivo, borrar el prettier de la raíz, que lint-staged delegue, y `ignores` de `ui/` en eslint + `.prettierignore` | Deps instaladas; la mudanza sin hacer |
-| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone` | Pendiente (resolver Hallazgos 1 y 2 antes) |
-| T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | Pendiente |
+| T1 | Tailwind con `typography` + `forms` | Hecho (se commitea en T8) |
+| T8 | **Limpieza + commit del toolchain.** Borrar `src/routes/demo/`, `src/lib/vitest-examples/` y el `DemoLinks` de `+layout.svelte`; commitear el estado del `sv add`. Absorbe el T9 original: era un commit de dos líneas y el toolchain debe llegar sin andamios de demo | **Hecho** en `e6b2cab`, junto con T3 y T9 |
+| T3 | eslint y prettier en el frontend: efectivo, borrar el prettier de la raíz, que lint-staged delegue, y `ignores` de `ui/` en eslint + `.prettierignore` | **Hecho dentro de T8** (L7): sin esto no se podía commitear nada del SPA |
 | T6 | vitest y playwright: arreglar `playwright.config.ts` (pnpm, puerto, no reinstalar navegadores a cada corrida) | Deps instaladas; limpieza pendiente |
-| T7 | Integración: scripts de raíz, `lint-staged`, `AGENTS.md`, README | Pendiente |
-| T8 | **Limpieza:** borrar `src/routes/demo/`, `src/lib/vitest-examples/`, el `DemoLinks` de `+layout.svelte` y el `pi-session-*.html` de la raíz | Pendiente |
-| T9 | Commitear el estado actual del `sv add` (hoy está sin commitear) | Pendiente |
+| T4 | shadcn-svelte con `--css src/routes/layout.css` y alias a `src/lib/componentes/ui`; base color `stone`. **Adelantado antes de T2** (L6): el `init` escribe su propio bloque de tokens en el CSS y pisaría el de Kanagawa | Pendiente (resolver Hallazgos 1 y 2 antes) |
+| T2 | Sistema de tokens Kanagawa en `src/routes/layout.css` + `mode-watcher` + reescribir `+page.svelte` con tokens. Valores ya calculados arriba | Pendiente |
+| T5 | Shim de íconos Solar (`@solar-icons/svelte@2.3.2`) | Pendiente |
+| T7 | Integración y documentación: scripts de raíz, `AGENTS.md`, README | Pendiente |
+| T9 | — | **Absorbido por T8** (L6) |
 
 ## Decisiones pendientes
 
@@ -246,3 +261,68 @@ advertencias reales sin resolver que son las de los Hallazgos 1 y 2.
 
 Parada en seco con el árbol sucio y sin commitear. **Punto de partida para retomar: revisar
 `git status` en `feat/ui-toolchain` antes de cualquier otra cosa.**
+
+### L6 — Reanudación autorizada y decisiones de producto
+
+El usuario volvió a abrir el documento (mensaje: `@odd/tasks/ui-toolchain.md`) y eligió, ante la
+pregunta de alcance, **retomar el plan completo en el orden del documento**, con la tipografía del
+tema definida como **Inter Variable + JetBrains Mono Variable** vía `@fontsource-variable/*` (el
+precedente de Pomody). Con eso:
+
+- **Decisiones pendientes 3 (tipografías): resuelta.** Las otras dos siguen abiertas y se resuelven
+dentro de T4, contra evidencia del CLI, no de memoria.
+- **T8 absorbe T9.** El commit de limpieza era de dos líneas; el toolchain entra al repo en un solo
+work unit sin los andamios de demo. T9 queda cerrado como absorbido, no como tarea hecha.
+- **T4 se adelanta antes de T2.** El `init` de shadcn escribe su propio bloque de tokens en el CSS
+(`--css src/routes/layout.css`); si T2 corriera primero, el init pisaría Kanagawa y habría que
+rehacerlo. El orden aprobado se respeta en todo lo demás.
+- **Entrega: cadena sobre la rama de feature.** Elegiste la opción que dice "incluye commits de unidad
+de trabajo en la rama". No hay remoto (`git remote -v` vacío), así que la creación de PR no aplica y
+no se pregunta por estrategias de encadenado. Push, PR y merge siguen siendo decisión tuya.
+- **Sin verificación independiente** (restricción vigente de L3), pero **sí** las advertencias reales de
+los Hallazgos 1 y 2: no se cierran por cansancio. RDD está apagado en este harness.
+- Evidencia de reanudación: `git remote -v` vacío; `pi-session-*.html` ya no existe en la raíz;
+`src/lib/` contiene `assets/`, `config.ts`, `index.ts`, `vitest-examples/`.
+
+### L7 — T8 ejecutado: el hook estaba roto y T3 se le adelantó
+
+T8 salió en `e6b2cab`, pero **no como estaba planeado**, y el motivo es un hallazgo duro:
+
+**El primer `git commit` falló.** El hook `pre-commit` (`pnpm exec lint-staged`) reventó con
+`Cannot find package 'prettier-plugin-tailwindcss' imported from .../javito/noop.js`. Causa: prettier
+resuelve sus plugins contra el **directorio de trabajo**, no contra el directorio de la configuración
+que descubre. Como `lint-staged` corre en la raíz, prettier encontraba `frontend/web/prettier.config.js`
+para cada archivo del SPA, pero intentaba importar los plugins desde `node_modules` de la raíz, donde
+`prettier-plugin-tailwindcss` no está.
+
+Consecuencia que cambia el plan: **con el estado que dejó el `sv add`, ningún commit del frontend pasa
+el hook.** No era "deuda de higiene" (Hallazgo 5); era un bloqueo. Los dos commits anteriores pasaron
+porque todavía no existía un `prettier.config.js` en el frontend.
+
+Por eso T3 se adelantó y se resolvió **dentro** del mismo work unit que T8, antes del primer commit:
+no tiene sentido dejar un commit intermedio que se sabe roto, y `--no-verify` habría ocultado el
+problema en lugar de arreglarlo. Qué se hizo:
+
+- `lint-staged` delega: `"frontend/web/**/*.{ts,js,svelte,json,yml,yaml}": "pnpm --dir frontend/web exec prettier --write"`. Con `--dir`, el cwd del proceso es `frontend/web`, así que los plugins y el
+`tailwindStylesheet` de `prettier.config.js` resuelven. Comprobado: el hook passó en `e6b2cab`.
+- Dato que hizo falta: `lint-staged@17.6.0` pasa **rutas absolutas** por defecto (`relative: false`),
+así que no hay que traducir rutas ni usar un `lint-staged.config.js` con funciones.
+- Prettier sale de la raíz por completo: `prettier` y `prettier-plugin-svelte` fuera de
+`devDependencies`, `.prettierrc` y `.prettierignore` borrados, y los scripts `format`/`check:format`
+que quedaron fuera también. La raíz queda con husky, commitlint y lint-staged (S6).
+- Los archivos de configuración de la raíz dejan de formatearse con prettier. Es lo que dice S6 y
+achica el sistema; el README y `AGENTS.md` lo reflejan en T7.
+- `ui/` quedó excluido de prettier y eslint ya en este commit, aunque todavía no exista. Es el
+contrato de S2 y evita que T4 tenga que acordarse.
+- `pnpm lint` del frontend **fallaba en 10 archivos** antes de esto; después, exit 0. También se
+confirmó que prettier **no** toca `.svelte-kit/` ni `build/`, así que no hicieron falta exclusiones
+nuevas para artefactos generados.
+
+Verificación observada de T8 (`e6b2cab`): `pnpm lint` exit 0 · `pnpm check` 0 errores / 0
+advertencias, exit 0 · `pnpm build` exit 0 · hook `pre-commit` en verde. **No verificado:**
+`pnpm exec vitest run` sale 1 con `No test files found` porque los únicos specs eran los de demo.
+Lo cubre T2 con el spec del contrato de tokens.
+
+Nota de higiene: `git status` muestra archivos del frontend como modificados aunque su md5 coincida
+exactamente con el blob de HEAD. Es la caché de stat de `core.autocrlf=true`, no un cambio real;
+`git add` de esos paths lo normaliza.
