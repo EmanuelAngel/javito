@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "svelte": {
+      "command": "npx",
+      "args": ["-y", "@sveltejs/mcp"],
+      "description": "Documentación oficial, guías de migración y buenas prácticas de Svelte y SvelteKit"
+    }
+  }
+}

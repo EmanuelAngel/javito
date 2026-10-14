@@ -1,0 +1,4 @@
+{
+	"frontend/web/**/*.{ts,js,svelte,json,yml,yaml}": "prettier --write",
+	"{package.json,.lintstagedrc.json,.prettierrc}": "prettier --write"
+}
