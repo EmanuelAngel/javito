@@ -1,4 +1,3 @@
 {
-	"frontend/web/**/*.{ts,js,svelte,json,yml,yaml}": "prettier --write",
-	"{package.json,.lintstagedrc.json,.prettierrc}": "prettier --write"
+	"frontend/web/**/*.{ts,js,svelte,json,yml,yaml}": "pnpm --dir frontend/web exec prettier --write"
 }

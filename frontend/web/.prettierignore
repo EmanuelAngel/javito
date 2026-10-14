@@ -1,0 +1,14 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Componentes vendorizados de shadcn-svelte: los escribe el CLI y se
+# actualizan con `shadcn-svelte update`, no con prettier. Ver S2 del
+# documento de feature odd/tasks/ui-toolchain.md.
+/src/lib/componentes/ui/
+
+# Miscellaneous
+/static/

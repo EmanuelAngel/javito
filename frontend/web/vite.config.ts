@@ -1,9 +1,12 @@
+import { defineConfig } from 'vitest/config';
+import { playwright } from '@vitest/browser-playwright';
+import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		sveltekit({
 			// SvelteKit 3 eliminó el alias `$lib` (module_removed_lib). Se restaura porque
 			// shadcn-svelte lo usa por defecto en los componentes que genera y en su
@@ -13,13 +16,43 @@ export default defineConfig({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true,
+					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
 			// SPA desacoplada: sin renderizado en servidor. adapter-static emite un único
 			// index.html como fallback y el ruteo ocurre en el cliente, que consume la
 			// WebAPI por HTTP. Ver docs/proyecto/propuesta.md §3.5.
-			adapter: adapter({ fallback: 'index.html' }),
-		}),
+			adapter: adapter({ fallback: 'index.html' })
+		})
 	],
+	test: {
+		expect: { requireAssertions: true },
+		projects: [
+			{
+				extends: './vite.config.ts',
+				test: {
+					name: 'client',
+					browser: {
+						enabled: true,
+						provider: playwright({
+							launchOptions: { channel: 'msedge' }
+						}),
+						instances: [{ browser: 'chromium', headless: true }]
+					},
+					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					exclude: ['src/lib/server/**']
+				}
+			},
+
+			{
+				extends: './vite.config.ts',
+				test: {
+					name: 'server',
+					environment: 'node',
+					include: ['src/**/*.{test,spec}.{js,ts}'],
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+				}
+			}
+		]
+	}
 });
