@@ -111,13 +111,15 @@ curl http://localhost:5256/api/health
 
 Con el perfil `http` el documento OpenAPI queda en `http://localhost:5256/openapi/v1.json`.
 
-Pruebas y formato:
+Pruebas y formato (desde la raíz del repositorio):
 
 ```sh
-./backend/scripts/check.sh     # dotnet build + dotnet test
-./backend/scripts/lint.sh      # verifica el formato sin escribir
-./backend/scripts/format.sh    # aplica el formato
+pnpm check       # dotnet build + dotnet test + svelte-check
+pnpm lint        # verifica el formato sin escribir
+pnpm format      # aplica el formato
 ```
+
+El resto de los atajos está en la tabla de `AGENTS.md`; `pnpm run` los lista.
 
 ### 3. Frontend
 

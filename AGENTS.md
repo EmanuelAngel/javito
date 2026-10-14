@@ -13,7 +13,6 @@ Alcance completo, cronograma y consignas: `docs/`. Los documentos de trabajo en 
 | `backend/Javito.slnx` | solución .NET |
 | `backend/Javito.Api/` | WebAPI: `Program.cs`, `Controllers/` |
 | `backend/Javito.Api.Tests/` | xUnit + `Microsoft.AspNetCore.Mvc.Testing` |
-| `backend/scripts/` | `check.sh`, `format.sh`, `lint.sh` (bash; ver nota abajo) |
 | `frontend/web/` | SPA SvelteKit con `adapter-static` |
 | `database.sql` | estructura + datos semilla (S2, pendiente) |
 | `docs/` | consignas de cátedra, propuesta, cronograma, brief de UX |
@@ -44,16 +43,15 @@ pnpm test:web       # vitest una vez
 pnpm build:web      # build estático (adapter-static -> frontend/web/build)
 ```
 
-Los `pnpm <script>` **no** llaman a los `.sh` de `backend/scripts/`: pnpm ejecuta los scripts con
-`cmd.exe` en Windows, y `./backend/scripts/check.sh` falla ahí con `"." no se reconoce como un comando
-interno o externo`. Los `.sh` siguen siendo válidos invocados desde bash.
+`package.json` es la **única** fuente de estos comandos: no hay wrappers `.sh`. pnpm ejecuta los scripts
+con `cmd.exe` en Windows, así que un `.sh` invocado desde `package.json` falla.
 
 Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
 playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que llega con S2. Los
 navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
 
-`pnpm test:web` **hoy falla con exit 1** (`No test files found`): el frontend no tiene archivos de prueba
-todavía. Sin `--passWithNoTests` a propósito, para que un glob roto no pase por verde.
+`pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los
+`*.svelte.test.ts` al project `client`, que necesita los navegadores de playwright.
 
 Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged,
 y `lint-staged` delega en el prettier del frontend. Por eso no hay `.prettierrc` en la raíz: los scripts
