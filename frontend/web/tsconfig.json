@@ -2,7 +2,15 @@
 	"extends": "$app/tsconfig",
 	"compilerOptions": {
 		"strict": true,
-		"types": ["$app/types", "node"]
+		"types": ["$app/types", "node"],
+		// `$lib` se resuelve en runtime por la opción `alias` del plugin de SvelteKit en
+		// `vite.config.ts`, que está deprecada. Estas rutas son la contraparte de tipos: sin
+		// ellas el typecheck de `$lib` depende de una sola pieza y `svelte-kit sync` avisa
+		// `tsconfig_invalid`. Ver odd/tasks/ui-toolchain.md, Hallazgo 2.
+		"paths": {
+			"$lib": ["./src/lib"],
+			"$lib/*": ["./src/lib/*"]
+		}
 	},
 	"include": ["src", "vite.config.ts", "playwright.config.ts"]
 }
