@@ -18,6 +18,8 @@ Alcance completo, cronograma y consignas: `docs/`. Los documentos de trabajo en 
 | `docs/` | consignas de cátedra, propuesta, cronograma, brief de UX |
 | `odd/tasks/` | documentos de feature del trabajo trackeado |
 | `package.json` (raíz) | punto de entrada único de comandos: `pnpm <script>` |
+| `.editorconfig` | fuente de verdad de `dotnet format`: finales de línea LF e indentación |
+| `lint-staged.config.js` | reglas del hook `pre-commit` (ver "Hooks de Git") |
 
 ## Comandos
 
@@ -53,9 +55,26 @@ navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:
 `pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los
 `*.svelte.test.ts` al project `client`, que necesita los navegadores de playwright.
 
-Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged,
-y `lint-staged` delega en el prettier del frontend. Por eso no hay `.prettierrc` en la raíz: los scripts
-de la raíz solo delegan.
+Prettier y eslint viven en el frontend, no en la raíz: la raíz conserva husky, commitlint y lint-staged.
+Por eso no hay `.prettierrc` en la raíz: los scripts de la raíz solo delegan.
+
+## Hooks de Git
+
+`pre-commit` corre `lint-staged` sobre lo que está en stage, con el alcance de `pnpm lint` acotado a los
+archivos que se commitean:
+
+- `frontend/web/**` → `prettier --write` (incluye `css`, `html` y `md`) y `eslint --fix` (`ts`, `js`,
+  `svelte`). Los dos con `--dir frontend/web`, porque prettier resuelve sus plugins contra el directorio
+  de trabajo, no contra el de la configuración. Si el SPA suma un lenguaje (`.scss`, `.mjs`), hay que
+  agregar la extensión al glob: pretty no los formatea solo por estar en el directorio.
+- `backend/**/*.cs` → `dotnet format --include` sobre los archivos staged.
+
+`dotnet format --include` **solo** acepta rutas relativas al directorio de trabajo: con una absoluta no
+formatea nada y termina con código 0, sin avisar. Por eso la regla del backend es una función en
+`lint-staged.config.js`, que traduce las rutas absolutas que pasa `lint-staged`. `svelte-check` y las
+pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`), no de commit.
+
+`commit-msg` corre `commitlint`.
 
 ## Puertos y vínculo entre capas
 
@@ -76,6 +95,9 @@ de la raíz solo delegan.
   convenciones del framework (`HealthController`, `Program`).
 - **Pruebas**: cada regla nueva llega con su prueba, y se observa RED antes del fix. Una prueba por
   regla, verificando todos sus efectos observables.
+- **Finales de línea**: LF en el repositorio y en el árbol de trabajo. Lo impone `.gitattributes`, y
+  `.editorconfig` lo repite porque `dotnet format` lo lee como fuente de verdad: sin esa regla escribe
+  CRLF en las líneas que corrige y el archivo queda sucio para git.
 - **Unidades de trabajo**: cada commit es una unidad revisable y lleva el código junto a sus pruebas
   y su documentación.
 - **Sin ORM**: acceso a datos con ADO.NET puro (`MySqlConnector`), SQL a mano.
