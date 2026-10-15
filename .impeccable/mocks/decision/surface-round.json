@@ -1,0 +1,45 @@
+{
+  "title": "Elegí la composición de la pantalla del día",
+  "question": "Tres estructuras para /today, la primera pantalla del celular (Javito es mobile-first, así que se decide en 390x844 y no en escritorio). El mundo visual ya está fijado (Rosé Pine + shadcn) y no se toca; la barra superior y las cinco pestañas de abajo también son iguales en las tres. Lo único que cambia es cómo se organiza el día.",
+  "options": [
+    {
+      "id": "rutina-activa",
+      "label": "La rutina como pantalla",
+      "kicker": "THE ROLL",
+      "lineage": "una rutina a la vez, con la tira de rutinas como columna del día",
+      "thesis": "La pantalla muestra una sola rutina y la tira de arriba es la espina que recorrés.",
+      "palette": ["#faf4ed", "#575279", "#d7827e", "#f2e9e1"],
+      "materials": ["panel único", "tira de rutinas", "densidad alta"],
+      "viewport": "Primera pantalla del celular: barra compacta, tira de rutinas deslizable con progreso propio, y el cuerpo de la rutina activa con sus hábitos en orden.",
+      "risk": "Lo que no está en la rutina activa no se ve: si un hábito no pertenece a ninguna, la pantalla del día puede quedar casi vacía.",
+      "html": ".impeccable/mocks/decision/rutina-activa.html"
+    },
+    {
+      "id": "lo-que-falta",
+      "label": "Solo lo que falta",
+      "kicker": "",
+      "lineage": "el día como lista que se encoge",
+      "thesis": "La pantalla abre con lo que queda del día y se contrae a medida que marcás.",
+      "palette": ["#faf4ed", "#575279", "#286983", "#f2e9e1"],
+      "materials": ["secciones apiladas", "plegado", "estado agregado"],
+      "viewport": "Primera pantalla del celular: un encabezado con el estado del día ('te quedan 6 de 14') y su barra de progreso, los pendientes, y lo cumplido plegado en una franja al pie.",
+      "risk": "El orden cambia mientras marcás: con 14 hábitos el reflujo constante puede costar releer lo que ya sabías dónde estaba.",
+      "html": ".impeccable/mocks/decision/lo-que-falta.html"
+    },
+    {
+      "id": "lista-densa",
+      "label": "Lista densa",
+      "kicker": "",
+      "lineage": "una fila por hábito, todo a la vista",
+      "thesis": "Catorce filas, nada escondido: control de hoy, semana L–D y cupo semanal en la misma línea.",
+      "palette": ["#faf4ed", "#575279", "#56949f", "#f2e9e1"],
+      "materials": ["filas regladas", "grilla inline", "cero ceremonia"],
+      "viewport": "Primera pantalla del celular: lista continua de filas agrupadas por rutina; cada fila lleva su control de hoy, su tira L–D y su cupo semanal.",
+      "risk": "Es lo que la categoría ya entrega, y en 390px la densidad cobra su precio: para que 14 filas entren en una línea los títulos largos se cortan ('Liberación de cuello y hom…'), y la tira L–D queda tan angosta que casi no se distingue del borde.",
+      "html": ".impeccable/mocks/decision/lista-densa.html"
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": { "value": "code", "toggle": false }
+}

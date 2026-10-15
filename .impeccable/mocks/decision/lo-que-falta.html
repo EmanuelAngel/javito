@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Javito · Hoy — lo que falta</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--background:#faf4ed;--foreground:#575279;--card:#fffaf3;--card-foreground:#575279;--muted:#f2e9e1;--muted-foreground:#797593;--secondary:#f2e9e1;--border:#f2e9e1;--primary:#d7827e;--primary-foreground:#faf4ed;--accent:#f2e9e1;--accent-foreground:#d7827e;--destructive:#b4637a;--ring:#d7827e;--pine:#286983;--foam:#56949f;--iris:#907aa9;--gold:#ea9d34;--radius:10px}
+html,body{width:390px;height:844px;margin:0;overflow:hidden}
+body{font:400 14px/1.35 'Inter',sans-serif;background:var(--background);color:var(--foreground);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.sup{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 20px}
+.marca{font-size:16px;font-weight:600;letter-spacing:-.2px}
+.ava-w{width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.ava{width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center}
+main{flex:1 1 auto;display:flex;flex-direction:column;padding:0 16px;overflow:hidden}
+.hero{flex:0 0 auto;background:var(--card);border:1.75px solid var(--border);border-radius:var(--radius);padding:14px 16px 16px}
+.fecha{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:1.2px;color:var(--muted-foreground)}
+.quedar{display:flex;align-items:baseline;gap:10px;margin:4px 0 14px}
+.quedar .pre{font-size:19px;font-weight:600}
+.quedar b{font-family:'JetBrains Mono',monospace;font-size:50px;font-weight:700;line-height:.9;color:var(--primary)}
+.quedar .de{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--muted-foreground)}
+.pseg{display:flex;gap:3px}
+.pseg i{flex:1;height:7px;border-radius:4px}
+.pseg .pn{background:var(--primary)}
+.pseg .pr{border:1.5px solid var(--muted-foreground);opacity:.35}
+.seccion{flex:0 0 auto;margin:18px 4px 4px;font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted-foreground)}
+.fila{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:8px 0}
+.toco{width:44px;height:44px;flex:0 0 44px;border:2px solid var(--muted-foreground);border-radius:50%;background:var(--card)}
+.tx{min-width:0}
+.tit{font-size:15px;font-weight:500}
+.cat{display:flex;align-items:center;gap:5px;margin-top:1px;font-size:12px;color:var(--muted-foreground)}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot.pine{background:var(--pine)}.dot.iris{background:var(--iris)}.dot.gold{background:var(--gold)}
+.sub{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px}
+.cupo{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;color:var(--iris)}
+.dias{display:flex;align-items:center;gap:3.5px}
+.d{width:12px;height:12px;border-radius:50%;box-sizing:border-box;position:relative}
+.dm{background:var(--pine)}
+.dm::after{content:"";position:absolute;left:2px;top:3px;width:6px;height:3px;border-left:1.5px solid var(--primary-foreground);border-bottom:1.5px solid var(--primary-foreground);transform:rotate(-45deg)}
+.dv{border:1.5px solid var(--muted-foreground);background:var(--card)}
+.dn{border:1.5px dashed var(--muted-foreground);opacity:.4}
+.dh{box-shadow:0 0 0 1.75px var(--ring)}
+.hechas{flex:0 0 auto;margin-top:auto;margin-bottom:12px;background:var(--muted);border-radius:var(--radius);padding:10px 14px 12px}
+.hh{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--muted-foreground)}
+.hl{margin:5px 0 0;font-size:11.5px;line-height:1.55;color:var(--muted-foreground);opacity:.72}
+.tabs{flex:0 0 56px;display:flex;border-top:1.75px solid var(--border);background:var(--card)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted-foreground)}
+.tab svg{width:20px;height:20px}
+.tab span{font-size:10px;font-weight:500}
+.on{color:var(--accent-foreground)}
+</style>
+</head>
+<body>
+<header class="sup">
+  <span class="marca">Javito</span>
+  <span class="ava-w"><span class="ava">A</span></span>
+</header>
+<main>
+  <section class="hero">
+    <div class="fecha">JUEVES 15 DE OCTUBRE</div>
+    <div class="quedar"><span class="pre">Te quedan</span><b>6</b><span class="de">de 14</span></div>
+    <div class="pseg"><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pn"></i><i class="pr"></i><i class="pr"></i><i class="pr"></i><i class="pr"></i><i class="pr"></i><i class="pr"></i></div>
+  </section>
+  <div class="seccion">Por hacer hoy · 6</div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Meditar</div><div class="cat"><i class="dot pine"></i>Salud · Mañana</div></div></div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Hidratación con agua</div><div class="cat"><i class="dot pine"></i>Salud · Escritorio</div></div></div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Té de hierbas consciente</div><div class="cat"><i class="dot pine"></i>Salud · Escritorio</div></div></div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Ejercicio pesado</div><div class="sub"><span class="cupo">Salud · Noche — 2 / 3 esta semana</span><span class="dias"><i class="d dm"></i><i class="d dv"></i><i class="d dm"></i><i class="d dv dh"></i><i class="d dn"></i><i class="d dn"></i><i class="d dn"></i></span></div></div></div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Practicar dibujo</div><div class="sub"><span class="cupo">Estudio · Noche — 1 / 2 esta semana</span><span class="dias"><i class="d dm"></i><i class="d dv"></i><i class="d dv"></i><i class="d dv dh"></i><i class="d dn"></i><i class="d dn"></i><i class="d dn"></i></span></div></div></div>
+  <div class="fila"><span class="toco"></span><div class="tx"><div class="tit">Practicar cocina</div><div class="sub"><span class="cupo">Casa · Noche — 0 / 1 esta semana</span><span class="dias"><i class="d dv"></i><i class="d dv"></i><i class="d dv"></i><i class="d dv dh"></i><i class="d dn"></i><i class="d dn"></i><i class="d dn"></i></span></div></div></div>
+  <section class="hechas">
+    <div class="hh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.6 2.6L16.5 9"/></svg><span>8 cumplidos hoy</span></div>
+    <p class="hl">Liberación de cuello y hombros · Estiramiento de muñeca y antebrazo · Extensión de espalda de pie · Respiración cuadrada · Caminata corta por la habitación · Descanso visual 20-20-20 · Anclaje sensorial 5-4-3-2-1 · Reset mental y reflexión</p>
+  </section>
+</main>
+<nav class="tabs">
+  <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.5 2.5 5.1-5.6"/></svg><span>Hoy</span></div>
+  <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h10M4 12h10M4 17.5h7"/><path d="M16.5 15.5l1.7 1.7 3-3.6"/></svg><span>Hábitos</span></div>
+  <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.2 2"/></svg><span>Rutinas</span></div>
+  <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Artículos</span></div>
+  <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.6-3.8 4.3-5.5 7.5-5.5s5.9 1.7 7.5 5.5"/></svg><span>Perfil</span></div>
+</nav>
+</body>
+</html>

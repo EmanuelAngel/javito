@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Javito — Hoy · sketch: lista densa (mobile)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --background:#faf4ed; --foreground:#575279; --card:#fffaf3; --card-foreground:#575279;
+    --muted:#f2e9e1; --muted-foreground:#797593; --secondary:#f2e9e1; --border:#f2e9e1;
+    --primary:#d7827e; --primary-foreground:#faf4ed; --accent:#f2e9e1; --accent-foreground:#d7827e;
+    --destructive:#b4637a; --ring:#d7827e; --pine:#286983; --foam:#56949f; --iris:#907aa9;
+    --gold:#ea9d34; --radius:10px; }
+  * { box-sizing:border-box; margin:0; }
+  html, body { width:390px; height:844px; margin:0; overflow:hidden; }
+  body { font-family:'Inter',sans-serif; background:var(--background); color:var(--foreground);
+    display:flex; flex-direction:column; }
+  a { text-decoration:none; color:inherit; }
+  svg.ic { fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+
+  /* barra superior */
+  .topbar { height:54px; flex:none; display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px; background:var(--card); border-bottom:1px solid var(--border); }
+  .marca { font-size:15px; font-weight:600; letter-spacing:-.01em; }
+  .avatar { width:44px; height:44px; border-radius:50%; background:var(--accent); color:var(--accent-foreground);
+    border:1px solid var(--border); display:grid; place-items:center; font-size:15px; font-weight:600; }
+
+  /* fecha de hoy */
+  .fecha { padding:12px 16px 10px; }
+  .fecha h1 { font-size:16px; font-weight:600; letter-spacing:-.01em; }
+  .fecha p { font-size:11.5px; color:var(--muted-foreground); margin-top:3px; }
+  .pbar { height:3px; margin-top:8px; border-radius:2px; background:var(--border); overflow:hidden; }
+  .pbar i { display:block; height:100%; width:57%; background:var(--pine); }
+
+  /* lista densa */
+  main { flex:1; overflow:hidden; border-top:1px solid var(--border); }
+  .seccion { padding:13px 16px 5px; display:flex; justify-content:space-between; align-items:baseline; }
+  .seccion h2 { font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted-foreground); }
+  .seccion .bloq { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted-foreground); }
+  .fila { min-height:56px; display:flex; align-items:center; gap:13px; padding:0 16px 0 12px;
+    border-bottom:1px solid var(--border); }
+  .marcador { width:44px; height:44px; flex:none; border-radius:12px; display:grid; place-items:center;
+    border:1.5px solid var(--muted-foreground); }
+  .marcador.ok { background:var(--pine); border-color:var(--pine); color:var(--background); }
+  .marcador svg { width:20px; height:20px; }
+  .tx { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .nom { font-size:13px; font-weight:500; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fila.ok .nom { color:var(--muted-foreground); font-weight:400; }
+  .sub { display:flex; align-items:center; gap:6px; }
+  .tag { font-size:9px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    padding:2.5px 6px; border-radius:999px; background:var(--muted); color:var(--accent-foreground); }
+  .tag.salud { color:var(--pine); }
+  .tag.trabajo { color:var(--gold); }
+  .tag.estudio { color:var(--iris); }
+  .tag.casa { color:var(--foam); }
+  .per { font-size:10px; color:var(--muted-foreground); }
+  .stri { margin-left:auto; display:flex; gap:2px; }
+  .d { width:15px; height:15px; border-radius:4px; display:grid; place-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:8.5px; font-weight:500;
+    border:1px solid var(--muted-foreground); color:var(--muted-foreground); }
+  .d.fut { opacity:.4; }
+  .d.ok { background:var(--pine); border-color:var(--pine); color:var(--primary-foreground); font-weight:600; }
+  .d.hoy { border:2px solid var(--foam); color:var(--foam); font-weight:600; }
+  .d.ok.hoy { color:var(--primary-foreground); }
+
+  /* pista de continuación */
+  .continua { padding:12px 16px 14px; display:flex; align-items:center; gap:8px;
+    font-size:11px; color:var(--muted-foreground); }
+  .continua svg { width:14px; height:14px; }
+
+  /* barra inferior */
+  .pestanas { height:56px; flex:none; display:flex; background:var(--card); border-top:1px solid var(--border); }
+  .pestanas a { flex:1; min-height:44px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:3px; color:var(--muted-foreground); }
+  .pestanas svg { width:20px; height:20px; }
+  .pestanas span { font-size:9.5px; font-weight:500; }
+  .pestanas a.activa { color:var(--primary); }
+  .pestanas a.activa span { font-weight:600; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><symbol id="tk" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L19.5 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>
+
+<header class="topbar">
+  <span class="marca">Javito</span>
+  <span class="avatar">A</span>
+</header>
+
+<div class="fecha">
+  <h1>Jueves 15 de octubre</h1>
+  <p><span class="mono">8 de 14</span> completados hoy</p>
+  <div class="pbar"><i></i></div>
+</div>
+
+<main>
+  <div class="seccion"><h2>Mañana</h2><span class="bloq">4 de 5</span></div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Liberación de cuello y hombros</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d ok">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Estiramiento de muñeca y antebrazo</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Extensión de espalda de pie</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d">L</i><i class="d ok">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Respiración cuadrada</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d ok">M</i><i class="d">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Meditar</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d ok">M</i><i class="d">X</i><i class="d hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="seccion"><h2>Escritorio</h2><span class="bloq">4 de 6</span></div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Caminata corta por la habitación</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Descanso visual 20-20-20</p>
+      <div class="sub"><em class="tag trabajo">Trabajo</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d ok">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Anclaje sensorial 5-4-3-2-1</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d">L</i><i class="d ok">M</i><i class="d ok">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila ok"><span class="marcador ok"><svg class="ic" viewBox="0 0 24 24"><use href="#tk"/></svg></span>
+    <div class="tx"><p class="nom">Reset mental y reflexión</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d ok">L</i><i class="d ok">M</i><i class="d">X</i><i class="d ok hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Hidratación con agua</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d">L</i><i class="d ok">M</i><i class="d">X</i><i class="d hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Té de hierbas consciente</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per">Diaria</span><span class="stri"><i class="d">L</i><i class="d">M</i><i class="d ok">X</i><i class="d hoy">J</i><i class="d fut">V</i><i class="d fut">S</i><i class="d fut">D</i></span></div>
+    </div>
+  </div>
+
+  <div class="seccion"><h2>Noche</h2><span class="bloq">0 de 3</span></div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Ejercicio pesado</p>
+      <div class="sub"><em class="tag salud">Salud</em><span class="per mono">2 / 3 esta semana</span></div>
+    </div>
+  </div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Practicar dibujo</p>
+      <div class="sub"><em class="tag estudio">Estudio</em><span class="per mono">1 / 2 esta semana</span></div>
+    </div>
+  </div>
+
+  <div class="fila"><span class="marcador"><i></i></span>
+    <div class="tx"><p class="nom">Practicar cocina</p>
+      <div class="sub"><em class="tag casa">Casa</em><span class="per mono">0 / 1 esta semana</span></div>
+    </div>
+  </div>
+</main>
+
+<nav class="pestanas">
+  <a href="#" class="activa"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v4.5l3.5 2"/></svg><span>Hoy</span></a>
+  <a href="#"><svg class="ic" viewBox="0 0 24 24"><path d="M8.5 6h12M8.5 12h12M8.5 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Hábitos</span></a>
+  <a href="#"><svg class="ic" viewBox="0 0 24 24"><path d="M17 2.5l4 4-4 4"/><path d="M3 11.5v-1a4 4 0 014-4h14"/><path d="M7 21.5l-4-4 4-4"/><path d="M21 12.5v1a4 4 0 01-4 4H3"/></svg><span>Rutinas</span></a>
+  <a href="#"><svg class="ic" viewBox="0 0 24 24"><path d="M13 2.5H7a2 2 0 00-2 2v15a2 2 0 002 2h10a2 2 0 002-2V8.5z"/><path d="M13 2.5v6h6"/><path d="M9 13.5h6M9 17h6"/></svg><span>Artículos</span></a>
+  <a href="#"><svg class="ic" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7.5" r="4"/></svg><span>Perfil</span></a>
+</nav>
+</body>
+</html>
