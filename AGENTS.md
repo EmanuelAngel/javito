@@ -4,7 +4,7 @@ Monorepo de una sola entrega: WebAPI **ASP.NET Core (.NET 10)** en `backend/` + 
 `frontend/web/`, con **MySQL 8.0** y **JWT**. Un solo repositorio Git, en la raíz. Todo corre en
 `localhost`; no hay despliegue.
 
-Alcance completo, cronograma y consignas: `docs/`. Los documentos de trabajo en curso: `odd/tasks/`.
+Alcance completo y consignas: `docs/`. Los documentos de trabajo en curso: `odd/tasks/`.
 
 ## Mapa
 
@@ -14,8 +14,8 @@ Alcance completo, cronograma y consignas: `docs/`. Los documentos de trabajo en 
 | `backend/Javito.Api/` | WebAPI: `Program.cs`, `Controllers/` |
 | `backend/Javito.Api.Tests/` | xUnit + `Microsoft.AspNetCore.Mvc.Testing` |
 | `frontend/web/` | SPA SvelteKit con `adapter-static` |
-| `database.sql` | estructura + datos semilla (S2, pendiente) |
-| `docs/` | consignas de cátedra, propuesta, cronograma, brief de UX |
+| `database.sql` | estructura + datos semilla (pendiente) |
+| `docs/` | consignas de cátedra, propuesta, historias de usuario |
 | `odd/tasks/` | documentos de feature del trabajo trackeado |
 | `package.json` (raíz) | punto de entrada único de comandos: `pnpm <script>` |
 | `.editorconfig` | fuente de verdad de `dotnet format`: finales de línea LF e indentación |
@@ -49,7 +49,7 @@ pnpm build:web      # build estático (adapter-static -> frontend/web/build)
 con `cmd.exe` en Windows, así que un `.sh` invocado desde `package.json` falla.
 
 Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
-playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que llega con S2. Los
+playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que todavía no existe. Los
 navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
 
 `pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los

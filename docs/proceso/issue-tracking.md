@@ -7,17 +7,18 @@ Projects, para un único integrante.
 
 | Nivel | Primitiva de GitHub | Regla |
 | :--- | :--- | :--- |
-| **Epic = Fase** | Milestone | El milestone es la épica. Su barra de progreso es el avance de la fase. |
+| **Epic** | Milestone | **Sin definir** — ver la nota de abajo. |
 | **Feature / Task / Bug** | Issue | Un issue = un card del Kanban = una unidad de trabajo. |
 | **Sub-task** | Sub-issue | Sólo si necesita seguimiento propio. Si no, checklist en el body. |
 
-Las fases `S0`…`S12` ya están definidas con fechas y entregables en
-[el cronograma](../proyecto/cronograma.md). Esos son los milestones: **no se inventa una capa nueva
-de épicas por encima**.
-
-`M0` (propuesta aprobada) ya pasó. `M1` (entrega final) no lleva milestone propia: la fecha de `S12`
-**es** el `2026-11-05`. `M2` (defensa oral) es un issue `type:task` con checklist, porque la fecha
-todavía no está confirmada.
+> **Pendiente: el nivel de épica está vacío.** El cronograma que definía las fases `S0`…`S12` se retiró:
+> era un plan escrito sin que nadie lo pidiera y sin que nadie lo revisara. No se reemplaza por otro
+> inventado.
+>
+> Consecuencia práctica: hoy los issues van sueltos. Un issue suelto es válido; lo que no vale es
+> inventarle un milestone para que el tablero parezca ordenado.
+>
+> Lo único firme es la fecha de entrega: `2026-11-05`.
 
 ## La regla que ordena todo
 
@@ -54,8 +55,8 @@ dos ejes es la forma más rápida de que ninguno de los dos sea confiable.
 | `Priority` | `P0` · `P1` · `P2` | Ordenar el tablero. Un campo ordena; un label, no. |
 | `Size` | `S` · `M` · `L` | Cuánto pesa el PR. |
 
-- `P0` bloquea la entrega o bloquea a otro issue · `P1` lo pide la consigna o el cronograma de la
-  fase · `P2` es mejora, no requerido.
+- `P0` bloquea la entrega o bloquea a otro issue · `P1` lo pide la consigna · `P2` es mejora, no
+  requerido.
 - `S` ≤150 líneas ponderadas · `M` ≤400 · `L` ≤600.
 
 ## Reglas duras
@@ -87,7 +88,7 @@ No hay reviewer que te frene, así que el DoD **es** la barrera:
 ## El flujo: del issue al doc de `odd/`
 
 ```txt
-Planificación        docs/proyecto/cronograma.md
+Planificación        docs/proyecto/
       ↓
 Issue detallado      gh issue create   ← el contrato: qué, por qué, criterios de aceptación
       ↓

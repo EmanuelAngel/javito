@@ -57,23 +57,23 @@ javito/
 ├── backend/
 │   ├── Javito.slnx                   # solución
 │   ├── Javito.Api/                   # ASP.NET Core WebAPI (.NET 10)
-│   │   ├── Controllers/              # Repositories/ Models/ Dtos/ Auth/ llegan con S3
+│   │   ├── Controllers/              # Repositories/ Models/ Dtos/ Auth/ todavía no existen
 │   │   └── appsettings.Development.json
 │   ├── Javito.Api.Tests/             # pruebas del backend
 │   └── scripts/                      # check / format / lint del backend
 ├── frontend/
 │   └── web/                          # SPA SvelteKit (adapter-static)
-├── docs/                             # contexto, consignas, cronograma y DER
+├── docs/                             # contexto, consignas, propuesta y DER
 ├── odd/tasks/                        # documentos de feature del trabajo trackeado
 ├── database.sql                      # estructura + datos de prueba
 ├── format-sql.sh                     # formateo de archivos .sql
 └── README.md
 ```
 
-> **Estado:** el scaffold del monorepo (`S1` del cronograma) está hecho: `backend/` con la solución y el
+> **Estado:** el scaffold del monorepo está hecho: `backend/` con la solución y el
 > proyecto WebAPI, `frontend/web/` con la SPA en `adapter-static`, y el repositorio Git inicializado con un
 > solo commit raíz. Los directorios de dominio del backend (`Repositories/`, `Models/`, `Dtos/`, `Auth/`) y
-> `database.sql` llegan con `S2` y `S3`. Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).
+> `database.sql` todavía no existen. Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -153,7 +153,7 @@ pnpm --dir frontend/web build
 
 ### 4. Base de datos y credenciales de prueba
 
-**Pendiente** (`S2` y `S11` del cronograma): `database.sql` con las 7 tablas y los datos semilla, la
+**Pendiente**: `database.sql` con las 7 tablas y los datos semilla, la
 cadena de conexión en `backend/appsettings.Development.json` y las credenciales por rol.
 
 ### Nota sobre el build estático
@@ -175,7 +175,7 @@ del cliente.
 
 ## Matriz de Evidencias de Requerimientos Mínimos
 
-Documento obligatorio de la consigna. Se completa a medida que cada hito del cronograma cierra.
+Documento obligatorio de la consigna. Se completa a medida que el proyecto avanza.
 `Estado` admite: **Pendiente**, **En curso**, **Cumplido**.
 
 | # | Requerimiento mínimo | Estado | Dónde se implementa (previsto) | Evidencia |
@@ -185,7 +185,7 @@ Documento obligatorio de la consigna. Se completa a medida que cada hito del cro
 | 3 | Manejo de archivos adicional al avatar | Pendiente | Imagen de portada de Artículos (`backend/Javito.Api/Controllers`) | GIF de subida |
 | 4 | ABM/CRUD completo vía AJAX, sin recargar la página | Pendiente | SPA SvelteKit consumiendo la WebAPI | GIF del ABM dinámico |
 | 5 | Paginado por servidor en los listados principales | Pendiente | Historial de registros y catálogo de artículos | Captura de red con `page=2` |
-| 6 | Búsqueda asíncrona de entidades relacionadas | Pendiente | Selector de categorías en hábitos y artículos | GIF de la búsqueda en el desplegable |
+| 6 | Búsqueda asíncrona de entidades relacionadas | Pendiente | Selector de hábitos al armar una rutina | GIF de la búsqueda en el desplegable |
 | 7 | Web API REST con JWT (+ colección para pruebas) | Pendiente | Endpoints `[Authorize]` · colección exportada | Captura con Bearer Token |
 
 ### Requisitos adicionales para promocionar
@@ -233,16 +233,14 @@ notificaciones push ni temporizadores en tiempo real · requiere conexión a int
 | Propuesta aprobada por la cátedra | Cumplido |
 | Repositorio y contexto documental | Cumplido |
 | Scaffold del monorepo | Cumplido |
-| Resto de los hitos | Ver [cronograma](docs/proyecto/cronograma.md) |
 
 ## Documentación
 
 - [Índice de documentación](docs/README.md)
 - [Propuesta completa (aprobada)](docs/proyecto/propuesta.md)
-- [Cronograma](docs/proyecto/cronograma.md)
+- [Historias de usuario](docs/proyecto/historias-de-usuario.md)
 - [Consigna final de la cátedra](docs/consignas/consigna-final.md)
 - [Especificación consolidada y criterios acordados](docs/consignas/consigna-y-definiciones.md)
-- [Brief de interfaz y UX](docs/proyecto/ux-brief.md)
 
 ---
 

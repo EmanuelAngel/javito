@@ -64,7 +64,7 @@ erDiagram
 
     USUARIO {
         int id PK
-        string rol "ENUM o constante, a definir"
+        string rol "ENUM: Administrador | Usuario"
         string nombre
         string email
         string password_hash
@@ -84,10 +84,12 @@ erDiagram
         int usuario_id FK
         int categoria_id FK
         string titulo
-        string tipo_habito
-        decimal meta_valor
-        string unidad_medida
-        string frecuencia
+        string descripcion "opcional"
+        string tipo_habito "ENUM: si_no | contador | abstinencia"
+        decimal meta_valor "opcional, solo contador"
+        string unidad_medida "opcional, solo contador"
+        string frecuencia_tipo "ENUM: diaria | semanal"
+        int frecuencia_veces "1-6, solo si es semanal"
         boolean activo
     }
 
@@ -132,9 +134,9 @@ erDiagram
 
 ### 2.2. Listado y Descripción de Entidades
 
-1. **`USUARIO`:** Datos de la cuenta (nombre, email, contraseña con hash), rol asignado, estado activo y avatar guardado en el servidor. El rol **no se guarda en una tabla**: se representa con un ENUM o constantes estáticas, a definir.
+1. **`USUARIO`:** Datos de la cuenta (nombre, email, contraseña con hash), rol asignado, estado activo y avatar guardado en el servidor. El rol **no se guarda en una tabla**: es un **ENUM de `USUARIO`** con dos valores, `Administrador` y `Usuario`.
 2. **`CATEGORIA`:** Agrupa hábitos y artículos por tema (ej. Salud, Estudio, Trabajo).
-3. **`HABITO`:** Regla o meta definida por el usuario (tipo cuantitativo, sí/no o abstinencia; valor meta y frecuencia).
+3. **`HABITO`:** Regla definida por el usuario: título, descripción opcional, tipo (`sí/no`, contador o abstinencia), categoría y frecuencia (**todos los días** o **N veces por semana**). Si es contador, lleva valor meta y unidad de medida.
 4. **`REGISTRO_HABITO`:** Registro diario de un hábito en una fecha concreta. Guarda el valor alcanzado, la meta fija a esa fecha y si se completó.
 5. **`RUTINA`:** Agrupación de hábitos para un momento del día (ej. Mañana, Noche) definida por el usuario.
 6. **`RUTINA_HABITO`:** Tabla intermedia (N:M) que asocia hábitos a una rutina y define su orden de ejecución.
@@ -144,6 +146,7 @@ erDiagram
 
 * **`CATEGORIA` como clasificador compartido:** Permite asociar tanto hábitos como artículos a una misma categoría.
 * **Restricción de fecha en `REGISTRO_HABITO`:** Restricción `UNIQUE(habito_id, fecha)` para que exista un solo registro por hábito por día. La meta queda fija en el registro para no alterar el historial si el usuario cambia su meta después.
+* **Frecuencia y cupo semanal en `HABITO`:** La frecuencia se guarda como tipo (`diaria` o `semanal`) y, si es semanal, con la cantidad de veces (1 a 6). El **cupo semanal no se guarda**: se cuenta sobre los registros de la semana en curso. Un cambio de frecuencia rige desde esa semana completa.
 * **`RUTINA` y `HABITO` (relación N:M vía `RUTINA_HABITO`):** Permite organizar hábitos en bloques según el momento del día. Un hábito puede pertenecer a múltiples rutinas (o a ninguna) y una rutina agrupa varios hábitos ordenados. El registro diario (`REGISTRO_HABITO`) se mantiene independiente de la rutina, vinculado directamente al hábito.
 * **Dependencia de dos tablas en `ARTICULO` y `HABITO`:** `HABITO` depende de `USUARIO` y `CATEGORIA`. `ARTICULO` depende de `USUARIO` y `CATEGORIA`.
 
@@ -164,14 +167,14 @@ erDiagram
 
 #### Alcance
 * **Autenticación y Sesiones:** Registro, login con JWT y subida de avatar al servidor.
-* **CRUD de Usuarios:** Alta en registro, edición de datos personales/avatar y gestión de estado por el Administrador.
+* **CRUD de Usuarios:** Registro público (cualquier persona puede crearse su cuenta de usuario) y administración completa por el Administrador: alta manual con contraseña inicial, edición de datos, cambio de rol y activación/desactivación.
 * **CRUD de Categorías:** Alta, modificación, listado y baja lógica (solo Administrador).
 * **CRUD de Hábitos:** Alta, edición de metas, archivado/baja lógica y listado individual por usuario.
 * **CRUD de Rutinas:** Alta, edición de orden de hábitos, baja lógica y filtrado en pantalla principal.
 * **CRUD de Registros de Hábitos:** Creación diaria rápida (sí/no o contador), actualización de valores o notas, consulta de historial y anulación/reinicio del día.
 * **CRUD de Artículos:** Alta con editor Markdown e imagen de portada, edición, listado paginado y baja lógica (solo Administrador; lectura para usuarios autenticados).
 * **Visualización de consistencia:** Cuadrícula de 7 días por tarjeta y vista histórica en detalle.
-* **Paginación y búsquedas:** Paginación en servidor para historial y catálogo de artículos; búsqueda asíncrona para asociar categorías a hábitos y artículos.
+* **Paginación y búsquedas:** Paginación en servidor para historial y catálogo de artículos; búsqueda asíncrona para asociar hábitos a una rutina.
 
 #### Límite
 * No es offline ni tiene app móvil nativa.
@@ -194,11 +197,11 @@ erDiagram
 | Requerimiento Cátedra | Implementación |
 |---|---|
 | **Mínimo 6 tablas relacionadas (1 a N y entidades compuestas)** | 7 tablas: `Usuario`, `Categoria`, `Habito`, `RegistroHabito`, `Rutina`, `RutinaHabito`, `Articulo`. Relación N:M entre `Rutina` y `Habito` mediante `RutinaHabito`. El rol no se guarda en tabla. |
-| **Seguridad: login, roles, `Authorize` y avatar** | Autenticación con JWT. Rol `Administrador` gestiona categorías y publica artículos; rol `Usuario` gestiona hábitos y lee artículos. Subida de avatar con validación. |
+| **Seguridad: login, roles, `Authorize` y avatar** | Autenticación con JWT. Rol `Administrador` gestiona categorías, publica artículos y administra usuarios; rol `Usuario` gestiona hábitos y lee artículos. Subida de avatar con validación. |
 | **Manejo de archivos adicional al avatar** | Subida y almacenamiento de imágenes de portada en `Articulo` (solo Administrador). |
 | **Al menos un CRUD vía AJAX en framework reactivo** | SPA en SvelteKit; todos los CRUDs se comunican por peticiones asíncronas a la WebAPI. |
-| **Listados con paginado en servidor** | Historial de registros y catálogo de artículos servidos por páginas desde el backend. |
-| **Búsqueda AJAX de entidades relacionadas** | Selector con búsqueda asíncrona para categorías en hábitos y artículos. |
+| **Listados con paginado en servidor** | Historial de registros, catálogo de artículos y listado de usuarios servidos por páginas desde el backend. |
+| **Búsqueda AJAX de entidades relacionadas** | Selector con búsqueda asíncrona para agregar hábitos a una rutina. |
 | **Web API REST con JWT** | Consumo directo desde la SPA con token Bearer y colección exportada para pruebas. |
 
 ### 3.5. Vistas de la SPA (SvelteKit)
@@ -210,4 +213,5 @@ erDiagram
 * **/articles/[id]**: Lectura del artículo con Markdown renderizado.
 * **/articles/nuevo** *(Admin)*: Editor de artículos con selector de imagen de portada.
 * **/admin/categorias** *(Admin)*: CRUD de categorías.
+* **/admin/usuarios** *(Admin)*: listado, alta, edición, cambio de rol y activación/desactivación de usuarios.
 * **/perfil**: Edición de datos y cambio de avatar.

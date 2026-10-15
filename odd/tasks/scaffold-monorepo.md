@@ -1,6 +1,6 @@
 # Scaffold del monorepo Javito
 
-Feature del hito **S1** del cronograma (`docs/proyecto/cronograma.md`), más la higiene de repo y
+Feature de la primera tanda de trabajo, más la higiene de repo y
 entorno de agente acordada antes del primer write. Rama: `feat/scaffold-monorepo`.
 Punto de retorno: commit inicial `2f5d818` en `main`.
 
@@ -15,7 +15,7 @@ Punto de retorno: commit inicial `2f5d818` en `main`.
   como punto de retorno; el scaffold se desarrolla en `feat/scaffold-monorepo` con un commit por
   unidad de trabajo, en Conventional Commits español, verbo en infinitivo, minúsculas y sin punto
   final (convención del `README.md`: `feat(repo): agregar repositorio de hábitos`).
-- **S3 — Entregable S1 del cronograma.** "`backend/` (WebAPI .NET 10 con OpenAPI), `frontend/`
+- **S3 — Entregable de la tanda.** "`backend/` (WebAPI .NET 10 con OpenAPI), `frontend/`
   (SvelteKit `adapter-static`), `.gitignore`, repo Git inicializado." SDK disponible: .NET 10.0.302,
   Node 24.20, pnpm 10.26.1, MySQL 8.0.46.
 - **S4 — Tooling Node.** Dos `package.json` sueltos: raíz con tooling (commitlint, lint-staged,
@@ -221,8 +221,7 @@ maneja el ruteo del cliente.
 Se completó "Puesta en marcha" con los comandos verificados, requisitos con versiones reales,
 puertos, CORS y la nota del build estático. Además se actualizó lo que el scaffold dejó obsoleto: el
 árbol del repositorio, la nota de estado, la tabla "Estado del proyecto" y el casillero del `.gitignore`
-en los requisitos para promocionar. `database.sql` y las credenciales siguen marcados **Pendiente**
-(S2 y S11).
+en los requisitos para promocionar. `database.sql` y las credenciales siguen marcados **Pendiente**.
 
 ### L19 — Verificación independiente acotada: NO VERIFICABLE, y qué se hizo con eso
 

@@ -137,7 +137,7 @@ política CORS del backend es fail-closed y sólo autoriza `http://localhost:517
 la aplicación. El servidor de e2e se sirve en 5173 y el config expone `baseURL`.
 - El script `test:e2e` corre `playwright install` en cada ejecución (baja navegadores). → se separó en
 `test:e2e:install`, que se corre una vez.
-- El e2e contra el backend real necesita MySQL, que llega con S2. **Sigue pendiente y por eso todavío
+- El e2e contra el backend real necesita MySQL, que todavía no existe. **Sigue pendiente y por eso todavío
 no hay pruebas de e2e.**
 
 **Resuelto en `5ea34e4`.** Evidencia: `pnpm preview --port 5173` responde 200 en 5173 y no escucha en
@@ -221,7 +221,7 @@ Lo que queda pendiente de verdad, después de T2, T5 y T10:
 
 - **`pnpm exec vitest run` sale 1 con `No test files found`.** No hay ningún spec en `frontend/web` y por
   L10 tampoco lo va a haber para los tokens. Es estado preexistente: no lo introduce T10.
-- **Pruebas de e2e: no existe ninguna.** El e2e contra el backend real necesita MySQL, que llega con S2.
+- **Pruebas de e2e: no existe ninguna.** El e2e contra el backend real necesita MySQL, que todavía no existe.
 - **La parte pendiente de T4** (el `init` sin TTY) quedó cubierta por diseño: `layout.css` importa
   `shadcn-svelte/tailwind.css` en vez de copiar el bloque. Al primer `add`, el CLI va a pedir
   `tailwind-variants` (L8).
