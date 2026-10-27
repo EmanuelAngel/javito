@@ -11,7 +11,8 @@
 --   desactivado@javito.local  Usuario desactivado: no puede iniciar sesión
 --
 -- Las reglas que caben en una fila son restricciones de la base (CHECK, UNIQUE, FOREIGN KEY): un
--- dato inválido hace fallar el script. Las que cruzan tablas las vigila db/validacion.sql.
+-- dato inválido hace fallar el script. Las que cruzan tablas (por ejemplo, que nadie registre un
+-- hábito ajeno) las valida el backend.
 
 -- La terminal de Windows habla cp850: sin esto, los acentos se guardan corruptos.
 SET NAMES utf8mb4;

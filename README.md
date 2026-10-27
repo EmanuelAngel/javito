@@ -70,10 +70,11 @@ javito/
 └── README.md
 ```
 
-> **Estado:** el scaffold del monorepo está hecho: `backend/` con la solución y el
-> proyecto WebAPI, `frontend/web/` con la SPA en `adapter-static`, y el repositorio Git inicializado con un
-> solo commit raíz. Los directorios de dominio del backend (`Repositories/`, `Models/`, `Dtos/`, `Auth/`) y
-> `database.sql` todavía no existen. Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).
+> **Estado:** el scaffold del monorepo y la base de datos están hechos: `backend/` con la solución y el
+> proyecto WebAPI, `frontend/web/` con la SPA en `adapter-static`, y `database.sql` con las 7 tablas y los
+> datos de prueba. Los directorios de dominio del backend (`Repositories/`, `Models/`, `Dtos/`, `Auth/`)
+> todavía no existen: la API solo responde `GET /api/health` y no se conecta a la base. Las convenciones de
+> trabajo están en [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -151,10 +152,27 @@ pnpm --dir frontend/web build
 
 > Con SvelteKit 3, `pnpm build` puede pasar con `pnpm check` en rojo. Corré los dos.
 
-### 4. Base de datos y credenciales de prueba
+### 4. Base de datos
 
-**Pendiente**: `database.sql` con las 7 tablas y los datos semilla, la
-cadena de conexión en `backend/appsettings.Development.json` y las credenciales por rol.
+`database.sql` crea la base `javito` **desde cero**: borra lo que hubiera y vuelve a cargar la estructura
+con las 7 tablas y los datos de prueba. Con MySQL corriendo:
+
+```sh
+mysql --table < database.sql
+```
+
+`--table` imprime con formato las consultas que corras después, útil para revisar lo que quedó cargado.
+Si no querés escribir la contraseña cada vez, guardala una vez con `mysql_config_editor` y usá
+`mysql --login-path=<nombre> --table < database.sql`.
+
+El script arranca con `SET NAMES utf8mb4;` porque la terminal de Windows habla `cp850`: sin esa línea los
+acentos se guardan corruptos. No hay que configurar nada más por eso.
+
+Las fechas de los registros son relativas al día en que se ejecuta el script, así que la semana en curso
+siempre tiene datos, sin importar cuándo lo cargues.
+
+El backend **todavía no se conecta a la base**: la cadena de conexión y el acceso a datos llegan con el
+primer endpoint de dominio.
 
 ### Nota sobre el build estático
 
@@ -168,8 +186,17 @@ del cliente.
 
 ## Usuarios de prueba
 
-**Pendiente** — se definen junto con `database.sql`. Requisito de promoción: un usuario por rol
-(`Administrador` y `Usuario`) con credenciales documentadas acá.
+Vienen cargados en `database.sql`, con la contraseña **`Javito2026`** para los cuatro.
+
+| Email | Rol | Estado |
+|---|---|---|
+| `admin@javito.local` | `Administrador` | Activo |
+| `usuario@javito.local` | `Usuario` | Activo, con los 14 hábitos reales y sus registros |
+| `otra@javito.local` | `Usuario` | Activo, para comprobar que nadie ve datos ajenos |
+| `desactivado@javito.local` | `Usuario` | Inactivo: no puede iniciar sesión |
+
+Las contraseñas están guardadas como hash bcrypt. El login todavía no existe: se verifica contra estos
+usuarios cuando llegue la autenticación con JWT.
 
 ---
 
@@ -180,7 +207,7 @@ Documento obligatorio de la consigna. Se completa a medida que el proyecto avanz
 
 | # | Requerimiento mínimo | Estado | Dónde se implementa (previsto) | Evidencia |
 |---|---|---|---|---|
-| 1 | Modelo de datos: 6+ tablas relacionadas, con 1:N y N:M | Pendiente | `database.sql` · `docs/der.md` | DER adjunto |
+| 1 | Modelo de datos: 6+ tablas relacionadas, con 1:N y N:M | En curso | `database.sql` · [DER](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der) | DER adjunto |
 | 2 | Seguridad: login/logout, roles, funcionalidad por rol y avatar | Pendiente | `backend/Javito.Api/Auth` · CRUD de Categorías y Artículos (solo Admin) | Captura de perfil con avatar |
 | 3 | Manejo de archivos adicional al avatar | Pendiente | Imagen de portada de Artículos (`backend/Javito.Api/Controllers`) | GIF de subida |
 | 4 | ABM/CRUD completo vía AJAX, sin recargar la página | Pendiente | SPA SvelteKit consumiendo la WebAPI | GIF del ABM dinámico |
@@ -191,10 +218,10 @@ Documento obligatorio de la consigna. Se completa a medida que el proyecto avanz
 ### Requisitos adicionales para promocionar
 
 - [x] `.gitignore` específico y sin artefactos de compilación
-- [ ] Diagrama Entidad-Relación adjunto
-- [ ] `README.md` con descripción y guía paso a paso
-- [ ] `database.sql` con estructura y datos de prueba precargados
-- [ ] Credenciales de prueba por rol
+- [x] Diagrama Entidad-Relación adjunto ([DER en Mermaid](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der))
+- [x] `README.md` con descripción y guía paso a paso
+- [x] `database.sql` con estructura y datos de prueba precargados
+- [x] Credenciales de prueba por rol
 - [ ] Colección de Postman/Bruno exportada
 - [ ] Todo el proyecto corriendo en `localhost` sin errores
 
@@ -204,7 +231,7 @@ Documento obligatorio de la consigna. Se completa a medida que el proyecto avanz
 
 `Usuario` · `Categoria` · `Habito` · `RegistroHabito` · `Rutina` · `RutinaHabito` · `Articulo`
 
-El rol del usuario **no se guarda en una tabla**: se representa con un ENUM o constantes estáticas, a definir.
+El rol del usuario **no vive en una tabla**: `usuario.rol` es un `ENUM('Administrador', 'Usuario')`.
 
 - Relación **1:N**: `Usuario` → `Habito`, `Usuario` → `Articulo`, `Habito` → `RegistroHabito`.
 - Relación **N:M**: `Rutina` ↔ `Habito` mediante `RutinaHabito` (con orden de ejecución).
@@ -233,6 +260,7 @@ notificaciones push ni temporizadores en tiempo real · requiere conexión a int
 | Propuesta aprobada por la cátedra | Cumplido |
 | Repositorio y contexto documental | Cumplido |
 | Scaffold del monorepo | Cumplido |
+| Base de datos con datos de prueba (`database.sql`) | Cumplido |
 
 ## Documentación
 
