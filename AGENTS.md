@@ -6,6 +6,20 @@ Monorepo de una sola entrega: WebAPI **ASP.NET Core (.NET 10)** en `backend/` + 
 
 Alcance completo y consignas: `docs/`. Los documentos de trabajo en curso: `odd/tasks/`.
 
+## Antecedente: el proyecto de la Inmobiliaria
+
+La consigna pide una complejidad "equivalente al sistema de la Inmobiliaria trabajado en clase"
+(`docs/consignas/consigna-final.md:9`). Ese proyecto previo es **`inmobiliaria-angel`**, y quedan dos
+fuentes para comparar:
+
+| Fuente | Dónde | Para qué |
+| :--- | :--- | :--- |
+| Repositorio remoto | <https://github.com/EmanuelAngel/inmobiliaria-angel> | lo que ve la cátedra |
+| Clon local | `~/dev/inmobiliaria-lab2` (su `origin` es el remoto de arriba) | comparar sin red |
+
+Es un **antecedente de calibre**, no una dependencia: Javito no copia ni importa nada de ahí. Se mira
+solo para juzgar si una solución quedó por debajo de lo que la cátedra ya vio funcionar.
+
 ## Mapa
 
 | Ruta | Qué es |
