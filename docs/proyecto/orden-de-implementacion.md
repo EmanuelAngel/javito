@@ -1,0 +1,300 @@
+# Orden de implementación
+
+El **cuándo** de las historias: qué módulo se encara antes y qué lo bloquea. Este documento no agrega
+requisitos; **ordena** los de [historias-de-usuario.md](./historias-de-usuario.md) por dependencia real
+y no por el orden narrativo en que están escritos. Es la fuente de verdad del orden de encare, y reemplaza
+a la decisión #6 de ese documento.
+
+Se usa al derivar una historia a issue: cada issue nombra la historia de la que depende (`Requiere:
+HU-CAT-01`). Si un issue no puede cerrarse porque su predecesora no existe, el orden es el que está mal,
+no el issue.
+
+---
+
+## 1. Las dependencias que imponen las FK
+
+```mermaid
+flowchart TD
+    subgraph N0["Nivel 0 — nadie los bloquea"]
+        U["usuario"]
+        C["categoria"]
+    end
+
+    subgraph N1["Nivel 1 — necesitan una fila del nivel 0"]
+        H["habito"]
+        R["rutina"]
+        A["articulo"]
+    end
+
+    subgraph N2["Nivel 2 — necesitan una fila del nivel 1"]
+        RH["registro_habito"]
+        RHA["rutina_habito"]
+    end
+
+    U --> H
+    C --> H
+    U --> R
+    U --> A
+    C --> A
+    H --> RH
+    R --> RHA
+    H --> RHA
+```
+
+| Nivel | Tablas | Qué significa para el orden |
+| :--- | :--- | :--- |
+| 0 | `usuario`, `categoria` | Ninguna otra se puede escribir sin estas dos filas. |
+| 1 | `habito`, `rutina`, `articulo` | Tres ramas independientes entre sí que comparten nivel 0. |
+| 2 | `registro_habito`, `rutina_habito` | Las dos últimas: viven de una fila del nivel 1. |
+
+Solo con esto el orden sería: `usuario` y `categoria` primero, `registro_habito` y `rutina_habito` al
+final, y las tres ramas del nivel 1 en cualquier orden. Todo lo demás — que es lo que decide el orden de
+verdad — no está en el DER.
+
+---
+
+## 2. Las dependencias que las FK no muestran
+
+```mermaid
+flowchart TD
+    classDef atras stroke-width:3px
+
+    ACC["Acceso<br/>3 historias"]
+    CAT["Categorías<br/>4 historias"]
+    HAB["Hábitos<br/>5 historias"]
+    REG["Registros<br/>6 historias"]
+    RUT["Rutinas<br/>5 historias"]
+    PER["Perfil<br/>2 historias"]
+    ART["Artículos<br/>5 historias"]
+    HIS["Historial<br/>2 historias"]
+    USU["Usuarios<br/>5 historias"]
+
+    ACC -- "JWT, roles, guard, shell" --> CAT
+    ACC -- "regla de email único" --> PER
+    ACC -- "regla de email único" --> USU
+    CAT -- "HAB-05: desplegable de activas" --> HAB
+    HAB -- "REG necesita un hábito que registrar" --> REG
+    REG -- "REG-01/04 crean /today" --> RUT
+    PER -- "PER-02: infra de archivos" --> ART
+    CAT -- "ART-01: categoría del artículo" --> ART
+    ART -- "ART-04 estrena el paginado" --> HIS
+    ART -- "mismo helper de paginado" --> USU
+    REG -. "REG-04 fija la semántica de la grilla" .-> HIS
+
+    subgraph ATRAS["Dependencia hacia atrás"]
+        direction TB
+        REG2["REG-01 escribe meta_objetivo"]
+        HAB2["HAB-03 promete que la meta no se reescribe"]
+        REG2 -. "sostiene un criterio ajeno" .-> HAB2
+    end
+
+    classDef atras stroke-width:3px
+    class REG2,HAB2 atras
+```
+
+### (a) `categoria` es el clasificador compartido
+
+Desbloquea 10 historias: las 5 de hábitos (`HU-HAB-05` es el desplegable que las alimenta) y las 5 de
+artículos. Es un ABM chico, sin reglas de negocio propias, y es **la prueba más barata** de que
+`[Authorize(Roles="Administrador")]` funciona. Por eso va segunda, apenas haya login.
+
+### (b) Tres infraestructuras se construyen una vez y se usan en varios lados
+
+| Infraestructura | Se estrena en | Se reusa en | Requisito |
+| :--- | :--- | :--- | :--- |
+| Subida y validación de archivos | `HU-PER-02` (avatar) | `HU-ART-01`, `HU-ART-02` (portada) | `RT-02`, `RT-03` |
+| Paginado de servidor | `HU-ART-04` | `HU-HIS-01`, `HU-USU-01` | `RT-05` |
+| Regla de email único | `HU-ACC-01` | `HU-PER-01`, `HU-USU-02`, `HU-USU-03` | `RT-02` |
+
+Si `HU-PER-02` se hace después de `HU-ART-01`, la subida de archivos se escribe dos veces. Por eso Perfil
+va inmediatamente antes de Artículos.
+
+### (c) La dependencia que va hacia atrás en el tiempo
+
+`HU-HAB-03` promete que *"los días ya registrados conservan la meta con la que se cerraron"*. Quien lo
+garantiza no es Hábitos: es `registro_habito.meta_objetivo`, la columna que **`HU-REG-01` escribe al crear
+o actualizar la fila**. Si Registros lee la meta desde `habito` en lugar de copiarla al registro, ese
+criterio de Hábitos se rompe en silencio, sin que falle ninguna prueba de hábitos.
+
+Es el motivo por el que Hábitos no se puede dar por cerrado antes que Registros, aunque las FK digan lo
+contrario.
+
+### (d) La pantalla del día la crea Registros y la reabre Rutinas
+
+`HU-REG-01` y `HU-REG-04` construyen `/today`; `HU-RUT-04` (filtrar por rutina) la vuelve a tocar. No es un
+problema, pero es una **segunda pasada conocida**: no hay que sobre-ingeniar el filtro durante `HU-REG-01`.
+
+### (e) Hay criterios que se prometen en un módulo y se verifican en otro
+
+Ver la tabla de [cruces de comportamiento](#6-cruces-de-comportamiento). Al derivar el issue que los
+verifica hay que citar también la historia que los promete, o la prueba se escribe mirando la pantalla
+equivocada.
+
+### (f) La etapa 0 no es un módulo, es la fundación
+
+Acceso no es "login". Es el lugar donde se decide:
+
+- la capa de datos (`MySqlConnector`, repositorios, transacciones, sin ORM);
+- el contrato de errores de la API y cómo lo consume el formulario;
+- los DTOs y dónde vive la validación (que después comparten registro, perfil y usuarios);
+- el JWT, el guard de rutas del SPA y el cliente HTTP con `Bearer`;
+- el shell con la barra superior, donde después entra el avatar.
+
+Eso no es una historia nueva ni un requisito de usuario: es trabajo técnico que el documento de feature
+de `HU-ACC-02` tiene que incluir. Y `HU-ACC-02` no se cierra sin eso: si queda abierto, cada uno de los
+ocho módulos siguientes lo reinventa a su manera.
+
+---
+
+## 3. Orden propuesto
+
+```mermaid
+flowchart LR
+    classDef fund stroke-width:2px
+
+    F["0 · Fundación<br/>se entrega en ACC-02"]:::fund
+
+    subgraph CA["Corte A — el producto funciona"]
+        direction LR
+        ACC["1 · Acceso<br/>ACC-02 → ACC-01 → ACC-03"] --> CAT["2 · Categorías"]
+        CAT --> HAB["3 · Hábitos"]
+        HAB --> REG["4 · Registros"]
+        REG --> RUT["5 · Rutinas"]
+    end
+
+    subgraph CB["Corte B — 5 cerrados de 7"]
+        direction LR
+        PER["6 · Perfil"] --> ART["7 · Artículos"]
+    end
+
+    subgraph CC["Holgura — hojas de bajo riesgo"]
+        direction LR
+        HIS["8 · Historial"] --> USU["9 · Usuarios"]
+    end
+
+    F --> ACC
+    RUT --> PER
+    ART --> HIS
+```
+
+| # | Módulo | Historias | Por qué acá | Desbloquea | Riesgo |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 0 | **Fundación** | dentro de `ACC-02` | Todo lo demás la hereda | — | **Alto** si se posterga |
+| 1 | **Acceso** | `ACC-02` → `ACC-01` → `ACC-03` | Base de `[Authorize]`, sesión y shell | las otras 34 | **Alto**: es el molde de todo |
+| 2 | **Categorías** | `CAT-01` … `CAT-04` | Clasificador compartido, ABM mínimo, prueba el rol | 10 | Bajo |
+| 3 | **Hábitos** | `HAB-01` … `HAB-05` | Núcleo del producto; necesita el desplegable de categorías | 13 | Medio |
+| 4 | **Registros** | `REG-01` … `REG-06` | El corazón. Acá están las incógnitas reales: acumulación, meta congelada, cupo semanal | 2 + `/today` | **Alto** |
+| 5 | **Rutinas** | `RUT-01` … `RUT-05` | Aporta `RT-01` (N:M) y `RT-06` (búsqueda asíncrona); reabre `/today` | — | Medio |
+| 6 | **Perfil** | `PER-01`, `PER-02` | Paga la infra de archivos con el caso chico | Artículos | Bajo |
+| 7 | **Artículos** | `ART-01` … `ART-05` | La portada reusa archivos; el paginado se estrena acá | Historial, Usuarios | Medio |
+| 8 | **Historial** | `HIS-01`, `HIS-02` | Casi todo lectura sobre datos que ya existen, más la edición del hábito que abre `HIS-02` desde el detalle | — | Bajo |
+| 9 | **Usuarios** | `USU-01` … `USU-05` | Repite reglas de registro y roles ya probados | — | Bajo |
+
+**Dentro de Acceso el orden es login primero**, aunque el documento liste el registro primero:
+`database.sql` ya trae cuatro usuarios con contraseña, así que `HU-ACC-02` se puede probar de punta a punta
+sin construir el alta. El registro llega segundo y reusa el mismo molde.
+
+### La única inversión contra el orden del documento: Perfil
+
+El documento pone Perfil segundo. Acá va sexto, inmediatamente antes de Artículos. La razón es que Perfil
+es una **hoja**: nada depende de él, salvo la infraestructura de archivos que necesita Artículos. Ponerlo
+segundo da una victoria rápida pero deja quieto el módulo con más incógnitas (`REG`), y encima separa la
+infra de archivos del único consumidor que la reusa.
+
+Si se prefiere respetar el documento al pie de la letra, Perfil segundo no rompe nada: solo atrasa
+Registros. Es la única diferencia, y es de bajo impacto.
+
+---
+
+## 4. Cortes de riesgo
+
+Sirven para saber qué hay funcionando si el tiempo se acaba, y son el punto natural para una demo parcial.
+Regla única de este documento: un requisito cuenta como cerrado solo cuando existen **todas** las
+evidencias de su fila en la tabla de abajo. Para `RT-05` la fila exige las tres listas paginadas:
+la primera (`HU-ART-04`, módulo 7) satisface el mínimo de cátedra, pero este documento lo cuenta
+1 de 3 y no lo da por cerrado hasta que exista la tercera (módulo 9).
+
+```mermaid
+flowchart TD
+    A["Corte A · después de Rutinas<br/>Cerrados: RT-01, RT-04, RT-06, RT-07<br/>RT-02: 1 de 3 · RT-05: sin empezar"]
+    B["Corte B · después de Artículos<br/>Cerrados: RT-01, RT-03, RT-04, RT-06, RT-07 (5 de 7)<br/>RT-02: 2 de 3 · RT-05: 1 de 3"]
+    C["Corte C · después de Usuarios<br/>7 de 7"]
+
+    A --> B --> C
+```
+
+| Requisito | Qué exige | Dónde se evidencia | Se cierra en |
+| :--- | :--- | :--- | :--- |
+| `RT-01` | 6 tablas relacionadas, 1:N y N:M | `rutina_habito` | **5** · Rutinas (corte A) |
+| `RT-02` | Login, roles, `[Authorize]` y avatar | `HU-ACC-01`…`03`, `HU-PER-02`, `HU-USU-04` | **9** · Usuarios (corte C) |
+| `RT-03` | Manejo de archivos adicional al avatar | `HU-ART-01`, `HU-ART-02` | **7** · Artículos (corte B) |
+| `RT-04` | Al menos un ABM completo por AJAX | toda la SPA | **2** · Categorías (corte A) |
+| `RT-05` | Paginado por servidor | `HU-ART-04`, `HU-HIS-01`, `HU-USU-01` | **9** (las 3) · el mínimo de cátedra queda cubierto en la **7** con la 1.ª lista |
+| `RT-06` | Búsqueda asíncrona de entidades relacionadas | `HU-RUT-02` | **5** · Rutinas (corte A) |
+| `RT-07` | Web API REST con JWT | la SPA consume con `Bearer` | **1** · Acceso (corte A) |
+
+**Corte A** deja `RT-01`, `RT-04`, `RT-06` y `RT-07` cerrados, y `RT-02` a mitad de camino: funcionan login,
+roles y `[Authorize]`, pero faltan el avatar (módulo 6) y el cambio de rol, que es lo único que vive al
+final del recorrido. `RT-05` todavía no empezó.
+
+**Corte B** cierra `RT-03`: van 5 de 7. Quedan `RT-02` (2 de 3: falta `HU-USU-04`) y `RT-05` (1 de 3:
+falta `HU-HIS-01` y `HU-USU-01`); con el primer paginado el requisito cubre el mínimo de cátedra,
+pero no las tres listas que pide la propuesta. **Corte C** cierra los siete.
+
+> **Si el objetivo fuera cerrar los requisitos antes que el producto**, el orden cambia: Perfil y
+> `HU-USU-04` (cambio de rol) subirían a los puestos 2 y 3, porque `RT-02` no se cierra hasta que existan.
+> Eso cuesta el corazón del sistema: Registros quedaría detrás de dos módulos de administración.
+
+Las dos últimas posiciones son hojas de bajo riesgo a propósito: se pueden cortar sin dejar nada roto.
+
+---
+
+## 5. Requisitos de cátedra por módulo
+
+Ningún módulo existe "para el requisito", pero conviene tener presente cuál cierra qué cosa:
+
+| Módulo | Aporta |
+| :--- | :--- |
+| Acceso | `RT-07`, la mitad de `RT-02`, la capa de datos de todo lo demás |
+| Categorías | `RT-04` (primer ABM por AJAX) |
+| Hábitos | volumen real de datos para `RT-06` y `RT-05` |
+| Registros | los datos que después paginan `RT-05` |
+| Rutinas | `RT-01` (N:M) y `RT-06` (búsqueda asíncrona) |
+| Perfil | `RT-02` (avatar) y la infra de archivos |
+| Artículos | `RT-03` (archivos) y `RT-05` (primer paginado) |
+| Historial | `RT-05` (segundo paginado) |
+| Usuarios | `RT-02` (cambio de rol) y `RT-05` (tercer paginado) |
+
+---
+
+## 6. Cruces de comportamiento
+
+Criterios que se prometen en una historia y se verifican en otra. Cuando se deriva el issue que los
+verifica, hay que citar también la historia que los promete.
+
+| Se promete en | Criterio | Se verifica en |
+| :--- | :--- | :--- |
+| `HU-HAB-03` | Los días ya registrados conservan su meta | `HU-REG-01` (al escribir `meta_objetivo`) y `HU-HIS-01` ("meta de ese día") |
+| `HU-HAB-04` | Archivar un hábito lo saca de las rutinas sin romperlas | `HU-RUT-02`, `HU-RUT-05` |
+| `HU-CAT-04` | Desactivar no toca lo que ya estaba clasificado | `HU-HAB-05`, `HU-ART-04` |
+| `HU-CAT-04` | Una categoría desactivada desaparece de los selectores | `HU-HAB-01`, `HU-HAB-05`, `HU-ART-01` |
+| `HU-REG-01` | Los registros del mismo día acumulan, no se duplican | `HU-REG-02` (reinicio), `HU-REG-06` (cupo semanal) |
+| `HU-REG-04` | Cumplido, vacío y neutro se distinguen sin depender del color | `HU-REG-06`, `HU-HIS-02` |
+| `HU-ACC-01` | Email en minúsculas, sin espacios y único | `HU-PER-01`, `HU-USU-02`, `HU-USU-03` |
+| `HU-USU-04` | El rol cambia en el siguiente inicio de sesión | `HU-ACC-02` |
+| `HU-ACC-02` | Un usuario desactivado no entra | `HU-USU-05` |
+
+---
+
+## 7. Lo que hay que decidir antes de Registros
+
+Nada de esto bloquea el arranque, pero se cierra en el documento de feature de `REG`, no después.
+
+1. **Qué hace "reiniciar el día"** (`HU-REG-02`). El criterio dice "vuelve a cero y queda sin completar",
+   pero `HU-REG-05` dice que la nota sobrevive. `database.sql` ya muestra el camino elegido: la fila queda
+   con `valor_alcanzado = 0`, `completado = FALSE` **y su nota**, en lugar de borrarse. Hay que confirmarlo
+   antes de escribir la primera prueba, porque `uq_registro_habito_fecha` impide tener dos filas del mismo
+   día.
+2. **La meta se copia, no se referencia.** `registro_habito.meta_objetivo` se escribe en el momento de
+   registrar y no se vuelve a tocar. Es la decisión de `REG` que sostiene `HU-HAB-03`, y también la que
+   hace que `HU-REG-06` (cumplir la cuota semanal) pueda contar semanas viejas sin recalcular nada.
