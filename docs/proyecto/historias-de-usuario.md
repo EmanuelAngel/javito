@@ -506,7 +506,7 @@ Lo que quedó cerrado, y por qué.
 | 3 | Formato idéntico a `feature.yml` (rol, historia, criterios, fuera de alcance) | Derivar una historia a issue es copiar y pegar, sin reescribir criterios |
 | 4 | Una historia = un objetivo de valor, no una pantalla ni una fase | "CRUD de rutinas" no es una historia: son cinco |
 | 5 | Los requisitos de cátedra son restricciones (`RT-xx`), no historias | Un actor "cátedra" contamina el vocabulario de las historias |
-| 6 | Agrupación por módulo | El orden del documento es el orden en que se encaran las cosas |
+| 6 | ~~Agrupación por módulo~~ — **superada por la #24** | El orden de este documento era el orden en que se encaran las cosas; la #24 lo reemplaza por el orden por dependencia de [orden-de-implementacion.md](./orden-de-implementacion.md) |
 | 7 | Las rutinas tienen ABM completo en `/routines`, no solo un selector | Es donde el N:M se ve funcionando en la defensa |
 | 8 | CRUD completo de usuarios por el Administrador | Decisión explícita del usuario, más amplia que la recomendación inicial |
 | 9 | La abstinencia entra como `sí/no` con la semántica de "día limpio": tildar significa *hoy me mantuve* | Cuesta lo mismo que cualquier hábito. El contador en vivo se paga después: es un cálculo sobre el historial ya guardado, más una columna si algún día se quiere precisión en horas y minutos |
@@ -524,12 +524,16 @@ Lo que quedó cerrado, y por qué.
 | 21 | El listado de categorías **no** se pagina | Son pocas y la consigna exceptúa del paginado a las tablas maestras chicas; paginar acá es ceremonia sin problema detrás |
 | 22 | La categoría de un hábito se elige en un **desplegable**, no con búsqueda asíncrona | La misma razón por la que no se pagina: si son pocas, buscar es teatro. La búsqueda asíncrona queda donde hay volumen real: los hábitos dentro de una rutina |
 | 23 | La propuesta **se corrige mientras la ventana esté abierta**: hasta el `2026-10-15 23:59`. Después vuelve a quedar congelada | El usuario abrió la ventana: el documento se ajusta para que no prometa lo que ya no se hace, y a partir de esa hora es otra vez el registro de lo aprobado |
+| 24 | El **orden de encare** vive en [orden-de-implementacion.md](./orden-de-implementacion.md), y **reemplaza a la #6**: los módulos se ordenan por dependencia real, no por el orden narrativo de este documento | Este documento agrupa por módulo para leerse de corrido; esa agrupación no dice qué bloquea a qué. El orden de encare se deduce de las FK y de las dependencias que las FK no muestran (categoría como clasificador compartido, infra de archivos, paginado, meta congelada). Separarlo deja las historias estables y el orden revisable |
 
 ## Preguntas abiertas
 
-Nada de esto bloquea el arranque, pero hay que cerrarlo antes de encarar la historia que lo toca.
+Ninguna. Las que había quedaron cerradas, y las que dependen de cómo se implementa algo se cierran en el
+documento de feature del módulo que las toca (ver [orden-de-implementacion.md](./orden-de-implementacion.md),
+sección 7).
 
-1. **Los dos ajustes de `database.sql`** (todavía sin escribir, así que salen gratis). Forma propuesta
-   para `HABITO`: `descripcion VARCHAR(255) NULL`, `frecuencia_tipo ENUM('diaria','semanal')` y
-   `frecuencia_veces TINYINT NULL` (1–6, solo cuando el tipo es `semanal`). No agrega tablas ni relaciones:
-   el DER sigue con 7 tablas y la N:M intacta.
+Resueltas:
+
+1. ~~**Los dos ajustes de `database.sql`**~~ — ya están escritos: `HABITO` tiene `descripcion VARCHAR(255)
+   NULL`, `frecuencia_tipo ENUM('diaria','semanal')` y `frecuencia_veces TINYINT NULL` (1–6, solo cuando el
+   tipo es `semanal`). No agregó tablas ni relaciones: el DER sigue con 7 tablas y la N:M intacta.

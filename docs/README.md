@@ -11,6 +11,7 @@ El resumen del proyecto vive en el [README raíz](../README.md).
 
 - [Propuesta completa (aprobada)](./proyecto/propuesta.md) — narrativa, DER, ficha técnica, alcance y vistas de la SPA.
 - [Historias de usuario](./proyecto/historias-de-usuario.md) — el qué del sistema, módulo por módulo; el puente entre la propuesta y los issues.
+- [Orden de implementación](./proyecto/orden-de-implementacion.md) — el cuándo: dependencias entre módulos, orden de encare y cortes de riesgo.
 
 ## Proceso
 
