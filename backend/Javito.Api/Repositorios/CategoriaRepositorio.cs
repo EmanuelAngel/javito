@@ -1,12 +1,12 @@
-using Javito.Api.Contratos;
 using Javito.Api.Datos;
+using Javito.Api.Modelos;
 using MySqlConnector;
 
 namespace Javito.Api.Repositorios;
 
-public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica)
+public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica) : ICategoriaRepositorio
 {
-    public async Task<IReadOnlyList<CategoriaDto>> ListarAsync(
+    public async Task<IReadOnlyList<Categoria>> ListarAsync(
         bool? activo,
         CancellationToken cancellationToken = default)
     {
@@ -21,15 +21,17 @@ public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica)
         await using var comando = new MySqlCommand(sql, conexion);
         comando.Parameters.AddWithValue("@activo", activo is null ? DBNull.Value : activo.Value);
 
-        var categorias = new List<CategoriaDto>();
+        var categorias = new List<Categoria>();
         await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
         while (await lector.ReadAsync(cancellationToken))
         {
-            categorias.Add(new CategoriaDto(
-                lector.GetInt32(0),
-                lector.GetString(1),
-                lector.IsDBNull(2) ? null : lector.GetString(2),
-                lector.GetBoolean(3)));
+            categorias.Add(new Categoria
+            {
+                Id = lector.GetInt32(0),
+                Nombre = lector.GetString(1),
+                Descripcion = lector.IsDBNull(2) ? null : lector.GetString(2),
+                Activo = lector.GetBoolean(3)
+            });
         }
 
         return categorias;

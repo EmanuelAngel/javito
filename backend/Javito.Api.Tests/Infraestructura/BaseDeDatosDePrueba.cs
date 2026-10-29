@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
@@ -76,39 +75,10 @@ internal static partial class BaseDeDatosDePrueba
             await borrar.ExecuteNonQueryAsync();
         }
 
-        using var lote = new MySqlBatch(conexion);
-        foreach (var sentencia in Sentencias(script))
-        {
-            lote.BatchCommands.Add(new MySqlBatchCommand(sentencia));
-        }
-
-        await lote.ExecuteNonQueryAsync();
-    }
-
-    /// <summary>
-    /// Divide el script por el punto y coma de fin de línea. database.sql no tiene puntos y coma
-    /// dentro de literales, así que la regla alcanza y no hace falta un parser de SQL.
-    /// </summary>
-    private static IEnumerable<string> Sentencias(string script)
-    {
-        var sentencia = new StringBuilder();
-        foreach (var linea in script.Split('\n'))
-        {
-            var limpia = linea.TrimEnd('\r');
-            if (limpia.TrimStart().StartsWith("--", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            sentencia.AppendLine(limpia);
-            if (!limpia.TrimEnd().EndsWith(';'))
-            {
-                continue;
-            }
-
-            yield return sentencia.ToString().Trim();
-            sentencia.Clear();
-        }
+        // El servidor ejecuta el script completo en orden, en una sola ida y vuelta.
+        // AllowUserVariables habilita las variables de sesión que usa database.sql (@lunes).
+        await using var comando = new MySqlCommand(script, conexion);
+        await comando.ExecuteNonQueryAsync();
     }
 
     private static string RutaDeDatabaseSql()

@@ -8,10 +8,13 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
 - **S1 — Unidad propia.** La fundación es su propio issue y documento, y cierra con un endpoint
   leyendo datos reales. `ACC-02` (JWT, guard, shell) abre después, aparte. Respuesta del usuario:
   "A · Unidad propia, cierra con endpoint real (recomendada)".
-- **S2 — Sin capa de servicios.** "Lo que recomendás pero sin servicios". `IDbConnectionFactory` +
-  un repositorio concreto por agregado, SQL a mano, devolviendo `record`s. El controlador llama al
-  repositorio; los helpers de archivos y JWT no son capas. La atomicidad, cuando exista, es del
-  repositorio; la fundación no escribe transacciones.
+- **S2 — Sin capa de servicios.** "Lo que recomendás pero sin servicios", alineado con la inmobiliaria.
+  `IDbConnectionFactory` + un repositorio por agregado **con interfaz e implementación**
+  (`ICategoriaRepositorio` / `CategoriaRepositorio`), SQL a mano, que devuelve **clases modelo** de
+  `Modelos/` con DataAnnotations. El controlador proyecta a DTO antes de responder, así el modelo
+  nunca se serializa. Helpers de archivos y JWT no son capas. La atomicidad, cuando exista, es del
+  repositorio; la fundación no escribe transacciones. Sin `IRepositorio<T>` genérico ni
+  `RepositorioBase`: cada agregado declara solo las operaciones que usa.
 - **S3 — Contrato de errores.** "A · ProblemDetails + codigo estable (recomendada)":
   `ProblemDetails` (RFC 9457) en todo, validación con DataAnnotations y una extensión `codigo`
   estable para errores de negocio.
@@ -91,6 +94,24 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
 - **L15.** Con la base de desarrollo creada (`pnpm db:reset`), el smoke completo contra `javito` da:
   `health` → `{"estado":"ok","baseDeDatos":"ok"}`; `/api/categorias` → 5 filas del seed;
   `?activo=false` → sólo `Espiritualidad`; `?activo=basura` → 400. Fundación cerrada.
+- **L16. Feedback del autor, pendiente de análisis — no son cambios pedidos todavía.**
+  1. "Esperaba que cada agregado tuviera su propia clase modelo, no que todo se maneje vía DTOs.
+     Sé que tal vez no es necesario pero bueno, así nos enseñaron en la cátedra".
+  2. "Esperaba que cada repositorio tuviera su interfaz e implementación."
+  3. "No entendí muy bien qué hiciste con los errores o por qué (no digo que esté mal)."
+  4. "No entendí PARA NADA lo que hice con los tests"; "nunca hice testing en ASP.NET Core";
+     "considerar solo quedarme con tests e2e".
+  5. "¿Por qué los DTO son records y no class con data annotations?"
+     Cierre del autor: "Son cosas para analizar, no para que hagas cambios. […] mañana vemos".
+- **L17.** "Toma el proyecto inmobiliaria como base y corregí modelos, interfaces y tests" ("tests la
+  inmobiliaria no tiene"). Hecho: `Modelos/Categoria.cs` con DataAnnotations como
+  `Models/TipoInmueble.cs` de la inmobiliaria; `ICategoriaRepositorio` + implementación; el controlador
+  proyecta con `MapeoDeCategorias.ADto`; DI por interfaz. Desvío consciente de la inmobiliaria: no se
+  copia `IRepositorio<T>` genérico ni `RepositorioBase`, porque obligarían a cada agregado a declarar
+  un CRUD que no usa. En tests, el fixture pasó de `MySqlBatch` + un divisor por `yield` a **una sola**
+  sentencia con el script completo y `AllowUserVariables`: 25 líneas menos y nada que mantener. Las 11
+  pruebas siguen verdes. Nota de entorno: el servicio `MySQL80` estaba detenido y se inició con
+  `net start MySQL80`.
 - **L14.** Corrección de implementación: `database.sql` usa variables de sesión (`SET @lunes = …`), así
   que el fixture ejecuta el script con `Allow User Variables=true`; sin eso MySqlConnector lo lee como
   parámetro y falla con `Parameter '@lunes' must be defined`.

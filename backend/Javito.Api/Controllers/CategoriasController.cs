@@ -9,7 +9,7 @@ namespace Javito.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/categorias")]
-public class CategoriasController(CategoriaRepositorio repositorio) : ControllerBase
+public class CategoriasController(ICategoriaRepositorio repositorio) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<CategoriaDto>>(StatusCodes.Status200OK)]
@@ -17,6 +17,8 @@ public class CategoriasController(CategoriaRepositorio repositorio) : Controller
         [FromQuery] bool? activo,
         CancellationToken cancellationToken)
     {
-        return Ok(await repositorio.ListarAsync(activo, cancellationToken));
+        var categorias = await repositorio.ListarAsync(activo, cancellationToken);
+
+        return Ok(categorias.Select(MapeoDeCategorias.ADto).ToList());
     }
 }

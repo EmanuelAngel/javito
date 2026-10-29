@@ -15,7 +15,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorDeErroresDeNegocio>();
 
 builder.Services.AddScoped<IDbConnectionFactory, MySqlConnectionFactory>();
-builder.Services.AddScoped<CategoriaRepositorio>();
+builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 
 builder.Services.AddOpenApi();
 
