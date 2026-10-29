@@ -42,6 +42,7 @@ Punto de entrada único, desde la raíz. `pnpm run` lista todo.
 ```sh
 pnpm dev:api        # WebAPI en http://localhost:5256 (dotnet run, perfil http)
 pnpm dev:web        # SPA en http://localhost:5173
+pnpm db:reset       # recrea la base javito desde database.sql (pide la contraseña de root)
 
 pnpm check          # check:api + check:web
 pnpm check:api      # dotnet build + dotnet test
@@ -65,6 +66,10 @@ con `cmd.exe` en Windows, así que un `.sh` invocado desde `package.json` falla.
 Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
 playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que todavía no existe. Los
 navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
+
+`check:api` **necesita MySQL prendido**: las pruebas de integración recrean el schema `javito_test`
+desde `database.sql`. La cadena de conexión sale de `ConnectionStrings__Javito` o de
+`dotnet user-secrets` del proyecto `Javito.Api`; la contraseña nunca vive en el repositorio.
 
 `pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los
 `*.svelte.test.ts` al project `client`, que necesita los navegadores de playwright.
