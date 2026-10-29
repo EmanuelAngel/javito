@@ -87,8 +87,10 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
   sin cambios. El mapeador se observó en rojo (`NotImplementedException`) antes de implementarlo, y el
   preflight se observó en rojo con `Access denied for user 'root'` antes de cargar el secreto.
   Smoke con la API levantada: `/scalar/v1` 200, `/openapi/v1.json` 200, `/api/no-existe` 404
-  ProblemDetails. `/api/categorias` responde 500 porque la base de desarrollo `javito` todavía no
-  existe: se crea con `pnpm db:reset`.
+  ProblemDetails.
+- **L15.** Con la base de desarrollo creada (`pnpm db:reset`), el smoke completo contra `javito` da:
+  `health` → `{"estado":"ok","baseDeDatos":"ok"}`; `/api/categorias` → 5 filas del seed;
+  `?activo=false` → sólo `Espiritualidad`; `?activo=basura` → 400. Fundación cerrada.
 - **L14.** Corrección de implementación: `database.sql` usa variables de sesión (`SET @lunes = …`), así
   que el fixture ejecuta el script con `Allow User Variables=true`; sin eso MySqlConnector lo lee como
   parámetro y falla con `Parameter '@lunes' must be defined`.
