@@ -9,9 +9,90 @@ Se usa al derivar una historia a issue: cada issue nombra la historia de la que 
 HU-CAT-01`). Si un issue no puede cerrarse porque su predecesora no existe, el orden es el que está mal,
 no el issue.
 
+Este documento responde una sola pregunta operativa —**qué se hace ahora**— en §1, con las 37 historias
+en secuencia. Todo lo que sigue explica por qué ese orden y no otro, y dónde conviene cortar si el
+tiempo se acaba.
+
 ---
 
-## 1. Las dependencias que imponen las FK
+## 1. La secuencia
+
+Las 37 historias, en el orden en que se encaran. **La columna `Cierra` es lo que hay que poder mostrar
+en la defensa**; el resto de las historias son producto, no evidencia.
+
+Regla de lectura: dentro de un módulo el orden es el del documento de historias, con **una sola
+excepción: en Acceso el login va primero** (§5 lo explica). La columna `Requiere` no es una preferencia,
+es una condición: si el renglón que nombra no está cerrado, este tampoco se puede cerrar.
+
+| # | Historia | Módulo | Requiere | Cierra |
+| --: | :--- | :--- | :--- | :--- |
+| 1 | `HU-ACC-02` — Iniciar sesión | Acceso | — · **incluye la Fundación** | `RT-07` · `RT-02` (1 de 3) |
+| 2 | `HU-ACC-01` — Registrarme | Acceso | `ACC-02` | — |
+| 3 | `HU-ACC-03` — Cerrar sesión | Acceso | `ACC-02` | — |
+| 4 | `HU-CAT-01` — Ver el listado de categorías | Categorías | `ACC-02` (rol) | — |
+| 5 | `HU-CAT-02` — Crear una categoría | Categorías | `CAT-01` | — |
+| 6 | `HU-CAT-03` — Editar una categoría | Categorías | `CAT-02` | — |
+| 7 | `HU-CAT-04` — Desactivar y reactivar una categoría | Categorías | `CAT-03` | `RT-04` |
+| 8 | `HU-HAB-01` — Crear un hábito | Hábitos | `ACC-02` | — |
+| 9 | `HU-HAB-02` — Ver mis hábitos | Hábitos | `HAB-01` | — |
+| 10 | `HU-HAB-03` — Editar un hábito | Hábitos | `HAB-02` | — |
+| 11 | `HU-HAB-04` — Archivar y reactivar un hábito | Hábitos | `HAB-03` | — |
+| 12 | `HU-HAB-05` — Elegir la categoría de un hábito | Hábitos | `HAB-01`, `CAT-02` | — |
+| 13 | `HU-REG-01` — Marcar el día | Registros | `HAB-01` | — |
+| 14 | `HU-REG-02` — Deshacer el día | Registros | `REG-01` | — |
+| 15 | `HU-REG-03` — Corregir un día pasado | Registros | `REG-01` | — |
+| 16 | `HU-REG-04` — Ver la semana de un vistazo | Registros | `REG-01` | — |
+| 17 | `HU-REG-05` — Anotar una nota del día | Registros | `REG-01` | — |
+| 18 | `HU-REG-06` — Cumplir un hábito que no es diario | Registros | `REG-01`, `REG-04` | — |
+| 19 | `HU-RUT-01` — Crear una rutina | Rutinas | `ACC-02` | — |
+| 20 | `HU-RUT-02` — Agregar hábitos a una rutina | Rutinas | `RUT-01`, `HAB-01` | `RT-01`, `RT-06` |
+| 21 | `HU-RUT-03` — Ordenar los hábitos de una rutina | Rutinas | `RUT-02` | — |
+| 22 | `HU-RUT-04` — Filtrar mi día por rutina | Rutinas | `RUT-01`, `REG-01` | — |
+| 23 | `HU-RUT-05` — Editar y desactivar una rutina | Rutinas | `RUT-01` | — |
+| 24 | `HU-PER-01` — Ver y editar mis datos | Perfil | `ACC-02`, `ACC-01` | — |
+| 25 | `HU-PER-02` — Subir mi avatar | Perfil | `PER-01` · **estrena archivos** | `RT-02` (2 de 3) |
+| 26 | `HU-ART-01` — Publicar un artículo | Artículos | `PER-02`, `CAT-02` | `RT-03` |
+| 27 | `HU-ART-02` — Editar un artículo | Artículos | `ART-01` | `RT-03` |
+| 28 | `HU-ART-03` — Desactivar un artículo | Artículos | `ART-02` | — |
+| 29 | `HU-ART-04` — Ver el catálogo de artículos | Artículos | `ART-01` · **estrena paginado** | `RT-05` (1 de 3) |
+| 30 | `HU-ART-05` — Leer un artículo | Artículos | `ART-04` | — |
+| 31 | `HU-HIS-01` — Ver mi historial de registros | Historial | `REG-01`, `ART-04` | `RT-05` (2 de 3) |
+| 32 | `HU-HIS-02` — Ver el detalle histórico de un hábito | Historial | `HIS-01` | — |
+| 33 | `HU-USU-01` — Ver el listado de usuarios | Usuarios | `ACC-02`, `ART-04` | `RT-05` (3 de 3) → **cierra `RT-05`** |
+| 34 | `HU-USU-02` — Crear un usuario | Usuarios | `USU-01`, `ACC-01` | — |
+| 35 | `HU-USU-03` — Editar los datos de un usuario | Usuarios | `USU-01` | — |
+| 36 | `HU-USU-04` — Cambiar el rol de un usuario | Usuarios | `USU-03` | `RT-02` (3 de 3) → **cierra `RT-02`** |
+| 37 | `HU-USU-05` — Activar y desactivar un usuario | Usuarios | `USU-01` | — |
+
+Tres cosas que esta tabla muestra y la prosa de los módulos no:
+
+- **`HAB-01` no requiere una categoría.** `habito.categoria_id` es `NULL` a propósito (`HU-HAB-05`
+  permite no elegir), así que Hábitos arranca sin esperar a Categorías. Lo que sí exige una categoría es
+  `HU-ART-01`: `articulo.categoria_id` es `NOT NULL`.
+- **`RT-05` se cierra en el renglón 33, no antes.** Los tres paginados son `ART-04`, `HIS-01` y `USU-01`;
+  con el primero se cubre el mínimo de cátedra, pero el requisito no está cerrado.
+- **`RT-02` se cierra en el renglón 36**, con el cambio de rol. Es el requisito que más tarde se cierra y
+  no tiene atajo: los otros dos tercios son `ACC-02` (renglón 1) y `PER-02` (renglón 25).
+
+---
+
+## 2. Lo que hay que decidir antes del renglón 13
+
+No bloquea el arranque, pero se cierra en el documento de feature de `REG` —**antes de escribir la
+primera prueba de `REG-01`**, no después—. Son las dos únicas decisiones que pueden invalidar trabajo ya
+hecho:
+
+1. **Qué hace "reiniciar el día"** (`HU-REG-02`). El criterio dice "vuelve a cero y queda sin completar",
+   pero `HU-REG-05` dice que la nota sobrevive. `database.sql` ya muestra el camino elegido: la fila queda
+   con `valor_alcanzado = 0`, `completado = FALSE` **y su nota**, en lugar de borrarse. Hay que confirmarlo
+   antes de la primera prueba, porque `uq_registro_habito_fecha` impide tener dos filas del mismo día.
+2. **La meta se copia, no se referencia.** `registro_habito.meta_objetivo` se escribe en el momento de
+   registrar y no se vuelve a tocar. Es la decisión de `REG` que sostiene `HU-HAB-03`, y también la que
+   hace que `HU-REG-06` (cumplir la cuota semanal) pueda contar semanas viejas sin recalcular nada.
+
+---
+
+## 3. Las dependencias que imponen las FK
 
 ```mermaid
 flowchart TD
@@ -53,7 +134,7 @@ verdad — no está en el DER.
 
 ---
 
-## 2. Las dependencias que las FK no muestran
+## 4. Las dependencias que las FK no muestran
 
 ```mermaid
 flowchart TD
@@ -126,7 +207,7 @@ problema, pero es una **segunda pasada conocida**: no hay que sobre-ingeniar el 
 
 ### (e) Hay criterios que se prometen en un módulo y se verifican en otro
 
-Ver la tabla de [cruces de comportamiento](#6-cruces-de-comportamiento). Al derivar el issue que los
+Ver la tabla de [cruces de comportamiento](#8-cruces-de-comportamiento). Al derivar el issue que los
 verifica hay que citar también la historia que los promete, o la prueba se escribe mirando la pantalla
 equivocada.
 
@@ -146,7 +227,7 @@ ocho módulos siguientes lo reinventa a su manera.
 
 ---
 
-## 3. Orden propuesto
+## 5. Los nueve módulos, y por qué en ese orden
 
 ```mermaid
 flowchart LR
@@ -201,12 +282,13 @@ es una **hoja**: nada depende de él, salvo la infraestructura de archivos que n
 segundo da una victoria rápida pero deja quieto el módulo con más incógnitas (`REG`), y encima separa la
 infra de archivos del único consumidor que la reusa.
 
-Si se prefiere respetar el documento al pie de la letra, Perfil segundo no rompe nada: solo atrasa
-Registros. Es la única diferencia, y es de bajo impacto.
+No hay orden alternativo aceptable. **Decisión:** Perfil va sexto y punto. Si en la defensa preguntan
+por qué, la respuesta es la de arriba: es una hoja que solo aporta la infraestructura de archivos, y
+adelantarlo cuesta el módulo con más incógnitas.
 
 ---
 
-## 4. Cortes de riesgo
+## 6. Cortes de riesgo
 
 Sirven para saber qué hay funcionando si el tiempo se acaba, y son el punto natural para una demo parcial.
 Regla única de este documento: un requisito cuenta como cerrado solo cuando existen **todas** las
@@ -249,7 +331,7 @@ Las dos últimas posiciones son hojas de bajo riesgo a propósito: se pueden cor
 
 ---
 
-## 5. Requisitos de cátedra por módulo
+## 7. Requisitos de cátedra por módulo
 
 Ningún módulo existe "para el requisito", pero conviene tener presente cuál cierra qué cosa:
 
@@ -267,7 +349,7 @@ Ningún módulo existe "para el requisito", pero conviene tener presente cuál c
 
 ---
 
-## 6. Cruces de comportamiento
+## 8. Cruces de comportamiento
 
 Criterios que se prometen en una historia y se verifican en otra. Cuando se deriva el issue que los
 verifica, hay que citar también la historia que los promete.
@@ -283,18 +365,3 @@ verifica, hay que citar también la historia que los promete.
 | `HU-ACC-01` | Email en minúsculas, sin espacios y único | `HU-PER-01`, `HU-USU-02`, `HU-USU-03` |
 | `HU-USU-04` | El rol cambia en el siguiente inicio de sesión | `HU-ACC-02` |
 | `HU-ACC-02` | Un usuario desactivado no entra | `HU-USU-05` |
-
----
-
-## 7. Lo que hay que decidir antes de Registros
-
-Nada de esto bloquea el arranque, pero se cierra en el documento de feature de `REG`, no después.
-
-1. **Qué hace "reiniciar el día"** (`HU-REG-02`). El criterio dice "vuelve a cero y queda sin completar",
-   pero `HU-REG-05` dice que la nota sobrevive. `database.sql` ya muestra el camino elegido: la fila queda
-   con `valor_alcanzado = 0`, `completado = FALSE` **y su nota**, en lugar de borrarse. Hay que confirmarlo
-   antes de escribir la primera prueba, porque `uq_registro_habito_fecha` impide tener dos filas del mismo
-   día.
-2. **La meta se copia, no se referencia.** `registro_habito.meta_objetivo` se escribe en el momento de
-   registrar y no se vuelve a tocar. Es la decisión de `REG` que sostiene `HU-HAB-03`, y también la que
-   hace que `HU-REG-06` (cumplir la cuota semanal) pueda contar semanas viejas sin recalcular nada.
