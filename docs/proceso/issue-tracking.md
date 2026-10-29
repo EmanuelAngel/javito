@@ -15,6 +15,11 @@ Projects, para un único integrante.
 > era un plan escrito sin que nadie lo pidiera y sin que nadie lo revisara. No se reemplaza por otro
 > inventado.
 >
+> **Actualización (28/10/2026):** el cronograma vuelve, ahora pedido por el autor y anclado a la fecha de
+> entrega: se llama [plan de cierre](../proyecto/plan-de-cierre.md) y trabaja con **puertas** (fechas de
+> corte), no con milestones. La decisión de abajo sigue vigente: no se inventa un milestone por cada
+> módulo.
+>
 > Consecuencia práctica: hoy los issues van sueltos. Un issue suelto es válido; lo que no vale es
 > inventarle un milestone para que el tablero parezca ordenado.
 >

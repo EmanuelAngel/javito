@@ -13,6 +13,10 @@ Este documento responde una sola pregunta operativa —**qué se hace ahora**—
 en secuencia. Todo lo que sigue explica por qué ese orden y no otro, y dónde conviene cortar si el
 tiempo se acaba.
 
+Este documento ordena **el producto**. Con la fecha de entrega encima manda otro criterio —*qué se entrega
+el 05/11*— y vive en el [plan de cierre](./plan-de-cierre.md), que reordena estas mismas historias. Cada
+uno responde una pregunta distinta: acá, en qué orden se construye; allá, qué se alcanza a entregar.
+
 ---
 
 ## 1. La secuencia
