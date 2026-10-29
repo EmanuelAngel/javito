@@ -9,13 +9,9 @@ Se usa al derivar una historia a issue: cada issue nombra la historia de la que 
 HU-CAT-01`). Si un issue no puede cerrarse porque su predecesora no existe, el orden es el que está mal,
 no el issue.
 
-Este documento responde una sola pregunta operativa —**qué se hace ahora**— en §1, con las 37 historias
-en secuencia. Todo lo que sigue explica por qué ese orden y no otro, y dónde conviene cortar si el
-tiempo se acaba.
-
-Este documento ordena **el producto**. Con la fecha de entrega encima manda otro criterio —*qué se entrega
-el 05/11*— y vive en el [plan de cierre](./plan-de-cierre.md), que reordena estas mismas historias. Cada
-uno responde una pregunta distinta: acá, en qué orden se construye; allá, qué se alcanza a entregar.
+Este documento ordena **el producto**: §1 son las 37 historias en secuencia y todo lo que sigue explica
+por qué ese orden. Con la fecha de entrega encima manda el [plan de cierre](./plan-de-cierre.md), que
+responde otra pregunta: *qué se alcanza a entregar el 05/11*.
 
 ---
 
