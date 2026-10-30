@@ -142,6 +142,10 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
 - **Errores.** Todo error de la API es `ProblemDetails`: 400 de validación, 404 de ruta inexistente y
   reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
   nunca comparando textos.
+- **Consumo desde la SPA.** El contrato es el JSON, no el schema: no se genera cliente ni tipos desde
+  OpenAPI. `frontend/web/src/lib/api/pedir.ts` envuelve `fetch` (suma `Authorization`, parsea
+  `ProblemDetails` en `ErrorDeApi`) y cada recurso tiene su módulo (`api/categorias.ts`) con la interface
+  escrita a mano. El tipo es una promesa, no una verificación: no valida el JSON en runtime.
 
 ## Interfaz y estilo
 
