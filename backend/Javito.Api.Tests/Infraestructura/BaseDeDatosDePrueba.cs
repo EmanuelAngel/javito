@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 
@@ -8,7 +7,7 @@ namespace Javito.Api.Tests.Infraestructura;
 /// Prepara el schema de pruebas una vez por corrida: recrea javito_test ejecutando database.sql
 /// con el nombre de base sustituido. Nunca toca la base de desarrollo.
 /// </summary>
-internal static partial class BaseDeDatosDePrueba
+internal static class BaseDeDatosDePrueba
 {
     public const string Nombre = "javito_test";
 
@@ -44,9 +43,7 @@ internal static partial class BaseDeDatosDePrueba
             throw new InvalidOperationException("El fixture solo recrea bases cuyo nombre termina en _test.");
         }
 
-        var script = await File.ReadAllTextAsync(RutaDeDatabaseSql());
-        script = PatronCreateDatabase().Replace(script, $"CREATE DATABASE {Nombre} ");
-        script = PatronUse().Replace(script, $"USE {Nombre};");
+        var script = ScriptDePruebas.Adaptar(ScriptDePruebas.LeerDatabaseSql());
 
         // database.sql usa variables de sesión (SET @lunes = ...) para cargar fechas relativas.
         var sinBase = new MySqlConnectionStringBuilder(CadenaDeConexion)
@@ -80,23 +77,4 @@ internal static partial class BaseDeDatosDePrueba
         await using var comando = new MySqlCommand(script, conexion);
         await comando.ExecuteNonQueryAsync();
     }
-
-    private static string RutaDeDatabaseSql()
-    {
-        var directorio = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directorio is not null && !File.Exists(Path.Combine(directorio.FullName, "database.sql")))
-        {
-            directorio = directorio.Parent;
-        }
-
-        return directorio is null
-            ? throw new FileNotFoundException("No se encontró database.sql en el árbol del repositorio.")
-            : Path.Combine(directorio.FullName, "database.sql");
-    }
-
-    [GeneratedRegex(@"CREATE DATABASE\s+javito\b")]
-    private static partial Regex PatronCreateDatabase();
-
-    [GeneratedRegex(@"USE\s+javito\s*;")]
-    private static partial Regex PatronUse();
 }

@@ -117,6 +117,14 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
   atributos salieron de `Modelos/Categoria.cs`; el modelo quedó 1:1 con la tabla y los límites viven
   en `database.sql`. Las DataAnnotations se mudan a los DTO de entrada cuando llegue `CAT-02`, donde
   `[ApiController]` las convierte en 400 con `errors`. 11/11 y `dotnet format` verdes.
+- **L19. Bug post-merge, ya corregido.** El fixture sustituía `CREATE DATABASE` y `USE`, pero no el
+  `DROP DATABASE IF EXISTS javito;` de `database.sql:20`: **cada `dotnet test` borraba la base de
+  desarrollo**. Se detectó desde Scalar con `Unknown database 'javito'`. Corrección en
+  `ScriptDePruebas.Adaptar`: sustituye las tres sentencias y después verifica que toda sentencia de
+  schema apunte a `javito_test`, así un cambio futuro en `database.sql` falla antes de conectar. Tres
+  pruebas unitarias sin MySQL (renombrado, seed intacto, base ajena que debe explotar). Prueba de
+  punta a punta: `javito` existía antes y después de correr `dotnet test` (14/14) y la API devolvió las
+  5 categorías.
 - **L14.** Corrección de implementación: `database.sql` usa variables de sesión (`SET @lunes = …`), así
   que el fixture ejecuta el script con `Allow User Variables=true`; sin eso MySqlConnector lo lee como
   parámetro y falla con `Parameter '@lunes' must be defined`.
