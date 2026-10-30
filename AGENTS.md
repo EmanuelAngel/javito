@@ -127,6 +127,22 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   y su documentación.
 - **Sin ORM**: acceso a datos con ADO.NET puro (`MySqlConnector`), SQL a mano.
 
+## Arquitectura
+
+- **Modelo, DTO y contrato.** `Modelos/` son clases planas 1:1 con la tabla y **sin DataAnnotations**:
+  el modelo es persistencia y nunca se serializa. El controlador proyecta a `Contratos/*Dto` (record con
+  solo las propiedades que viajan). Las DataAnnotations van en los DTO de **entrada**, donde
+  `[ApiController]` las convierte en un 400 con `errors` por campo. Los límites de longitud viven en
+  `database.sql`.
+- **Repositorios.** Un `IXRepositorio` + su implementación por agregado, con SQL adentro, a través de
+  `IDbConnectionFactory`. Sin `IRepositorio<T>` genérico ni `RepositorioBase`: cada agregado declara
+  solo las operaciones que usa.
+- **Sin capa de servicios.** El controlador autoriza y orquesta; la atomicidad de una secuencia vive en
+  el repositorio que la ejecuta; los helpers de archivos y JWT no son capas.
+- **Errores.** Todo error de la API es `ProblemDetails`: 400 de validación, 404 de ruta inexistente y
+  reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
+  nunca comparando textos.
+
 ## Interfaz y estilo
 
 - **Temas Rosé Pine** en `frontend/web/src/routes/layout.css`, copiados de Pomody: capa de marca con la
