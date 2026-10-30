@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -33,6 +34,20 @@ public sealed class EsquemaDeSeguridadEnOpenApi : IOpenApiDocumentTransformer
         {
             [new OpenApiSecuritySchemeReference(Esquema, documento, null)] = []
         });
+
+        // El login tiene que seguir siendo público a nivel contrato: una lista vacía de requisitos
+        // significa "sin autenticación" en OpenAPI. Sólo POST /api/sesion sale del requisito del
+        // documento; el resto de las operaciones sigue heredándolo.
+        if (documento.Paths.TryGetValue("/api/sesion", out var rutaSesion))
+        {
+            foreach (var operacion in rutaSesion.Operations)
+            {
+                if (operacion.Key == HttpMethod.Post)
+                {
+                    operacion.Value.Security = [];
+                }
+            }
+        }
 
         return Task.CompletedTask;
     }
