@@ -38,7 +38,7 @@ de abstinencia en uso: los dos se implementan, pero no pueden dominar la pantall
 - **Armazón fijo:** barra superior compacta (marca + avatar) y barra inferior de cinco destinos:
   `Hoy · Hábitos · Rutinas · Artículos · Perfil`. Admin **no** es un sexto tab: vive dentro de `/perfil`,
   porque el rol es raro y la barra es para el trabajo diario.
-- **Composición de `/today`: la tira de rutinas como espina del día.** Una rutina a la vez, con su propio
+- **Composición de `/hoy`: la tira de rutinas como espina del día.** Una rutina a la vez, con su propio
   progreso visible, y el toque de deselección para llegar a `Sin rutina`.
 - **Momento focal:** la fila del hábito con su control de marcado. Es donde se gana o se pierde todo lo
   demás.
@@ -62,40 +62,48 @@ La §3.5 de la propuesta lista 10 vistas. Este mapa las corrige.
 | :--- | :--- | :--- |
 | `/login` | Entrar | Operate |
 | `/registro` | Crear cuenta | Operate |
-| `/today` | Hoy: la tira de rutinas y el día | Operate |
-| `/habits` | Mis hábitos, activos y archivados | Operate |
-| `/habits/[id]` | Detalle: cuadrícula 30/60/365, totales, editar, archivar | Operate |
+| `/hoy` | Hoy: la tira de rutinas y el día | Operate |
+| `/habitos` | Mis hábitos, activos y archivados | Operate |
+| `/habitos/[id]` | Detalle: cuadrícula 30/60/365, totales, editar, archivar | Operate |
 | `/historial` | Registros paginados con filtro de hábito y fecha | Operate |
-| `/routines` | Rutinas: ABM, orden y búsqueda asíncrona de hábitos | Operate |
-| `/articles` | Catálogo paginado | Read |
-| `/articles/[id]` | Leer un artículo | Read |
-| `/articles/nuevo` · `/articles/[id]/editar` | Publicar y corregir (Admin) | Operate |
+| `/rutinas` | Rutinas: ABM, orden y búsqueda asíncrona de hábitos | Operate |
+| `/articulos` | Catálogo paginado | Read |
+| `/articulos/[id]` | Leer un artículo | Read |
+| `/articulos/nuevo` · `/articulos/[id]/editar` | Publicar y corregir (Admin) | Operate |
 | `/admin/categorias` | ABM de categorías (Admin) | Operate |
 | `/admin/usuarios` | Listado, alta, rol y activación (Admin) | Operate |
 | `/perfil` | Datos, avatar, tema, salir, y las entradas de Admin | Operate |
 
 **Superficies nuevas contra la §3.5:** `/login`, `/registro`, `/historial` y la **edición** de artículo.
-La §3.5 no listaba las tres primeras y solo tenía `/articles/nuevo`, aunque `HU-ART-02` pide editar.
+La §3.5 no listaba las tres primeras y solo tenía `/articulos/nuevo`, aunque `HU-ART-02` pide editar.
+
+**Las rutas van en español.** La versión anterior de este mapa mezclaba `/today`, `/habits`,
+`/routines` y `/articles` con `/registro`, `/historial` y `/perfil`. Se unificó en español porque la
+convención del repo es español para el dominio e inglés solo para identificadores del framework, y la
+API ya está en español (`api/categorias`, `api/sesion`). Ver `odd/tasks/acc-02.md`, S7.
+
+**`/diagnostico` no es una superficie de producto:** es la página de humo del vínculo SPA-API, vive
+dentro del shell autenticado y sirve para verificar CORS y `/api/health` sin herramientas.
 
 **No hay superficie Persuade.** Javito no tiene landing, ni marketing, ni página de precios.
 
 ### Decisiones por superficie que el build no debe inventar
 
-- **`/habits/[id]` es la superficie de corrección.** La cuadrícula de 30/60/365 **es** el editor: tocar un
+- **`/habitos/[id]` es la superficie de corrección.** La cuadrícula de 30/60/365 **es** el editor: tocar un
   día de los últimos 7 lo corrige, con las mismas reglas que el día de hoy; más atrás es solo lectura. Eso
   resuelve `HU-REG-03` sin inventar una pantalla aparte.
-- **`/today` no corrige días pasados.** Marca hoy rápido; el pasado se corrige en el detalle, donde la
+- **`/hoy` no corrige días pasados.** Marca hoy rápido; el pasado se corrige en el detalle, donde la
   cuadrícula ya lo muestra.
-- **Reordenar en `/routines` con botones de subir/bajar en un modo de orden**, no con arrastre: el arrastre
+- **Reordenar en `/rutinas` con botones de subir/bajar en un modo de orden**, no con arrastre: el arrastre
   táctil en listas largas es una trampa en el celular.
-- **`/habits`:** el listado separa activos de archivados sin que los archivados ensucien la vista
+- **`/habitos`:** el listado separa activos de archivados sin que los archivados ensucien la vista
   principal, y cada fila muestra categoría y frecuencia.
-- **`/routines`:** el alta de hábitos a una rutina es el **único** lugar con búsqueda asíncrona del
+- **`/rutinas`:** el alta de hábitos a una rutina es el **único** lugar con búsqueda asíncrona del
   sistema. Las categorías se eligen siempre en desplegable y nunca se buscan ni se paginan.
 
 ## 5. Estados que importan
 
-- **Vacío real:** cuenta recién creada, cero hábitos. `/today` tiene que enseñar qué hacer, no mostrar un
+- **Vacío real:** cuenta recién creada, cero hábitos. `/hoy` tiene que enseñar qué hacer, no mostrar un
   panel en blanco.
 - **`Sin rutina`:** el estado deseleccionado de la tira (ver §3).
 - **Un hábito nuevo** aparece al instante y sin rutina.
@@ -127,4 +135,4 @@ español.
 2. **Qué rutina queda seleccionada al abrir:** la primera, o la que corresponde al momento del día.
 3. **Dónde vive el toggle de tema.** En los sketches quedó dentro de `/perfil` (la barra superior es marca
    + avatar). Hay que confirmarlo.
-4. **Si `/historial` merece ruta propia** o es una pestaña dentro de `/habits`.
+4. **Si `/historial` merece ruta propia** o es una pestaña dentro de `/habitos`.

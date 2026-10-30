@@ -179,6 +179,17 @@ repositorio, en `dotnet user-secrets`.
 dotnet user-secrets set "ConnectionStrings:Javito" "Server=localhost;Port=3306;Database=javito;User ID=root;Password=TU_CLAVE" --project backend/Javito.Api
 ```
 
+La clave con la que se firman los JWT también vive fuera del repositorio. Sin ella **la API no
+arranca**: falla al construirse, con un mensaje que dice cómo cargarla. Necesita 32 caracteres o más.
+
+```sh
+dotnet user-secrets set "Jwt:Clave" "TU_CLAVE_DE_AL_MENOS_32_CARACTERES" --project backend/Javito.Api
+```
+
+La sesión dura **8 horas y no se renueva**. Los endpoints de acceso son `POST /api/sesion` (login) y
+`GET /api/sesion/yo` (quién soy, para validar la sesión al recargar). El resto exige
+`Authorization: Bearer <token>`; sin él responde 401 con `codigo: "no_autenticado"`.
+
 `pnpm db:reset` recrea la base de desarrollo desde `database.sql`. Las pruebas usan un schema
 aparte, `javito_test`, que el fixture recrea en cada corrida: por eso **`pnpm check:api` necesita MySQL
 prendido**, y falla con un mensaje que dice qué correr cuando no lo está.
