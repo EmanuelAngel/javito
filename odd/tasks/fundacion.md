@@ -11,10 +11,11 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
 - **S2 — Sin capa de servicios.** "Lo que recomendás pero sin servicios", alineado con la inmobiliaria.
   `IDbConnectionFactory` + un repositorio por agregado **con interfaz e implementación**
   (`ICategoriaRepositorio` / `CategoriaRepositorio`), SQL a mano, que devuelve **clases modelo** de
-  `Modelos/` con DataAnnotations. El controlador proyecta a DTO antes de responder, así el modelo
-  nunca se serializa. Helpers de archivos y JWT no son capas. La atomicidad, cuando exista, es del
-  repositorio; la fundación no escribe transacciones. Sin `IRepositorio<T>` genérico ni
-  `RepositorioBase`: cada agregado declara solo las operaciones que usa.
+  `Modelos/` **sin DataAnnotations**: en una WebAPI el modelo es persistencia y las reglas de entrada
+  se validan en el DTO que llega por HTTP, donde producen un 400 legible. El controlador proyecta a
+  DTO antes de responder, así el modelo nunca se serializa. Helpers de archivos y JWT no son capas. La
+  atomicidad, cuando exista, es del repositorio; la fundación no escribe transacciones. Sin
+  `IRepositorio<T>` genérico ni `RepositorioBase`: cada agregado declara solo las operaciones que usa.
 - **S3 — Contrato de errores.** "A · ProblemDetails + codigo estable (recomendada)":
   `ProblemDetails` (RFC 9457) en todo, validación con DataAnnotations y una extensión `codigo`
   estable para errores de negocio.
@@ -112,6 +113,10 @@ Cierra cuando la WebAPI devuelve datos reales de MySQL con el contrato de errore
   sentencia con el script completo y `AllowUserVariables`: 25 líneas menos y nada que mantener. Las 11
   pruebas siguen verdes. Nota de entorno: el servicio `MySQL80` estaba detenido y se inició con
   `net start MySQL80`.
+- **L18.** "sacalos [los DataAnnotations de los modelos] y dejalos para los dto de entrada". Los
+  atributos salieron de `Modelos/Categoria.cs`; el modelo quedó 1:1 con la tabla y los límites viven
+  en `database.sql`. Las DataAnnotations se mudan a los DTO de entrada cuando llegue `CAT-02`, donde
+  `[ApiController]` las convierte en 400 con `errors`. 11/11 y `dotnet format` verdes.
 - **L14.** Corrección de implementación: `database.sql` usa variables de sesión (`SET @lunes = …`), así
   que el fixture ejecuta el script con `Allow User Variables=true`; sin eso MySqlConnector lo lee como
   parámetro y falla con `Parameter '@lunes' must be defined`.
