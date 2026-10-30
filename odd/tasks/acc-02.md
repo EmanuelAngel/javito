@@ -94,8 +94,10 @@ Hereda las decisiones de `odd/tasks/fundacion.md` S6–S10.
 - **L6.** "Ok! Yo creo que con Scalar ya cubrimos el requerimiento de postman, ignoralo." — La evidencia de
   `RT-07` pasa de Postman a capturas de Scalar (S12). Consecuencia asumida: hay que declarar el esquema
   `bearer` en el documento OpenAPI, porque hoy Scalar no tiene dónde pegar el token.
-- **L7.** Cierre de T2–T5 (`2f07deb`). Evidencia: `dotnet test` 23/23 (eran 11; las 7 nuevas se
-  observaron en rojo antes de implementar), `pnpm lint:api` sin cambios, y el documento OpenAPI sirviendo
+- **L7.** Cierre de T2–T5 (`2f07deb`). Evidencia: `dotnet test` en verde, con la aritmética corregida
+  por la verificación de L9: `main` tenía 14 pruebas y HEAD tiene 23, o sea 9 nuevas (5 de sesión y
+  acceso + 4 de `pedir`), no 7; se observaron en rojo antes de implementar. Además `pnpm lint:api`
+  sin cambios, y el documento OpenAPI sirviendo
   `securitySchemes.bearer` + `security: [{ bearer: [] }]` con la API levantada. Hallazgos:
   - **Las DataAnnotations en un record posicional van sobre el parámetro, no con `[property: …]`.** Con el
     prefijo, MVC lanza al validar: "Record type 'CredencialesDto' has validation metadata defined on
@@ -126,3 +128,36 @@ Hereda las decisiones de `odd/tasks/fundacion.md` S6–S10.
   - `pedir` arma las cabeceras con `new Headers(...)` y no con un spread: un spread descarta un `Headers`
     o un array de pares sin avisar. Además pone `Content-Type: application/json` cuando hay cuerpo.
   - La raíz se quedó sin `+page.svelte`: `+page.ts` redirige a `/hoy` antes de cualquier render.
+- **L9.** Ronda de verificación independiente (rama `feat/acceso`, pre-commit): cinco correcciones y
+  sus evidencias, sin commit (el orquestador decide cuándo):
+  - **Cobertura de emisor, audiencia y vencimiento.** Nueva clase `TokensDeAccesoEndpointTests` con 4
+    pruebas: token bien firmado con emisor `otro-emisor` y audiencia `otro-cliente` → 401
+    `no_autenticado` como ProblemDetails, token vencido (firma propia a mano, `expires` 5 minutos
+    atrás, porque `ServicioDeTokens` sólo emite tokens vigentes) → 401 igual, y login con contraseña
+    incorrecta → 401 `credenciales_invalidas` (el login sigue siendo público). Las 4 pasaron de una
+    porque la producción ya valida emisor/audiencia/vida. Prueba de que sirven: con
+    `ValidateIssuer = false` y `ValidateAudience = false` en `Program.cs`, los tokens ajenos pasan y
+    devuelven 200 (las 2 pruebas se observaron en rojo); con sólo el emisor en `false` seguían
+    rechazando, porque `ValidateAudience` por defecto está encendida y con `ValidAudience` nulo
+    invalida igual. Revertido y en verde otra vez.
+  - **Dependencia explícita.** `System.IdentityModel.Tokens.Jwt` se usa directo en
+    `ServicioDeTokens.cs` y `SesionController.cs` pero sólo llegaba transitivo vía `JwtBearer`. La
+    `PackageReference` en `Javito.Api.csproj` con la versión que el árbol ya resolvía: `8.19.2`,
+    tomada de `obj/project.assets.json` (no inventada). `dotnet build` en 0 y sin NU1xxx.
+  - **OpenAPI del login.** El requisito `security` a nivel documento mentía sobre `POST /api/sesion`.
+    En el mismo transformer, `EsquemaDeSeguridadEnOpenApi` ahora le vacía la `Security` a la
+    operación POST de `/api/sesion`; `security: []` significa "sin autenticación" en OpenAPI. Smoke
+    contra la API levantada: `metodos en /api/sesion: [post]`, `POST security: []`, y el resto
+    (`/api/categorias`) sigue heredando el requisito del documento (`security: [{bearer: []}]`).
+  - **Open redirect en `?destino=`.** `goto(destino)` aceptaba el query param crudo: un
+    `?destino=//otro.host` sacaba al usuario del sitio. Nueva función `destinoSeguro` en
+    `frontend/web/src/lib/navegacion.ts` (sólo `/` sin `//` ni `/\`; cualquier otra cosa → `/hoy`),
+    usada en `login/+page.ts`, `login/+page.svelte` y el guard `(app)/+layout.ts`; el formato de la
+    URL de login (`?destino=` con `encodeURIComponent`) vive ahora en `rutaDeLogin` del mismo
+    módulo, que el guard usa en sus dos redirect.
+  - **Aritmética del L7 corregida arriba**: el paso de 14 en `main` a 23 en HEAD es 9 nuevas
+    (5 de sesión y acceso + 4 de `pedir`), no "eran 11 con 7 nuevas".
+  - La verificación independiente no encontró bloqueantes. Detalle honesto: MySQL80 estaba detenido
+    cuando corrió, por eso esa ronda no observó el verde de las pruebas de integración; en esta
+    ronda se lo prendió (`net start MySQL80`) y el verde se observó acá, con los comandos del
+    cierre.
