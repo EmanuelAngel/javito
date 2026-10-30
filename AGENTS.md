@@ -42,6 +42,7 @@ Punto de entrada único, desde la raíz. `pnpm run` lista todo.
 ```sh
 pnpm dev:api        # WebAPI en http://localhost:5256 (dotnet run, perfil http)
 pnpm dev:web        # SPA en http://localhost:5173
+pnpm db:reset       # recrea la base javito desde database.sql (pide la contraseña de root)
 
 pnpm check          # check:api + check:web
 pnpm check:api      # dotnet build + dotnet test
@@ -65,6 +66,10 @@ con `cmd.exe` en Windows, así que un `.sh` invocado desde `package.json` falla.
 Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
 playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que todavía no existe. Los
 navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
+
+`check:api` **necesita MySQL prendido**: las pruebas de integración recrean el schema `javito_test`
+desde `database.sql`. La cadena de conexión sale de `ConnectionStrings__Javito` o de
+`dotnet user-secrets` del proyecto `Javito.Api`; la contraseña nunca vive en el repositorio.
 
 `pnpm test:web` corre vitest una vez. Los `*.test.ts` van al project `server` (entorno node) y los
 `*.svelte.test.ts` al project `client`, que necesita los navegadores de playwright.
@@ -121,6 +126,26 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
 - **Unidades de trabajo**: cada commit es una unidad revisable y lleva el código junto a sus pruebas
   y su documentación.
 - **Sin ORM**: acceso a datos con ADO.NET puro (`MySqlConnector`), SQL a mano.
+
+## Arquitectura
+
+- **Modelo, DTO y contrato.** `Modelos/` son clases planas 1:1 con la tabla y **sin DataAnnotations**:
+  el modelo es persistencia y nunca se serializa. El controlador proyecta a `Contratos/*Dto` (record con
+  solo las propiedades que viajan). Las DataAnnotations van en los DTO de **entrada**, donde
+  `[ApiController]` las convierte en un 400 con `errors` por campo. Los límites de longitud viven en
+  `database.sql`.
+- **Repositorios.** Un `IXRepositorio` + su implementación por agregado, con SQL adentro, a través de
+  `IDbConnectionFactory`. Sin `IRepositorio<T>` genérico ni `RepositorioBase`: cada agregado declara
+  solo las operaciones que usa.
+- **Sin capa de servicios.** El controlador autoriza y orquesta; la atomicidad de una secuencia vive en
+  el repositorio que la ejecuta; los helpers de archivos y JWT no son capas.
+- **Errores.** Todo error de la API es `ProblemDetails`: 400 de validación, 404 de ruta inexistente y
+  reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
+  nunca comparando textos.
+- **Consumo desde la SPA.** El contrato es el JSON, no el schema: no se genera cliente ni tipos desde
+  OpenAPI. `frontend/web/src/lib/api/pedir.ts` envuelve `fetch` (suma `Authorization`, parsea
+  `ProblemDetails` en `ErrorDeApi`) y cada recurso tiene su módulo (`api/categorias.ts`) con la interface
+  escrita a mano. El tipo es una promesa, no una verificación: no valida el JSON en runtime.
 
 ## Interfaz y estilo
 

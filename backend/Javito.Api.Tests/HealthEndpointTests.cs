@@ -1,22 +1,18 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Javito.Api.Tests.Infraestructura;
 
 namespace Javito.Api.Tests;
 
 /// <summary>
-/// Cubre la regla de S8: el SPA obtiene datos del backend a través de la API con CORS
-/// configurado por origen. Cada prueba verifica un efecto observable del contrato.
+/// El SPA obtiene datos por la API con CORS por origen; la fundación le suma el estado de la base.
+/// Cada prueba verifica un efecto observable del contrato.
 /// </summary>
-public class HealthEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests(FabricaDeApi fabrica) : IClassFixture<FabricaDeApi>
 {
     private const string OrigenSpa = "http://localhost:5173";
 
-    private readonly HttpClient _cliente = factory
-        .WithWebHostBuilder(builder => builder.UseEnvironment("Development"))
-        .CreateClient();
+    private readonly HttpClient _cliente = fabrica.CreateClient();
 
     [Fact]
     public async Task El_endpoint_de_salud_reporta_el_servicio_activo()
@@ -29,6 +25,28 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory)
         Assert.NotNull(cuerpo);
         Assert.Equal("ok", cuerpo.Estado);
         Assert.Equal("Javito.Api", cuerpo.Servicio);
+    }
+
+    [Fact]
+    public async Task El_endpoint_de_salud_informa_la_base_de_datos_disponible()
+    {
+        var cuerpo = await _cliente.GetFromJsonAsync<RespuestaDeSalud>("/api/health");
+
+        Assert.NotNull(cuerpo);
+        Assert.Equal("ok", cuerpo.BaseDeDatos);
+    }
+
+    [Fact]
+    public async Task El_endpoint_de_salud_degrada_cuando_la_base_no_responde()
+    {
+        using var sinBase = FabricaDeApi.ConCadena("Server=localhost;Port=1;User ID=root;Database=javito");
+        using var cliente = sinBase.CreateClient();
+
+        var cuerpo = await cliente.GetFromJsonAsync<RespuestaDeSalud>("/api/health");
+
+        Assert.NotNull(cuerpo);
+        Assert.Equal("degradado", cuerpo.Estado);
+        Assert.Equal("error", cuerpo.BaseDeDatos);
     }
 
     [Fact]
@@ -48,13 +66,12 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task CORS_no_habilita_ningun_origen_cuando_la_lista_esta_vacia()
     {
-        // Fuera de Development, appsettings.json no define `Cors:AllowedOrigins`, así que el
+        // Fuera de Development, appsettings.json no define Cors:AllowedOrigins, así que el
         // constructor de política queda sin ningún configurador: ni WithOrigins ni AllowAnyOrigin.
         // Es la rama que corre en cualquier entorno que no sea Development, y ninguna otra prueba
         // la ejercita. Si la política vacía fuese permisiva, esta prueba lo delata.
-        using var fabrica = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
-        using var cliente = fabrica.CreateClient();
+        using var fabricaProduccion = FabricaDeApi.EnEntorno("Production");
+        using var cliente = fabricaProduccion.CreateClient();
 
         var peticion = new HttpRequestMessage(HttpMethod.Get, "/api/health");
         peticion.Headers.Add("Origin", OrigenSpa);
@@ -68,4 +85,4 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory)
     }
 }
 
-internal sealed record RespuestaDeSalud(string Estado, string Servicio);
+internal sealed record RespuestaDeSalud(string Estado, string Servicio, string BaseDeDatos);

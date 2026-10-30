@@ -18,7 +18,8 @@
 		"format:web": "pnpm --dir frontend/web format",
 		"format": "pnpm format:api && pnpm format:web",
 		"test:web": "pnpm --dir frontend/web exec vitest run",
-		"build:web": "pnpm --dir frontend/web build"
+		"build:web": "pnpm --dir frontend/web build",
+		"db:reset": "mysql -u root -p < database.sql"
 	},
 	"devDependencies": {
 		"@commitlint/cli": "^21.2.3",

@@ -171,8 +171,20 @@ acentos se guardan corruptos. No hay que configurar nada más por eso.
 Las fechas de los registros son relativas al día en que se ejecuta el script, así que la semana en curso
 siempre tiene datos, sin importar cuándo lo cargues.
 
-El backend **todavía no se conecta a la base**: la cadena de conexión y el acceso a datos llegan con el
-primer endpoint de dominio.
+El backend se conecta con `ConnectionStrings:Javito`, que está en
+`backend/Javito.Api/appsettings.Development.json` **sin contraseña**: el secreto vive fuera del
+repositorio, en `dotnet user-secrets`.
+
+```sh
+dotnet user-secrets set "ConnectionStrings:Javito" "Server=localhost;Port=3306;Database=javito;User ID=root;Password=TU_CLAVE" --project backend/Javito.Api
+```
+
+`pnpm db:reset` recrea la base de desarrollo desde `database.sql`. Las pruebas usan un schema
+aparte, `javito_test`, que el fixture recrea en cada corrida: por eso **`pnpm check:api` necesita MySQL
+prendido**, y falla con un mensaje que dice qué correr cuando no lo está.
+
+Con la API levantada, la documentación interactiva (Scalar) queda en
+`http://localhost:5256/scalar/v1`.
 
 ### Nota sobre el build estático
 
