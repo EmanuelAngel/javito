@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { sesion } from '$lib/sesion.svelte';
+	import { destinoSeguro } from '$lib/navegacion';
 	import { API_URL as apiUrl } from '$lib/config';
 	import type { PageProps } from './$types';
 
@@ -17,8 +18,9 @@
 	let mensajeError = $state('');
 	let erroresPorCampo = $state<Record<string, string[]>>({});
 
-	// ?destino= lo puso el guard: después de entrar se vuelve ahí. Si no hay destino, /hoy.
-	let destino = $derived(data.destino ?? '/hoy');
+	// ?destino= lo puso el guard: después de entrar se vuelve ahí. Ya sale validado del load,
+	// pero el destino no se usa si no pasa por destinoSeguro.
+	let destino = $derived(destinoSeguro(data.destino));
 
 	async function entrar(evento: SubmitEvent) {
 		evento.preventDefault();
