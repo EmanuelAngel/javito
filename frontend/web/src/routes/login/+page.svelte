@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { sesion } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
-	import { API_URL as apiUrl } from '$lib/config';
+	import { ErrorDeApi, pedir } from '$lib/api/pedir';
 	import type { PageProps } from './$types';
 
 	type RespuestaDeSesion = {
@@ -29,40 +29,31 @@
 		erroresPorCampo = {};
 
 		try {
-			// fetch crudo, sin pedir: el 401 del login es un error del formulario, no una
-			// sesión vencida. Si usara pedir, el deslogueo global se comería el mensaje.
-			const respuesta = await fetch(`${apiUrl}/api/sesion`, {
+			const iniciada = await pedir<RespuestaDeSesion>('/api/sesion', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email, password })
+				body: JSON.stringify({ email, password }),
+				// El 401 del login es un error del formulario, no una sesión vencida: sin esto, el
+				// deslogueo global de `pedir` se comería el mensaje.
+				sinSesion: true
 			});
-			const cuerpo = (await respuesta.json().catch(() => null)) as
-				| (RespuestaDeSesion & {
-						title?: string;
-						detail?: string;
-						errors?: Record<string, string[]>;
-				  })
-				| null;
 
-			if (respuesta.ok && cuerpo?.token && cuerpo?.usuario) {
-				sesion.iniciar({ token: cuerpo.token, usuario: cuerpo.usuario });
-				// El destino lo generó el guard y puede ser cualquier ruta dentro de (app): no hay una
-				// estática a resolver, así que la regla `no-navigation-without-resolve` queda desactivada.
-				// eslint-disable-next-line svelte/no-navigation-without-resolve
-				await goto(destino);
-				return;
-			}
-
-			if (respuesta.status === 400) {
-				erroresPorCampo = cuerpo?.errors ?? {};
-				mensajeError = cuerpo?.detail ?? 'Revisá los datos del formulario.';
-			} else if (respuesta.status === 401) {
-				mensajeError = cuerpo?.detail ?? 'El email o la contraseña no son correctos.';
+			sesion.iniciar({ token: iniciada.token, usuario: iniciada.usuario });
+			// El destino lo generó el guard y puede ser cualquier ruta dentro de (app): no hay una
+			// estática a resolver, así que la regla `no-navigation-without-resolve` queda desactivada.
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(destino);
+		} catch (error) {
+			if (error instanceof ErrorDeApi) {
+				// El 400 trae los errores por campo; el resto, un mensaje para el formulario.
+				if (error.estado === 400) {
+					erroresPorCampo = error.errores ?? {};
+					mensajeError = 'Revisá los datos del formulario.';
+				} else {
+					mensajeError = error.mensaje;
+				}
 			} else {
-				mensajeError = `La WebAPI respondió ${respuesta.status}.`;
+				mensajeError = 'No se pudo contactar a la WebAPI. ¿Está levantada?';
 			}
-		} catch {
-			mensajeError = 'No se pudo contactar a la WebAPI. ¿Está levantada?';
 		} finally {
 			enviando = false;
 		}

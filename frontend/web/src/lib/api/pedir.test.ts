@@ -56,6 +56,25 @@ describe('pedir', () => {
 		expect(new Headers(initCapturado?.headers).get('Content-Type')).toBe('application/json');
 	});
 
+	it('con sinSesion no cierra la sesión en 401', async () => {
+		sesion.iniciar({ token: 'token-de-prueba', usuario: USUARIO });
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () =>
+				respuestaJson(401, {
+					codigo: 'credenciales_invalidas',
+					detail: 'El email o la contraseña no son correctos.'
+				})
+			)
+		);
+
+		await expect(
+			pedir('/api/sesion', { method: 'POST', body: '{}', sinSesion: true })
+		).rejects.toBeInstanceOf(ErrorDeApi);
+
+		expect(sesion.token).toBe('token-de-prueba');
+	});
+
 	it('convierte el ProblemDetails en ErrorDeApi con codigo y mensaje', async () => {
 		vi.stubGlobal(
 			'fetch',

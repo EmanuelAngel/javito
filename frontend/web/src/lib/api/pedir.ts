@@ -74,10 +74,22 @@ function leerProblema(respuesta: Response): Promise<RespuestaLeida> {
 		.catch(() => respuestaPorDefecto());
 }
 
-export async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+export type OpcionesDePedido = RequestInit & {
+	/**
+	 * No cierra la sesión cuando la API responde 401. Es para el login: su 401 es un error del
+	 * formulario y no una sesión vencida, así que desloguear ahí se comería el mensaje.
+	 */
+	sinSesion?: boolean;
+};
+
+export async function pedir<T>(ruta: string, opciones: OpcionesDePedido = {}): Promise<T> {
+	// `sinSesion` es una decisión del cliente, no una opción de `fetch`: se saca antes de armar
+	// el pedido para no mandarla al servidor como si fuera parte del protocolo.
+	const { sinSesion = false, ...resto } = opciones;
+
 	// `Headers` y no un objeto plano: así también funcionan los arrays de pares y los `Headers`
 	// que pase el llamador, que un spread descartaría en silencio.
-	const cabeceras = new Headers(opciones.headers);
+	const cabeceras = new Headers(resto.headers);
 	const token = sesion.token;
 
 	if (token) {
@@ -85,18 +97,18 @@ export async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promis
 	}
 
 	// Un cuerpo JSON sin su Content-Type se rechaza con 415 en la WebAPI.
-	if (opciones.body !== undefined && !cabeceras.has('Content-Type')) {
+	if (resto.body !== undefined && !cabeceras.has('Content-Type')) {
 		cabeceras.set('Content-Type', 'application/json');
 	}
 
-	const respuesta = await fetch(`${API_URL}${ruta}`, { ...opciones, headers: cabeceras });
+	const respuesta = await fetch(`${API_URL}${ruta}`, { ...resto, headers: cabeceras });
 
 	if (!respuesta.ok) {
 		const problema = await leerProblema(respuesta);
 
 		// El 401 termina la sesión: o venció el token (8 hs, sin refresh) o el token no es
 		// válido. El redirect lo hace el shell; acá sólo deslogueamos (S14).
-		if (respuesta.status === 401) {
+		if (respuesta.status === 401 && !sinSesion) {
 			sesion.cerrar();
 		}
 
