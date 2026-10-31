@@ -9,8 +9,11 @@ namespace Javito.Api.Tests;
 /// <summary>
 /// S5: el día 1 entrega lectura real de MySQL. Cada prueba cubre una regla del listado.
 /// Desde ACC-02 el listado exige token, así que la sesión se abre una vez para toda la clase.
+/// Va en la colección de categorías porque cuenta filas del seed: la escritura de CAT-02…CAT-04 crea
+/// y desactiva filas, y en paralelo esas cuentas dejarían de ser deterministas.
 /// </summary>
-public class CategoriasEndpointTests(FabricaDeApi fabrica) : IClassFixture<FabricaDeApi>, IAsyncLifetime
+[Collection(ColeccionDeCategorias.Nombre)]
+public class CategoriasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
 {
     private readonly HttpClient _cliente = fabrica.CreateClient();
 
