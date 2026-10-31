@@ -133,7 +133,9 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   el modelo es persistencia y nunca se serializa. El controlador proyecta a `Contratos/*Dto` (record con
   solo las propiedades que viajan). Las DataAnnotations van en los DTO de **entrada**, donde
   `[ApiController]` las convierte en un 400 con `errors` por campo. Los límites de longitud viven en
-  `database.sql`.
+  `database.sql`. En un record posicional van **sobre el parámetro**, sin el prefijo `[property: …]`: con
+  el prefijo MVC las ignora y lanza al validar ("validation metadata defined on property … that will be
+  ignored").
 - **Repositorios.** Un `IXRepositorio` + su implementación por agregado, con SQL adentro, a través de
   `IDbConnectionFactory`. Sin `IRepositorio<T>` genérico ni `RepositorioBase`: cada agregado declara
   solo las operaciones que usa.
@@ -141,11 +143,25 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   el repositorio que la ejecuta; los helpers de archivos y JWT no son capas.
 - **Errores.** Todo error de la API es `ProblemDetails`: 400 de validación, 404 de ruta inexistente y
   reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
-  nunca comparando textos.
+  nunca comparando textos. El 401 y el 403 de `JwtBearer` también: corren fuera de MVC, así que se
+  escriben en `OnChallenge`/`OnForbidden` (`Contratos/RespuestasDeError.cs`); sin eso saldrían con el
+  cuerpo vacío.
+- **Seguridad.** `Seguridad/` guarda el helper de JWT, no una capa: `OpcionesDeJwt` (configuración con
+  fail-fast), `ServicioDeTokens` (firma), `ReclamosDeSesion` (los nombres `sub`, `rol`, `nombre`,
+  `email`) y `EsquemaDeSeguridadEnOpenApi` (declara `bearer` para que Scalar pueda mandar el token).
+  `Jwt:Clave` vive en `dotnet user-secrets`; sin ella la API **no arranca**. La sesión dura 8 h sin
+  refresh y `activo` se valida **solo en el login**: el token vale lo que dura.
+  `MapInboundClaims = false` y `RoleClaimType = "rol"` son obligatorios: sin lo primero ASP.NET Core
+  remapea los claims, sin lo segundo `[Authorize(Roles=...)]` no encuentra el rol.
 - **Consumo desde la SPA.** El contrato es el JSON, no el schema: no se genera cliente ni tipos desde
   OpenAPI. `frontend/web/src/lib/api/pedir.ts` envuelve `fetch` (suma `Authorization`, parsea
   `ProblemDetails` en `ErrorDeApi`) y cada recurso tiene su módulo (`api/categorias.ts`) con la interface
   escrita a mano. El tipo es una promesa, no una verificación: no valida el JSON en runtime.
+- **Sesión en el SPA.** `frontend/web/src/lib/sesion.svelte.ts` guarda `{ token, usuario }` con runes y
+  lo persiste en `localStorage`. `pedir` en **401 cierra la sesión** y en **403 la conserva** (el 403 es
+  la evidencia de que el rol no alcanza). El redirect a `/login` lo hace un solo lugar: el `$effect` del
+  shell en `(app)`. El login **no** usa `pedir`: su 401 es un error de formulario, no una sesión vencida.
+  El guard de `(app)/+layout.ts` valida contra `GET /api/sesion/yo` y arrastra `?destino=`.
 
 ## Interfaz y estilo
 

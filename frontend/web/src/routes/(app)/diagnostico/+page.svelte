@@ -5,6 +5,8 @@
 	import { toggleMode } from 'mode-watcher';
 	import { API_URL as apiUrl } from '$lib/config';
 
+	// Página de humo heredada de la raíz del scaffold: verifica el vínculo SPA-API y ahora
+	// vive detrás del guard, dentro de (app). (S9 del odd/tasks/acc-02.md)
 	type RespuestaDeSalud = { estado: string; servicio: string };
 
 	let estado = $state<'cargando' | 'conectado' | 'error'>('cargando');
@@ -40,7 +42,7 @@
 <main class="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10">
 	<header class="flex items-start justify-between gap-4">
 		<div class="flex flex-col gap-1">
-			<h1 class="text-3xl font-semibold tracking-tight">Javito</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">Diagnóstico</h1>
 			<p class="text-sm text-muted-foreground">Vínculo entre el SPA y la WebAPI desacoplada.</p>
 		</div>
 		<button

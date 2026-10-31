@@ -9,6 +9,12 @@ namespace Javito.Api.Tests.Infraestructura;
 /// </summary>
 public sealed class FabricaDeApi : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// Clave de firma de las pruebas. No es un secreto: la API real la toma de user-secrets y falla
+    /// al arrancar si falta, así que el host de pruebas tiene que declarar la suya.
+    /// </summary>
+    public const string ClaveDeJwtDePruebas = "clave-de-pruebas-para-firmar-jwt-con-32-bytes-o-mas";
+
     private readonly string _cadena;
     private readonly string _entorno;
 
@@ -38,5 +44,6 @@ public sealed class FabricaDeApi : WebApplicationFactory<Program>
     {
         builder.UseEnvironment(_entorno);
         builder.UseSetting("ConnectionStrings:Javito", _cadena);
+        builder.UseSetting("Jwt:Clave", ClaveDeJwtDePruebas);
     }
 }

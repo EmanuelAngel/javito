@@ -6,10 +6,21 @@ using Javito.Api.Tests.Infraestructura;
 
 namespace Javito.Api.Tests;
 
-/// <summary>S5: el día 1 entrega lectura real de MySQL. Cada prueba cubre una regla del listado.</summary>
-public class CategoriasEndpointTests(FabricaDeApi fabrica) : IClassFixture<FabricaDeApi>
+/// <summary>
+/// S5: el día 1 entrega lectura real de MySQL. Cada prueba cubre una regla del listado.
+/// Desde ACC-02 el listado exige token, así que la sesión se abre una vez para toda la clase.
+/// </summary>
+public class CategoriasEndpointTests(FabricaDeApi fabrica) : IClassFixture<FabricaDeApi>, IAsyncLifetime
 {
     private readonly HttpClient _cliente = fabrica.CreateClient();
+
+    public async Task InitializeAsync() => await SesionDePrueba.ClienteAutenticadoAsync(_cliente);
+
+    public Task DisposeAsync()
+    {
+        _cliente.Dispose();
+        return Task.CompletedTask;
+    }
 
     [Fact]
     public async Task Listar_sin_filtro_devuelve_las_cinco_categorias_del_seed()
