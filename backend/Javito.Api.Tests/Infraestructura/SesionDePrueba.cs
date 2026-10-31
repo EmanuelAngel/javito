@@ -14,19 +14,33 @@ internal static class SesionDePrueba
 
     public const string Password = "Javito2026";
 
-    public static async Task<string> IniciarAsync(HttpClient cliente)
+    /// <summary>Cuenta del seed con rol Administrador: la única que escribe en el catálogo.</summary>
+    public const string EmailAdministrador = "admin@javito.local";
+
+    public static Task<string> IniciarAsync(HttpClient cliente) => IniciarAsync(cliente, Email);
+
+    public static async Task<string> IniciarAsync(HttpClient cliente, string email)
     {
-        var respuesta = await cliente.PostAsJsonAsync("/api/sesion", new { email = Email, password = Password });
+        var respuesta = await cliente.PostAsJsonAsync(
+            "/api/sesion",
+            new { email, password = Password });
         respuesta.EnsureSuccessStatusCode();
 
         var sesion = await respuesta.Content.ReadFromJsonAsync<SesionDto>();
         return sesion?.Token ?? throw new InvalidOperationException("El login no devolvió token.");
     }
 
-    public static async Task<HttpClient> ClienteAutenticadoAsync(HttpClient cliente)
+    public static Task<HttpClient> ClienteAutenticadoAsync(HttpClient cliente) =>
+        ClienteConAsync(cliente, Email);
+
+    public static Task<HttpClient> ClienteAdministradorAsync(HttpClient cliente) =>
+        ClienteConAsync(cliente, EmailAdministrador);
+
+    private static async Task<HttpClient> ClienteConAsync(HttpClient cliente, string email)
     {
         cliente.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", await IniciarAsync(cliente));
+            new AuthenticationHeaderValue("Bearer", await IniciarAsync(cliente, email));
+
         return cliente;
     }
 }
