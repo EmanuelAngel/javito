@@ -57,15 +57,20 @@ pnpm format:api     # dotnet format
 pnpm format:web     # prettier --write
 
 pnpm test:web       # vitest una vez
+pnpm test:e2e       # e2e de playwright (levanta la WebAPI y el SPA por su cuenta)
 pnpm build:web      # build estático (adapter-static -> frontend/web/build)
 ```
 
 `package.json` es la **única** fuente de estos comandos: no hay wrappers `.sh`. pnpm ejecuta los scripts
 con `cmd.exe` en Windows, así que un `.sh` invocado desde `package.json` falla.
 
-Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y
-playwright, pero **todavía no hay pruebas de e2e**: necesitan la WebAPI con MySQL, que todavía no existe. Los
-navegadores de playwright se instalan una vez con `pnpm --dir frontend/web test:e2e:install`.
+Las pruebas del backend usan `dotnet test`. El frontend tiene vitest (projects `client` y `server`) y e2e
+con playwright: `pnpm test:e2e` es **autocontenido**, su `webServer` levanta la WebAPI (perfil `http`,
+puerto 5256) y construye y sirve el SPA en 5173. Usa el **Edge del sistema** (`channel: 'msedge'`), así
+que no necesita `pnpm --dir frontend/web test:e2e:install`. Requisitos: MySQL prendido, los user-secrets
+del proyecto `Javito.Api` cargados y **ningún `Javito.Api` ya corriendo** (el proceso bloquea la DLL y
+`dotnet run` falla con MSB3021). Corre contra la base de **desarrollo**: el recorrido crea la categoría
+`Pruebas e2e` y la deja inactiva, porque la baja es lógica y no hay `DELETE`; `pnpm db:reset` la borra.
 
 `check:api` **necesita MySQL prendido**: las pruebas de integración recrean el schema `javito_test`
 desde `database.sql`. La cadena de conexión sale de `ConnectionStrings__Javito` o de
@@ -145,14 +150,17 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
   nunca comparando textos. El 401 y el 403 de `JwtBearer` también: corren fuera de MVC, así que se
   escriben en `OnChallenge`/`OnForbidden` (`Contratos/RespuestasDeError.cs`); sin eso saldrían con el
-  cuerpo vacío.
+  cuerpo vacío. Cuando la regla **es** una restricción de la base, se traduce en el repositorio y no
+  con un `SELECT` previo: el `1062` de MySQL es un `409 nombre_repetido` porque la consulta previa
+  pierde la carrera entre dos altas simultáneas.
 - **Seguridad.** `Seguridad/` guarda el helper de JWT, no una capa: `OpcionesDeJwt` (configuración con
   fail-fast), `ServicioDeTokens` (firma), `ReclamosDeSesion` (los nombres `sub`, `rol`, `nombre`,
   `email`) y `EsquemaDeSeguridadEnOpenApi` (declara `bearer` para que Scalar pueda mandar el token).
   `Jwt:Clave` vive en `dotnet user-secrets`; sin ella la API **no arranca**. La sesión dura 8 h sin
   refresh y `activo` se valida **solo en el login**: el token vale lo que dura.
   `MapInboundClaims = false` y `RoleClaimType = "rol"` son obligatorios: sin lo primero ASP.NET Core
-  remapea los claims, sin lo segundo `[Authorize(Roles=...)]` no encuentra el rol.
+  remapea los claims, sin lo segundo `[Authorize(Roles=...)]` no encuentra el rol. Los nombres de rol
+  viven como constantes en `Seguridad/Roles.cs`: el atributo exige un valor conocido al compilar.
 - **Consumo desde la SPA.** El contrato es el JSON, no el schema: no se genera cliente ni tipos desde
   OpenAPI. `frontend/web/src/lib/api/pedir.ts` envuelve `fetch` (suma `Authorization`, parsea
   `ProblemDetails` en `ErrorDeApi`) y cada recurso tiene su módulo (`api/categorias.ts`) con la interface
