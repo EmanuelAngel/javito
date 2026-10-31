@@ -102,7 +102,7 @@ describe('pedir', () => {
 		const error = capturado as ErrorDeApi;
 		expect(error.estado).toBe(403);
 		expect(error.codigo).toBe('sin_permiso');
-		expect(error.mensaje).toBe('No tenés permiso para esta operación.');
+		expect(error.message).toBe('No tenés permiso para esta operación.');
 	});
 
 	it('en 401 cierra la sesión y lanza', async () => {

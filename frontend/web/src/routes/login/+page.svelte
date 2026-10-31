@@ -49,7 +49,7 @@
 					erroresPorCampo = error.errores ?? {};
 					mensajeError = 'Revisá los datos del formulario.';
 				} else {
-					mensajeError = error.mensaje;
+					mensajeError = error.message;
 				}
 			} else {
 				mensajeError = 'No se pudo contactar a la WebAPI. ¿Está levantada?';
