@@ -25,6 +25,10 @@
 	// Logout local: el token vence solo (8 hs, sin refresh), pero el usuario puede
 	// adelantarlo desde acá.
 	async function salir() {
+		// Se marca antes de limpiar el estado: si no, el effect de arriba ve la sesión vacía y compite
+		// con este goto, y el usuario termina en /login?destino=<la pantalla que acaba de dejar>.
+		// Salir a propósito tiene que dejar un login limpio (HU-ACC-03: computadora compartida).
+		volviendoAlLogin = true;
 		sesion.cerrar();
 		await goto(resolve('/login'));
 	}
@@ -43,6 +47,14 @@
 			<a href="/hoy" class="text-lg font-semibold tracking-tight">Javito</a>
 
 			<div class="flex items-center gap-3">
+				{#if data.usuario.rol === 'Administrador'}
+					<a
+						href={resolve('/(app)/admin/categorias')}
+						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Categorías
+					</a>
+				{/if}
 				<span class="hidden text-sm text-muted-foreground sm:inline">{data.usuario.nombre}</span>
 				<!-- Avatar placeholder: el perfil real entra con el módulo de usuario -->
 				<span

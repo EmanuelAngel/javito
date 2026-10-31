@@ -66,11 +66,11 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
 
 | ID | Qué | Specs | Ruta | Commit |
 | :--- | :--- | :--- | :--- | :--- |
-| T1 | Pruebas de integración de las cuatro historias, en rojo | S1, S4–S6 | inline | `test(api): cubrir el ABM de categorías` |
-| T2 | Contratos de entrada, repositorio de escritura y endpoints por rol | S2–S5 | inline | `feat(api): agregar alta, edición y baja lógica de categorías` |
-| T3 | Primer e2e del camino crítico, en rojo | S7 | inline | `test(e2e): agregar el recorrido de la puerta 1` |
-| T4 | Módulo de API del SPA, pantalla `/admin/categorias` y enlace en el header | S8, S9 | inline | `feat(web): agregar la pantalla de categorías` |
-| T5 | Comando `test:e2e` en la raíz y documentación del cierre | S10 | inline | `docs(proyecto): cerrar la puerta 1` |
+| T1 | Pruebas de integración de las cuatro historias, en rojo | S1, S4–S6 | inline | `3b95ede` |
+| T2 | Contratos de entrada, repositorio de escritura y endpoints por rol | S2–S5 | inline | `3b95ede` |
+| T3 | Primer e2e del camino crítico, en rojo | S7 | inline | `b17831b` |
+| T4 | Módulo de API del SPA, pantalla `/admin/categorias` y enlace en el header | S8, S9 | worker acotado | `6060696` |
+| T5 | Comando `test:e2e` en la raíz y documentación del cierre | S10 | inline | este commit |
 
 ## Log
 
@@ -91,3 +91,29 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
   habla MySQL por `MySqlConnector`. Ningún camino de shell la conoce, y por eso `db:reset` la pide.
   Ese arreglo (script que lea user-secrets y arme un `--defaults-extra-file` temporal) queda fuera de
   este documento, en S11.
+- **L4.** El SPA lo escribió un worker acotado (el orquestador llegó al backstop de contexto).
+  `check`, `lint` y `build` en verde. Descubrimiento suyo: con `resolve()` el route id tipado tiene
+  que incluir el grupo, `resolve('/(app)/admin/categorias')`, y el precedente de `<a>` crudo con
+  `eslint-disable` sólo sirve en una línea.
+- **L5.** El primer e2e se observó en rojo dos veces antes del verde y encontró dos cosas:
+  - `getByLabel('Nombre')` resolvía a dos inputs, porque `Buscar por nombre` también contiene la
+    palabra. Es un defecto de la prueba, no de la app: se arregla con `{ exact: true }`.
+  - **Defecto real del shell de ACC-02:** al salir, el `$effect` del 401 competía con el `goto` del
+    logout y ganaba, así que se aterrizaba en `/login?destino=/admin/categorias` y, al volver a
+    entrar, te devolvía a la pantalla que acababas de dejar. Ahora `salir()` marca
+    `volviendoAlLogin` antes de limpiar la sesión: el logout deja un login limpio, que es lo que
+    pide `HU-ACC-03` (computadora compartida).
+  - Verde: `pnpm test:e2e` → 1 passed, cubriendo guard, login, alta, edición, búsqueda, baja lógica,
+    reactivación y salida. El alta es tolerante al `409` y el estado se normaliza antes de probar la
+    baja, así la prueba se puede repetir sin resetear nada.
+- **L6.** Verificación de cierre, toda en el árbol final:
+  - `pnpm check:api` → `dotnet format` limpio y **45/45** pruebas (27 previas + 18 nuevas).
+  - `pnpm check` → exit 0; `svelte-check` 0 errores y 0 advertencias (las dos advertencias de
+    `config_option_deprecated_alias` y `tsconfig_invalid` son las conocidas del alias `$lib`).
+  - `pnpm lint` → prettier y eslint limpios, exit 0.
+  - `pnpm test:web` → 12/12 (los 12 son previos: este módulo no sumó vitest, por S6).
+  - `pnpm build:web` → adapter-static en 0 (lo corrió el worker con la pantalla ya escrita).
+  - `pnpm test:e2e` → 1 passed.
+  - Riesgo declarado en S12: `Risk: none`. El diff no toca opciones ni parsers compartidos por otros
+    comandos; lo único que cambia comportamiento existente es el logout del shell, cubierto por el
+    e2e que lo destapó.
