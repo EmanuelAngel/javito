@@ -63,7 +63,7 @@ pesado»).
 
 - **T1 — El día se ve** (`S1`) · inline · rama `feat/dia-lectura` · commit `feat(api): agregar la lectura del día con sus registros` (`1e20b1d`)
 - **T2 — El día se marca** (`S2`–`S5`, `S8`) · inline · rama `feat/dia-marcar` · commit `feat(dia): agregar el marcado del día con guardado optimista` (`5533eae`)
-- **T3 — Mis hábitos** (`S6`, `S7`, `S9`, `S10`) · API inline + SPA delegado a `gentle-ai-worker` · rama `feat/habitos-lista` · commit `feat(habitos): agregar el alta y el listado de hábitos`
+- **T3 — Mis hábitos** (`S6`, `S7`, `S9`, `S10`) · API inline + SPA delegado a `gentle-ai-worker` · rama `feat/habitos-lista` · commit `feat(habitos): agregar el alta y el listado de hábitos` (`7b62129`)
 
 Cada slice sale de `main` después del merge del anterior, así el reviewer siempre lee contra una base
 conocida. Los PRs se abren cuando el autor lo pida: nada se pushea solo.
@@ -129,3 +129,10 @@ svelte-check 0/0 y lint limpio en las dos capas.
 devuelve a cero para poder repetirse; el histórico del usuario de prueba sigue contando la semana de la
 cátedra. La fila queda en la base de desarrollo y `pnpm db:reset` la borra, igual que la categoría
 «Pruebas e2e» del e2e anterior.
+
+**L14 — Cierre.** Las tres tareas quedan en tres commits encadenados sobre sus ramas: `1e20b1d` en
+`feat/dia-lectura`, `5533eae` en `feat/dia-marcar` y `7b62129` en `feat/habitos-lista`. Como los PRs
+todavía no se abrieron, cada slice sale de la rama del anterior: el corte quedó local y encadenado, no
+apilado por capas. Con esto `HAB-01`, `HAB-02` y `REG-01` están cerrados y la Puerta 2 del 02/11 queda
+a un paso: `REG-04` (la semana, que ya tiene su lectura servida por `GET /api/dias?desde=&hasta=`) y
+`PER-02` (el avatar).
