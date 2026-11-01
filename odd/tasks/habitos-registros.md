@@ -62,8 +62,8 @@ pesado»).
 ## Tasks
 
 - **T1 — El día se ve** (`S1`) · inline · rama `feat/dia-lectura` · commit `feat(api): agregar la lectura del día con sus registros` (`1e20b1d`)
-- **T2 — El día se marca** (`S2`–`S5`, `S8`) · inline · rama `feat/dia-marcar` · commit `feat(dia): agregar el marcado del día con guardado optimista`
-- **T3 — Mis hábitos** (`S6`, `S7`, `S9`, `S10`) · inline · rama `feat/habitos-lista` · commit `feat(web): agregar el alta y el listado de hábitos`
+- **T2 — El día se marca** (`S2`–`S5`, `S8`) · inline · rama `feat/dia-marcar` · commit `feat(dia): agregar el marcado del día con guardado optimista` (`5533eae`)
+- **T3 — Mis hábitos** (`S6`, `S7`, `S9`, `S10`) · API inline + SPA delegado a `gentle-ai-worker` · rama `feat/habitos-lista` · commit `feat(habitos): agregar el alta y el listado de hábitos`
 
 Cada slice sale de `main` después del merge del anterior, así el reviewer siempre lee contra una base
 conocida. Los PRs se abren cuando el autor lo pida: nada se pushea solo.
@@ -103,3 +103,29 @@ revisar: unidad de medida como texto libre ≤30; meta obligatoria sólo en `con
 `unidad_requerida`, `frecuencia_fuera_de_rango`, `habito_archivado`, `fecha_fuera_de_rango`; `PUT` de
 registro responde `200` y `DELETE` `204`; `/hoy` ordena por id y `/habitos` por título; la acción de
 abstinencia dice «Hoy me mantuve».
+
+**L9 — Dónde se escribe cada cosa.** `GET /api/habitos` expone `categoriaId` y no el nombre de la
+categoría: el `/habitos` ya pide el catálogo completo para el desplegable —y para mostrar el nombre
+de una categoría que después se archivó—, así que el nombre se resuelve en el cliente. `/api/dias` sí
+trae el nombre: es una proyección y no tiene sentido pedirle al cliente que una dos payloads.
+Desmarcar un hábito archivado responde el mismo 400 `habito_archivado` que marcarlo.
+
+**L10 — Evidencia de T1.** `1e20b1d`: 8 pruebas nuevas, 53/53 en la suite, svelte-check 0/0, lint
+limpio, vitest 4 nuevas de `fechas.ts`. Dos rojos iniciales fueron defecto de la prueba, no de la API:
+interpolar un `DateOnly` en la ruta usa la cultura local («1/11/2026») y no matchea ninguna acción.
+
+**L11 — Evidencia de T2.** `5533eae`: 10 pruebas nuevas, 63/63 en la suite, vitest 18/18 (5 del estado
+del día, 3 del 204 de `pedir`), svelte-check 0/0. El 204 del `DELETE` obligó a tocar `pedir.ts`: antes
+`respuesta.json()` explotaba con un `SyntaxError` y un desmarcado exitoso se veía como error.
+
+**L12 — Evidencia de T3.** 10 pruebas nuevas de API, 73/73 en la suite; el SPA entra con `/habitos`
+modularizado (`lib/habitos.svelte.ts`, `HabitoForm.svelte`, `HabitosLista.svelte`, el helper
+`lib/api/errores.ts` compartido y la página como composición de 31 líneas), más el e2e
+`frontend/web/e2e/habitos.e2e.ts`, que da de alta «Prueba e2e» por la UI, lo marca y desmarca en
+`/hoy`, sube y baja de la meta y recarga. Gate de cierre: 73/73 de API, 22/22 de vitest, 2/2 de e2e,
+svelte-check 0/0 y lint limpio en las dos capas.
+
+**L13 — El e2e no toca el seed.** «Prueba e2e» es un contador propio (meta 3, vasos) y el recorrido lo
+devuelve a cero para poder repetirse; el histórico del usuario de prueba sigue contando la semana de la
+cátedra. La fila queda en la base de desarrollo y `pnpm db:reset` la borra, igual que la categoría
+«Pruebas e2e» del e2e anterior.

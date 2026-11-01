@@ -45,6 +45,64 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
         };
     }
 
+    public async Task<IReadOnlyList<Habito>> ListarAsync(
+        int usuarioId,
+        bool? activo,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT id, usuario_id, categoria_id, titulo, descripcion, tipo_habito, meta_valor,
+                   unidad_medida, frecuencia_tipo, frecuencia_veces, activo
+            FROM habito
+            WHERE usuario_id = @usuarioId
+              AND (@activo IS NULL OR activo = @activo)
+            ORDER BY activo DESC, titulo
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@usuarioId", usuarioId);
+        comando.Parameters.AddWithValue("@activo", activo is null ? DBNull.Value : activo.Value);
+
+        var habitos = new List<Habito>();
+        await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+        while (await lector.ReadAsync(cancellationToken))
+        {
+            habitos.Add(ADominio(lector));
+        }
+
+        return habitos;
+    }
+
+    public async Task<int> CrearAsync(Habito habito, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            INSERT INTO habito (usuario_id, categoria_id, titulo, descripcion, tipo_habito, meta_valor,
+                                unidad_medida, frecuencia_tipo, frecuencia_veces, activo)
+            VALUES (@usuarioId, @categoriaId, @titulo, @descripcion, @tipo, @meta, @unidad,
+                    @frecuenciaTipo, @frecuenciaVeces, TRUE)
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@usuarioId", habito.UsuarioId);
+        comando.Parameters.AddWithValue("@categoriaId", (object?)habito.CategoriaId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@titulo", habito.Titulo);
+        comando.Parameters.AddWithValue("@descripcion", (object?)habito.Descripcion ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@tipo", habito.Tipo);
+        comando.Parameters.AddWithValue("@meta", (object?)habito.Meta ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@unidad", (object?)habito.Unidad ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@frecuenciaTipo", habito.FrecuenciaTipo);
+        comando.Parameters.AddWithValue("@frecuenciaVeces", (object?)habito.FrecuenciaVeces ?? DBNull.Value);
+
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+        habito.Activo = true;
+
+        // La fila recién insertada se lee de esta misma conexión: LAST_INSERT_ID() es por sesión.
+        await using var ultimoId = new MySqlCommand("SELECT LAST_INSERT_ID()", conexion);
+        return Convert.ToInt32(await ultimoId.ExecuteScalarAsync(cancellationToken));
+    }
+
     public async Task<Registro> GuardarRegistroAsync(
         Registro registro,
         CancellationToken cancellationToken = default)
@@ -116,4 +174,19 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
 
         return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
     }
+
+    private static Habito ADominio(MySqlDataReader lector) => new()
+    {
+        Id = lector.GetInt32(0),
+        UsuarioId = lector.GetInt32(1),
+        CategoriaId = lector.IsDBNull(2) ? null : lector.GetInt32(2),
+        Titulo = lector.GetString(3),
+        Descripcion = lector.IsDBNull(4) ? null : lector.GetString(4),
+        Tipo = lector.GetString(5),
+        Meta = lector.IsDBNull(6) ? null : lector.GetDecimal(6),
+        Unidad = lector.IsDBNull(7) ? null : lector.GetString(7),
+        FrecuenciaTipo = lector.GetString(8),
+        FrecuenciaVeces = lector.IsDBNull(9) ? null : lector.GetInt32(9),
+        Activo = lector.GetBoolean(10)
+    };
 }
