@@ -27,11 +27,14 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
   de `categoria`, `usuario`, `habito` y `articulo`: una sola forma para los cuatro agregados. Regla que
   se suma: repetir el estado que ya tiene es **idempotente**, devuelve `200`, nunca `409`. El `409`
   queda reservado para el nombre repetido.
-- **S4 — Unicidad del nombre.** La impone la base: `nombre VARCHAR(60) UNIQUE` sobre
-  `utf8mb4_0900_ai_ci`. No hay consulta previa: el `1062` de MySQL se traduce a `409` con
-  `codigo: "nombre_repetido"`. Es lo único que cubre la carrera entre dos altas concurrentes.
-  **Consecuencia declarada del esquema:** esa collation ignora mayúsculas *y acentos*, así que
-  `Alimentacion` choca con `Alimentación`.
+- **S4 — Unicidad del nombre, y quién la valida.** Cambió en la revisión de #16 (L7): el controlador
+  consulta `BuscarPorNombreAsync` del repositorio y devuelve `409` con `codigo: "nombre_repetido"`; el
+  repositorio no lanza ni captura nada, y deja de depender de `Contratos`. La base conserva
+  `nombre VARCHAR(60) UNIQUE` sobre `utf8mb4_0900_ai_ci` como última línea de defensa: si dos altas
+  simultáneas pasan el chequeo, la segunda choca con el índice y la API responde **500 en vez de 409**;
+  el dato queda correcto, solo empeora el mensaje. Es el mismo patrón del ABM de la inmobiliaria
+  (`ObtenerPorDescripcion` en el controlador). **Consecuencia declarada del esquema:** esa collation
+  ignora mayúsculas *y acentos*, así que `Alimentacion` choca con `Alimentación`.
 - **S5 — Errores.** `400` de DataAnnotations en el DTO de entrada (claves por campo en `errors`),
   `404` con `codigo: "no_encontrado"`, `409` con `codigo: "nombre_repetido"`, `403` con
   `codigo: "sin_permiso"` para rol `Usuario`, `401` con `codigo: "no_autenticado"` sin token. Todo
@@ -66,11 +69,11 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
 
 | ID | Qué | Specs | Ruta | Commit |
 | :--- | :--- | :--- | :--- | :--- |
-| T1 | Pruebas de integración de las cuatro historias, en rojo | S1, S4–S6 | inline | `test(api): cubrir el ABM de categorías` |
-| T2 | Contratos de entrada, repositorio de escritura y endpoints por rol | S2–S5 | inline | `feat(api): agregar alta, edición y baja lógica de categorías` |
-| T3 | Primer e2e del camino crítico, en rojo | S7 | inline | `test(e2e): agregar el recorrido de la puerta 1` |
-| T4 | Módulo de API del SPA, pantalla `/admin/categorias` y enlace en el header | S8, S9 | inline | `feat(web): agregar la pantalla de categorías` |
-| T5 | Comando `test:e2e` en la raíz y documentación del cierre | S10 | inline | `docs(proyecto): cerrar la puerta 1` |
+| T1 | Pruebas de integración de las cuatro historias, en rojo | S1, S4–S6 | inline | `3b95ede` |
+| T2 | Contratos de entrada, repositorio de escritura y endpoints por rol | S2–S5 | inline | `3b95ede` + `f401093` |
+| T3 | Primer e2e del camino crítico, en rojo | S7 | inline | `81524ad` |
+| T4 | Módulo de API del SPA, pantalla `/admin/categorias` y enlace en el header | S8, S9 | worker acotado | `85673c5` |
+| T5 | Comando `test:e2e` en la raíz y documentación del cierre | S10 | inline | este commit |
 
 ## Log
 
@@ -91,3 +94,57 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
   habla MySQL por `MySqlConnector`. Ningún camino de shell la conoce, y por eso `db:reset` la pide.
   Ese arreglo (script que lea user-secrets y arme un `--defaults-extra-file` temporal) queda fuera de
   este documento, en S11.
+- **L4.** El SPA lo escribió un worker acotado (el orquestador llegó al backstop de contexto).
+  `check`, `lint` y `build` en verde. Descubrimiento suyo: con `resolve()` el route id tipado tiene
+  que incluir el grupo, `resolve('/(app)/admin/categorias')`, y el precedente de `<a>` crudo con
+  `eslint-disable` sólo sirve en una línea.
+- **L5.** El primer e2e se observó en rojo dos veces antes del verde y encontró dos cosas:
+  - `getByLabel('Nombre')` resolvía a dos inputs, porque `Buscar por nombre` también contiene la
+    palabra. Es un defecto de la prueba, no de la app: se arregla con `{ exact: true }`.
+  - **Defecto real del shell de ACC-02:** al salir, el `$effect` del 401 competía con el `goto` del
+    logout y ganaba, así que se aterrizaba en `/login?destino=/admin/categorias` y, al volver a
+    entrar, te devolvía a la pantalla que acababas de dejar. Ahora `salir()` marca
+    `volviendoAlLogin` antes de limpiar la sesión: el logout deja un login limpio, que es lo que
+    pide `HU-ACC-03` (computadora compartida).
+  - Verde: `pnpm test:e2e` → 1 passed, cubriendo guard, login, alta, edición, búsqueda, baja lógica,
+    reactivación y salida. El alta es tolerante al `409` y el estado se normaliza antes de probar la
+    baja, así la prueba se puede repetir sin resetear nada.
+- **L6.** Verificación de cierre, toda en el árbol final:
+  - `pnpm check:api` → `dotnet format` limpio y **45/45** pruebas (27 previas + 18 nuevas).
+  - `pnpm check` → exit 0; `svelte-check` 0 errores y 0 advertencias (las dos advertencias de
+    `config_option_deprecated_alias` y `tsconfig_invalid` son las conocidas del alias `$lib`).
+  - `pnpm lint` → prettier y eslint limpios, exit 0.
+  - `pnpm test:web` → 12/12 (los 12 son previos: este módulo no sumó vitest, por S6).
+  - `pnpm build:web` → adapter-static en 0 (lo corrió el worker con la pantalla ya escrita).
+  - `pnpm test:e2e` → 1 passed.
+  - Riesgo declarado en S12: `Risk: none`. El diff no toca opciones ni parsers compartidos por otros
+    comandos; lo único que cambia comportamiento existente es el logout del shell, cubierto por el
+    e2e que lo destapó.
+- **L7.** Revisión del autor sobre #16. Tres hallazgos, los tres atendidos en `f401093`, sobre la rama
+  de la API y con las 18 pruebas **sin tocar**:
+  - "el repositorio está capturando una excepción y el controlador no hace nada… esto se debería
+    chequear en el controlador, ayudándose de un método `BuscarPorNombre`". Se hizo: el repositorio
+    perdió el `catch`, el `throw` y su única dependencia de `Contratos`; ofrece `BuscarPorNombreAsync`
+    y el controlador decide. Se dejó dicho que el chequeo previo no cubre una carrera (dos altas
+    simultáneas): ahí la respuesta es 500 en vez de 409, con el dato correcto. Riesgo aceptado por el
+    autor, que prefirió el patrón simple de la cátedra.
+  - "¿por qué hay validación de entrada en el controlador si ya la clase con DataAnnotations se
+    encarga?". Tenía razón: se fue `NombreInvalido` y el caso que cubría (`"   "`) pasó al DTO como
+    `[RegularExpression(@".*\S.*")]`.
+  - "¿por qué hacés `throw` cuando podrías retornar un `NotFound()`?". Se dejó de lanzar: los errores
+    previstos se devuelven con `Problema(...)`, que arma el `ProblemDetails` con su `codigo` y
+    `application/problem+json`. `ErrorDeNegocio` queda sólo para el 401 y el 403 de `JwtBearer`, que
+    corren fuera de MVC.
+  - Discusión de fondo, útil para la defensa: una excepción no es "mala" en ASP.NET Core por el mismo
+    motivo que no lo es en NestJS —hay un pipeline que la mapea (`IExceptionHandler`) y el framework
+    entero está construido sobre ellas—; en Express sí es un problema porque no existe ese lugar. La
+    regla que queda: **lo previsto se devuelve, lo imprevisto se lanza**.
+- **L8.** La verificación posterior al refactor encontró un defecto propio: **toda alta respondía
+  400**. `RegularExpressionAttribute` no valida "contiene": exige que el match empiece en 0 y cubra la
+  cadena entera, así que `\S` solo aceptaba nombres de un carácter. Va `.*\S.*`. Lo destaparon las 18
+  pruebas de integración del refactor, que no se tocaron: es el argumento concreto de por qué están,
+  aunque no se lean. Dos lecciones más:
+  - El merge de la rama de la API en la del SPA se hizo con `git merge`, no con `rebase` + force-push:
+    el refactor ya estaba publicado y reescribir una rama con PR abierto no aporta nada acá.
+  - **Nunca pipear un comando de verificación por `tail` sin `set -o pipefail`**: el exit de la
+    tubería es el de `tail`, así que el gate reportó verde con la suite en rojo y el e2e igual corrió.

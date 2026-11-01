@@ -49,9 +49,13 @@ Tres cortes con fecha. Si una puerta no cierra, se aplica el recorte de §4 **es
 
 ### Puerta 1 — sábado 31/10
 
-- [ ] `ACC-02`: login con `Bearer` funcionando de punta a punta, con el guard de la SPA activo.
-- [ ] `ACC-03`: logout que invalida la sesión en el cliente.
-- [ ] `CAT-01`…`CAT-04`: alta, edición, baja y listado por AJAX, sin recargar la página.
+- [x] `ACC-02`: login con `Bearer` funcionando de punta a punta, con el guard de la SPA activo.
+- [x] `ACC-03`: logout que invalida la sesión en el cliente.
+- [x] `CAT-01`…`CAT-04`: alta, edición, baja y listado por AJAX, sin recargar la página.
+
+Cerrada con el primer recorrido de extremo a extremo (`frontend/web/e2e/categorias.e2e.ts`), que
+arranca sin sesión, entra con la cuenta de Administración, da de alta, edita, busca, desactiva,
+reactiva y sale. Ver `odd/tasks/categorias.md`.
 
 **Si no cierra:** se recorta producto, nunca arquitectura. Sin login no hay nada que entregar.
 
