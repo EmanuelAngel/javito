@@ -130,7 +130,7 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
     autor, que prefirió el patrón simple de la cátedra.
   - "¿por qué hay validación de entrada en el controlador si ya la clase con DataAnnotations se
     encarga?". Tenía razón: se fue `NombreInvalido` y el caso que cubría (`"   "`) pasó al DTO como
-    `[RegularExpression(@"\S")]`.
+    `[RegularExpression(@".*\S.*")]`.
   - "¿por qué hacés `throw` cuando podrías retornar un `NotFound()`?". Se dejó de lanzar: los errores
     previstos se devuelven con `Problema(...)`, que arma el `ProblemDetails` con su `codigo` y
     `application/problem+json`. `ErrorDeNegocio` queda sólo para el 401 y el 403 de `JwtBearer`, que
@@ -139,3 +139,12 @@ con ellos la **Puerta 1** y `RT-04`. Hereda las decisiones de `odd/tasks/acc-02.
     motivo que no lo es en NestJS —hay un pipeline que la mapea (`IExceptionHandler`) y el framework
     entero está construido sobre ellas—; en Express sí es un problema porque no existe ese lugar. La
     regla que queda: **lo previsto se devuelve, lo imprevisto se lanza**.
+- **L8.** La verificación posterior al refactor encontró un defecto propio: **toda alta respondía
+  400**. `RegularExpressionAttribute` no valida "contiene": exige que el match empiece en 0 y cubra la
+  cadena entera, así que `\S` solo aceptaba nombres de un carácter. Va `.*\S.*`. Lo destaparon las 18
+  pruebas de integración del refactor, que no se tocaron: es el argumento concreto de por qué están,
+  aunque no se lean. Dos lecciones más:
+  - El merge de la rama de la API en la del SPA se hizo con `git merge`, no con `rebase` + force-push:
+    el refactor ya estaba publicado y reescribir una rama con PR abierto no aporta nada acá.
+  - **Nunca pipear un comando de verificación por `tail` sin `set -o pipefail`**: el exit de la
+    tubería es el de `tail`, así que el gate reportó verde con la suite en rojo y el e2e igual corrió.
