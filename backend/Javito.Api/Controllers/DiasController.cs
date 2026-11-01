@@ -1,4 +1,3 @@
-using System.Globalization;
 using Javito.Api.Contratos;
 using Javito.Api.Repositorios;
 using Javito.Api.Seguridad;
@@ -23,18 +22,9 @@ public class DiasController(IDiaRepositorio repositorio) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DiaAsync(string fecha, CancellationToken cancellationToken)
     {
-        if (!DateOnly.TryParseExact(
-                fecha,
-                "yyyy-MM-dd",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out var dia))
+        if (!FechaIso.TryParsear(fecha, out var dia))
         {
-            return RespuestasDeError.De(new ErrorDeNegocio(
-                "fecha_invalida",
-                "Fecha inválida",
-                $"«{fecha}» no es una fecha con formato aaaa-mm-dd.",
-                StatusCodes.Status400BadRequest));
+            return RespuestasDeError.De(FechaIso.ErrorDeFormato(fecha));
         }
 
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))

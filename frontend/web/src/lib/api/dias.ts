@@ -40,3 +40,23 @@ export type Dia = {
 export function obtener(fecha: string): Promise<Dia> {
 	return pedir<Dia>(`/api/dias/${fecha}`);
 }
+
+/** Lo que devuelve un toque: el servidor fija la meta y deriva el completado. */
+export type RegistroGuardado = {
+	valor: number;
+	metaObjetivo: number;
+	completado: boolean;
+};
+
+/** Crea o reemplaza la marca del par (hábito, fecha). Idempotente: reintentar no duplica. */
+export function marcar(habitoId: number, fecha: string, valor: number): Promise<RegistroGuardado> {
+	return pedir<RegistroGuardado>(`/api/habitos/${habitoId}/registros/${fecha}`, {
+		method: 'PUT',
+		body: JSON.stringify({ valor })
+	});
+}
+
+/** Desmarca: el registro deja de existir, no queda en cero. */
+export function desmarcar(habitoId: number, fecha: string): Promise<void> {
+	return pedir<void>(`/api/habitos/${habitoId}/registros/${fecha}`, { method: 'DELETE' });
+}
