@@ -1,4 +1,3 @@
-using Javito.Api.Contratos;
 using Javito.Api.Datos;
 using Javito.Api.Modelos;
 using MySqlConnector;
@@ -48,6 +47,24 @@ public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica) : ICatego
         return await lector.ReadAsync(cancellationToken) ? ADominio(lector) : null;
     }
 
+    public async Task<Categoria?> BuscarPorNombreAsync(
+        string nombre,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT id, nombre, descripcion, activo
+            FROM categoria
+            WHERE nombre = @nombre
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@nombre", nombre);
+
+        await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+        return await lector.ReadAsync(cancellationToken) ? ADominio(lector) : null;
+    }
+
     public async Task<int> CrearAsync(Categoria categoria, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -61,14 +78,7 @@ public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica) : ICatego
         comando.Parameters.AddWithValue("@descripcion", (object?)categoria.Descripcion ?? DBNull.Value);
         categoria.Activo = true;
 
-        try
-        {
-            await comando.ExecuteNonQueryAsync(cancellationToken);
-        }
-        catch (MySqlException excepcion) when (excepcion.ErrorCode == MySqlErrorCode.DuplicateKeyEntry)
-        {
-            throw NombreRepetido(categoria.Nombre);
-        }
+        await comando.ExecuteNonQueryAsync(cancellationToken);
 
         // La fila recién insertada se lee de esta misma conexión: LAST_INSERT_ID() es por sesión.
         await using var ultimoId = new MySqlCommand("SELECT LAST_INSERT_ID()", conexion);
@@ -93,16 +103,9 @@ public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica) : ICatego
         comando.Parameters.AddWithValue("@nombre", nombre);
         comando.Parameters.AddWithValue("@descripcion", (object?)descripcion ?? DBNull.Value);
 
-        try
-        {
-            // MySqlConnector informa filas encontradas y no modificadas (UseAffectedRows es false por
-            // defecto): guardar los mismos valores cuenta como 1 y no se confunde con un 404.
-            return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
-        }
-        catch (MySqlException excepcion) when (excepcion.ErrorCode == MySqlErrorCode.DuplicateKeyEntry)
-        {
-            throw NombreRepetido(nombre);
-        }
+        // MySqlConnector informa filas encontradas y no modificadas (UseAffectedRows es false por
+        // defecto): guardar los mismos valores cuenta como 1 y no se confunde con un 404.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
     }
 
     public async Task<bool> CambiarActivoAsync(
@@ -127,15 +130,4 @@ public sealed class CategoriaRepositorio(IDbConnectionFactory fabrica) : ICatego
         Descripcion = lector.IsDBNull(2) ? null : lector.GetString(2),
         Activo = lector.GetBoolean(3)
     };
-
-    /// <summary>
-    /// La unicidad la impone el índice de MySQL: <c>nombre</c> es UNIQUE sobre una collation que no
-    /// distingue mayúsculas ni acentos. El 1062 se traduce acá y no en el controlador porque es el
-    /// repositorio el que ve la restricción; de paso cubre la carrera entre dos altas simultáneas,
-    /// que una consulta previa dejaría pasar.
-    /// </summary>
-    private static ErrorDeNegocio NombreRepetido(string nombre) => new(
-        "nombre_repetido",
-        "Nombre repetido",
-        $"Ya existe una categoría con el nombre «{nombre}».");
 }

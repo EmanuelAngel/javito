@@ -9,6 +9,8 @@ namespace Javito.Api.Contratos;
 /// </summary>
 public sealed record CategoriaEntradaDto(
     [Required(ErrorMessage = "El nombre es obligatorio.")]
+    // `\S` pide al menos un caracter que no sea espacio: `[Required]` acepta `"   "`.
+    [RegularExpression(@"\S", ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(60, ErrorMessage = "El nombre no puede superar los 60 caracteres.")]
     string Nombre,
     [StringLength(255, ErrorMessage = "La descripción no puede superar los 255 caracteres.")]

@@ -36,14 +36,16 @@ public class CategoriasController(ICategoriaRepositorio repositorio) : Controlle
         [FromBody] CategoriaEntradaDto entrada,
         CancellationToken cancellationToken)
     {
-        if (NombreInvalido(entrada.Nombre) is { } invalido)
+        var nombre = entrada.Nombre.Trim();
+
+        if (await repositorio.BuscarPorNombreAsync(nombre, cancellationToken) is not null)
         {
-            return invalido;
+            return NombreRepetido(nombre);
         }
 
         var categoria = new Categoria
         {
-            Nombre = entrada.Nombre.Trim(),
+            Nombre = nombre,
             Descripcion = NormalizarDescripcion(entrada.Descripcion)
         };
 
@@ -63,23 +65,36 @@ public class CategoriasController(ICategoriaRepositorio repositorio) : Controlle
         [FromBody] CategoriaEntradaDto entrada,
         CancellationToken cancellationToken)
     {
-        if (NombreInvalido(entrada.Nombre) is { } invalido)
+        var actual = await repositorio.BuscarAsync(id, cancellationToken);
+
+        if (actual is null)
         {
-            return invalido;
+            return NoEncontrada(id);
         }
 
-        var actualizada = await repositorio.ActualizarAsync(
-            id,
-            entrada.Nombre.Trim(),
-            NormalizarDescripcion(entrada.Descripcion),
-            cancellationToken);
+        var nombre = entrada.Nombre.Trim();
+        var conEseNombre = await repositorio.BuscarPorNombreAsync(nombre, cancellationToken);
 
-        if (!actualizada)
+        // Guardar la categoría con el nombre que ya tiene es válido: el choque es con otra fila.
+        if (conEseNombre is not null && conEseNombre.Id != id)
         {
-            throw NoEncontrada(id);
+            return NombreRepetido(nombre);
         }
 
-        return Ok(MapeoDeCategorias.ADto(await BuscarAsync(id, cancellationToken)));
+        var descripcion = NormalizarDescripcion(entrada.Descripcion);
+
+        if (!await repositorio.ActualizarAsync(id, nombre, descripcion, cancellationToken))
+        {
+            return NoEncontrada(id);
+        }
+
+        return Ok(MapeoDeCategorias.ADto(new Categoria
+        {
+            Id = id,
+            Nombre = nombre,
+            Descripcion = descripcion,
+            Activo = actual.Activo
+        }));
     }
 
     /// <summary>
@@ -97,43 +112,59 @@ public class CategoriasController(ICategoriaRepositorio repositorio) : Controlle
         [FromBody] CambioDeActivoDto entrada,
         CancellationToken cancellationToken)
     {
-        var cambiada = await repositorio.CambiarActivoAsync(
-            id,
-            entrada.Activo!.Value,
-            cancellationToken);
+        var actual = await repositorio.BuscarAsync(id, cancellationToken);
 
-        if (!cambiada)
+        if (actual is null)
         {
-            throw NoEncontrada(id);
+            return NoEncontrada(id);
         }
 
-        return Ok(MapeoDeCategorias.ADto(await BuscarAsync(id, cancellationToken)));
-    }
+        var activo = entrada.Activo!.Value;
 
-    private async Task<Categoria> BuscarAsync(int id, CancellationToken cancellationToken) =>
-        await repositorio.BuscarAsync(id, cancellationToken) ?? throw NoEncontrada(id);
+        if (!await repositorio.CambiarActivoAsync(id, activo, cancellationToken))
+        {
+            return NoEncontrada(id);
+        }
+
+        return Ok(MapeoDeCategorias.ADto(new Categoria
+        {
+            Id = id,
+            Nombre = actual.Nombre,
+            Descripcion = actual.Descripcion,
+            Activo = activo
+        }));
+    }
 
     /// <summary>
-    /// El nombre llega recortado a la base, así que uno de sólo espacios no es un nombre: se rechaza
-    /// con el mismo 400 por campo que produce la validación del DTO.
+    /// ProblemDetails con el `codigo` estable que consume el SPA. Es el equivalente del
+    /// `ModelState.AddModelError` del ABM de la cátedra: los errores previstos se devuelven, no se
+    /// lanzan.
     /// </summary>
-    private IActionResult? NombreInvalido(string nombre)
+    private ObjectResult Problema(int estado, string codigo, string titulo, string detalle)
     {
-        if (!string.IsNullOrWhiteSpace(nombre))
-        {
-            return null;
-        }
+        var problema = Problem(
+            statusCode: estado,
+            title: titulo,
+            detail: detalle,
+            extensions: new Dictionary<string, object?> { ["codigo"] = codigo });
 
-        ModelState.AddModelError(nameof(CategoriaEntradaDto.Nombre), "El nombre es obligatorio.");
-        return ValidationProblem(ModelState);
+        problema.ContentTypes.Add("application/problem+json");
+
+        return problema;
     }
+
+    private ObjectResult NombreRepetido(string nombre) => Problema(
+        StatusCodes.Status409Conflict,
+        "nombre_repetido",
+        "Nombre repetido",
+        $"Ya existe una categoría con el nombre «{nombre}».");
+
+    private ObjectResult NoEncontrada(int id) => Problema(
+        StatusCodes.Status404NotFound,
+        "no_encontrado",
+        "Categoría inexistente",
+        $"No hay ninguna categoría con id {id}.");
 
     private static string? NormalizarDescripcion(string? descripcion) =>
         string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
-
-    private static ErrorDeNegocio NoEncontrada(int id) => new(
-        "no_encontrado",
-        "Categoría inexistente",
-        $"No hay ninguna categoría con id {id}.",
-        StatusCodes.Status404NotFound);
 }

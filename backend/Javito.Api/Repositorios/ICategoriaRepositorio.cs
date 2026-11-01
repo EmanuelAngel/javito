@@ -10,12 +10,16 @@ public interface ICategoriaRepositorio
 
     Task<Categoria?> BuscarAsync(int id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Busca por nombre exacto. La comparación la resuelve la collation de la base, así que no
+    /// distingue mayúsculas ni acentos.
+    /// </summary>
+    Task<Categoria?> BuscarPorNombreAsync(string nombre, CancellationToken cancellationToken = default);
+
     /// <summary>Inserta la categoría y devuelve el id que le asignó la base.</summary>
-    /// <exception cref="Contratos.ErrorDeNegocio">Ya existe una categoría con ese nombre.</exception>
     Task<int> CrearAsync(Categoria categoria, CancellationToken cancellationToken = default);
 
     /// <summary>Devuelve <c>false</c> cuando no hay ninguna fila con ese id.</summary>
-    /// <exception cref="Contratos.ErrorDeNegocio">Ya existe otra categoría con ese nombre.</exception>
     Task<bool> ActualizarAsync(
         int id,
         string nombre,
