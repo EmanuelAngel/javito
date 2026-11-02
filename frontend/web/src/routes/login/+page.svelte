@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import CambioDeTema from '$lib/components/CambioDeTema.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
 	import { ErrorDeApi, pedir } from '$lib/api/pedir';
@@ -70,9 +71,14 @@
 </svelte:head>
 
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-5">
-	<header class="flex flex-col gap-1">
-		<h1 class="text-3xl font-semibold tracking-tight">Javito</h1>
-		<p class="text-sm text-muted-foreground">Ingresá con tu cuenta para seguir.</p>
+	<header class="flex items-start justify-between gap-4">
+		<div class="flex flex-col gap-1">
+			<h1 class="text-3xl font-semibold tracking-tight">Javito</h1>
+			<p class="text-sm text-muted-foreground">Ingresá con tu cuenta para seguir.</p>
+		</div>
+		<!-- El login queda fuera de (app), así que el header del shell no llega: el control de tema
+				sube acá para que se pueda cambiar el tema antes de entrar. -->
+		<CambioDeTema />
 	</header>
 
 	<form class="flex flex-col gap-4 rounded-xl border border-border bg-card p-6" onsubmit={entrar}>

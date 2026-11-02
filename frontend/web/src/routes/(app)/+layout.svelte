@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import CambioDeTema from '$lib/components/CambioDeTema.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import type { LayoutProps } from './$types';
 
@@ -62,6 +63,7 @@
 					</a>
 				{/if}
 				<span class="hidden text-sm text-muted-foreground sm:inline">{data.usuario.nombre}</span>
+				<CambioDeTema />
 				<!-- Avatar placeholder: el perfil real entra con el módulo de usuario -->
 				<span
 					class="grid size-9 place-items-center rounded-full border border-border bg-background text-muted-foreground"
