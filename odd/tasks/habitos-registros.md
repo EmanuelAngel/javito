@@ -3,6 +3,9 @@
 Cierra `HAB-01`, `HAB-02` y `REG-01`. Es el 60% de la Puerta 2 (que además pide `REG-04` y `PER-02`).
 Tres slices verticales, cada uno con su rama y su PR: el día se ve, el día se marca, mis hábitos.
 
+**Estado: entregado y mergeado** — issues #19, #20 y #21; PRs #22 (`3790fb7`), #23 (`b090e06`) y
+#24 (`fe96774`).
+
 ## Specs
 
 **S1 — El día se lee como recurso propio.** `GET /api/dias/{fecha}` devuelve el día del usuario
@@ -130,9 +133,18 @@ devuelve a cero para poder repetirse; el histórico del usuario de prueba sigue 
 cátedra. La fila queda en la base de desarrollo y `pnpm db:reset` la borra, igual que la categoría
 «Pruebas e2e» del e2e anterior.
 
-**L14 — Cierre.** Las tres tareas quedan en tres commits encadenados sobre sus ramas: `1e20b1d` en
-`feat/dia-lectura`, `5533eae` en `feat/dia-marcar` y `7b62129` en `feat/habitos-lista`. Como los PRs
-todavía no se abrieron, cada slice sale de la rama del anterior: el corte quedó local y encadenado, no
-apilado por capas. Con esto `HAB-01`, `HAB-02` y `REG-01` están cerrados y la Puerta 2 del 02/11 queda
-a un paso: `REG-04` (la semana, que ya tiene su lectura servida por `GET /api/dias?desde=&hasta=`) y
-`PER-02` (el avatar).
+**L14 — Cierre.** Las tres tareas quedan en tres commits encadenados, mergeados como squash en `main`:
+#22 `3790fb7` (`feat/dia-lectura`), #23 `b090e06` (`feat/dia-marcar`) y #24 `fe96774`
+(`feat/habitos-lista`). Cada PR cerró su issue con `Closes #N`. El presupuesto se declaró en el body de
+cada PR: 484 ponderadas la primera, y 721 y 947 las dos siguientes, sobre el techo de 600, a propósito
+para conservar el corte vertical. Con esto `HAB-01`, `HAB-02` y `REG-01` están cerrados y la Puerta 2
+del 02/11 queda a un paso: `REG-04` (la semana) y `PER-02` (el avatar).
+
+**L15 — Deuda técnica anotada, no ejecutada.** `Modelos/HabitoDelDia.cs` es un **read model** (sale de
+`habito` + `categoria` + `registro_habito` y de una agregación semanal), no un DTO ni una entidad, pero
+vive en `Modelos/`, que en este repo promete tablas 1:1, y duplica 7 campos de `Modelos/Habito.cs`.
+Origen: T1 construyó la proyección antes de que existiera la entidad, porque en ese slice un hábito no
+se podía crear ni listar. Arreglo decidido para un commit aparte sobre `main`: mover las proyecciones a
+`Consultas/` y componer `Habito` adentro de `HabitoDelDia`, así la proyección queda como «el hábito +
+lo del día» y no como una segunda copia. No entró en la cadena porque compuesta depende de
+`Modelos/Habito.cs`, que nace en #23, y habría hecho que #22 dejara de compilar sola.
