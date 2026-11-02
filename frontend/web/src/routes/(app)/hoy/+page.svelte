@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import FilaDelDia from '$lib/components/FilaDelDia.svelte';
 	import { diaLargo } from '$lib/fechas';
 	import { estadoDelDia } from '$lib/hoy.svelte';
@@ -41,6 +42,13 @@
 	{#if estado.dia.habitos.length === 0}
 		<p class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
 			Todavía no tenés hábitos activos.
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+			<a
+				href={resolve('/(app)/habitos')}
+				class="font-medium text-primary underline-offset-4 hover:underline"
+			>
+				Crear uno en Hábitos
+			</a>
 		</p>
 	{:else}
 		<ul class="flex flex-col gap-3">

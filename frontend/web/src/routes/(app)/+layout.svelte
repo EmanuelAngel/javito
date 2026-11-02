@@ -47,6 +47,12 @@
 			<a href="/hoy" class="text-lg font-semibold tracking-tight">Javito</a>
 
 			<div class="flex items-center gap-3">
+				<a
+					href={resolve('/(app)/habitos')}
+					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+				>
+					Hábitos
+				</a>
 				{#if data.usuario.rol === 'Administrador'}
 					<a
 						href={resolve('/(app)/admin/categorias')}
