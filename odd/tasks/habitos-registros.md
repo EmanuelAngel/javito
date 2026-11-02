@@ -61,8 +61,8 @@ pesado»).
 
 ## Tasks
 
-- **T1 — El día se ve** (`S1`) · inline · rama `feat/dia-lectura` · commit `feat(api): agregar la lectura del día con sus registros`
-- **T2 — El día se marca** (`S2`–`S5`, `S8`) · inline · rama `feat/dia-marcar` · commit `feat(web): agregar el marcado del día con guardado optimista`
+- **T1 — El día se ve** (`S1`) · inline · rama `feat/dia-lectura` · commit `feat(api): agregar la lectura del día con sus registros` (`1e20b1d`)
+- **T2 — El día se marca** (`S2`–`S5`, `S8`) · inline · rama `feat/dia-marcar` · commit `feat(dia): agregar el marcado del día con guardado optimista`
 - **T3 — Mis hábitos** (`S6`, `S7`, `S9`, `S10`) · inline · rama `feat/habitos-lista` · commit `feat(web): agregar el alta y el listado de hábitos`
 
 Cada slice sale de `main` después del merge del anterior, así el reviewer siempre lee contra una base

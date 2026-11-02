@@ -51,5 +51,9 @@ export async function pedir<T>(ruta: string, opciones: OpcionesDePedido = {}): P
 		);
 	}
 
+	// 204 sin cuerpo: el DELETE de un registro no tiene representación que devolver. Sin este
+	// corte, `respuesta.json()` explota con un SyntaxError y un desmarcado exitoso se ve como error.
+	if (respuesta.status === 204) return undefined as T;
+
 	return (await respuesta.json()) as T;
 }
