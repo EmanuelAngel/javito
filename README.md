@@ -70,11 +70,12 @@ javito/
 └── README.md
 ```
 
-> **Estado:** el scaffold del monorepo y la base de datos están hechos: `backend/` con la solución y el
-> proyecto WebAPI, `frontend/web/` con la SPA en `adapter-static`, y `database.sql` con las 7 tablas y los
-> datos de prueba. Los directorios de dominio del backend (`Repositories/`, `Models/`, `Dtos/`, `Auth/`)
-> todavía no existen: la API solo responde `GET /api/health` y no se conecta a la base. Las convenciones de
-> trabajo están en [AGENTS.md](AGENTS.md).
+> **Estado:** la fundación y el acceso están hechos: MySQL por ADO.NET, errores `ProblemDetails` con un
+> `codigo` estable, JWT con guard en la SPA y shell autenticado. Sobre eso viven el ABM de categorías
+> (sólo Administrador), el alta y el listado de hábitos, y el día con sus marcas. La API expone
+> `POST /api/sesion`, `GET /api/sesion/yo`, `GET|POST|PUT /api/categorias`, `GET|POST /api/habitos`,
+> `GET /api/dias/{fecha}`, `PUT|DELETE /api/habitos/{id}/registros/{fecha}` y `GET /api/health`. Las
+> convenciones de trabajo están en [AGENTS.md](AGENTS.md).
 
 ---
 
