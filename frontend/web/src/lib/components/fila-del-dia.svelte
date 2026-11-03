@@ -3,6 +3,8 @@
 	import MinusIcon from '@lucide/svelte/icons/minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { HabitoDelDia } from '$lib/api/dias';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let {
 		habito,
@@ -36,22 +38,28 @@
 >
 	<div class="flex min-w-0 flex-col gap-1">
 		<span class="truncate font-medium">{habito.titulo}</span>
-		<span class="text-sm text-muted-foreground">
-			{habito.categoria ?? 'Sin categoría'} · {progreso}
-		</span>
+		<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+			<span>{habito.categoria ?? 'Sin categoría'}</span>
+			{#if habito.frecuencia.tipo === 'semanal'}
+				<Badge variant="secondary">{progreso}</Badge>
+			{:else}
+				<span>{progreso}</span>
+			{/if}
+		</div>
 	</div>
 
 	{#if esContador}
 		<div class="flex shrink-0 items-center gap-2">
-			<button
+			<Button
 				type="button"
+				variant="outline"
+				size="icon-lg"
 				aria-label="Restar {habito.unidad ?? 'uno'} a {habito.titulo}"
 				disabled={valor <= 0}
 				onclick={() => bajar(habito)}
-				class="grid size-9 place-items-center rounded-lg border border-border bg-background transition-colors hover:bg-accent disabled:opacity-40"
 			>
-				<MinusIcon class="size-4" />
-			</button>
+				<MinusIcon />
+			</Button>
 
 			<span
 				class="min-w-20 text-center text-sm tabular-nums {hecho
@@ -62,26 +70,25 @@
 				{#if habito.unidad}<span class="text-xs"> {habito.unidad}</span>{/if}
 			</span>
 
-			<button
+			<Button
 				type="button"
+				variant="outline"
+				size="icon-lg"
 				aria-label="Sumar {habito.unidad ?? 'uno'} a {habito.titulo}"
 				onclick={() => subir(habito)}
-				class="grid size-9 place-items-center rounded-lg border border-border bg-background transition-colors hover:bg-accent"
 			>
-				<PlusIcon class="size-4" />
-			</button>
+				<PlusIcon />
+			</Button>
 		</div>
 	{:else}
-		<button
+		<Button
 			type="button"
+			variant={hecho ? 'default' : 'outline'}
 			aria-pressed={hecho}
 			onclick={() => alternar(habito)}
-			class="flex shrink-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors {hecho
-				? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
-				: 'bg-background hover:bg-accent'}"
 		>
-			<CheckIcon class="size-4" />
+			<CheckIcon />
 			{etiqueta}
-		</button>
+		</Button>
 	{/if}
 </li>
