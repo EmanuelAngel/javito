@@ -154,3 +154,10 @@ refactor salen de ahí.
 2 de 73 y un minuto después dio 73/73. Causa: el fixture siembra con `CURDATE()` a las 23:59 y las pruebas
 vuelven a preguntar `CURDATE()` a las 00:00, así que la base quedó sembrada para ayer. No lo causa el
 slice: queda como issue **#34**.
+
+**L17** — La carrera de #42 se arregló en su propia rama (`fix/dia-serializado`, `ebc2469`, PR #45): un
+solo envío en vuelo por hábito y el último valor esperando turno, con la foto previa capturada antes de
+pintar. RED observado con un servidor falso que responde a demanda (los dos `PUT` en vuelo a la vez);
+GREEN con 23/23 de vitest y **tres corridas seguidas** del e2e. Con eso el gate de los slices deja de
+depender del azar.
+
