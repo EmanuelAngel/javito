@@ -154,3 +154,19 @@ refactor salen de ahí.
 2 de 73 y un minuto después dio 73/73. Causa: el fixture siembra con `CURDATE()` a las 23:59 y las pruebas
 vuelven a preguntar `CURDATE()` a las 00:00, así que la base quedó sembrada para ayer. No lo causa el
 slice: queda como issue **#34**.
+
+**L17** — La carrera de #42 se arregló en su propia rama (`fix/dia-serializado`, `ebc2469`, PR #45): un
+solo envío en vuelo por hábito y el último valor esperando turno, con la foto previa capturada antes de
+pintar. RED observado con un servidor falso que responde a demanda (los dos `PUT` en vuelo a la vez);
+GREEN con 23/23 de vitest y **tres corridas seguidas** del e2e. Con eso el gate de los slices deja de
+depender del azar.
+
+
+**L18** — La verificación independiente de #42 (subagente `gentle-ai-verify`) encontró un hueco real que el
+slice no cubría: un toque encolado mientras el envío anterior **falla** deja la pantalla atrás del
+servidor, porque la reconciliación trae la foto vieja y el `PUT` encolado después llega bien sin que nadie
+repinte. Corregido en `e63ba64`: el envío que llega vuelve a pintar el valor que mandó (idempotente, porque
+`conValor` no mueve el conteo si el completado no cambió). Se sumaron cuatro pruebas —tres toques se
+juntan en uno, toque en el borde, encolado durante un fallo, dos hábitos en paralelo—: RED en la del
+encolado (9 en vez de 11) y GREEN 27/27. Gate completo: `pnpm lint` 0 · `pnpm check` 0 · `pnpm test:web`
+27/27 · `pnpm test:e2e` 2/2.
