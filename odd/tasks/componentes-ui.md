@@ -57,6 +57,7 @@ y las rutas de SvelteKit (`+page.svelte`, `+layout.svelte`) no cambian.
   componentes base`.
 - **T2 — Categorías** (`S5`–`S7`) · inline · commit `refactor(web): rearmar el ABM de categorías con componentes de ui`
 - **T3 — Formulario de hábito** (`S4`, `S5`, `S7`) · inline · commit `refactor(web): rearmar el alta de hábitos con componentes de ui`
+  · **Hecho** en `d5282a2` (issue #38, PR #39)
 - **T4 — Listas y el día** (`S6`, `S7`) · inline · commit `refactor(web): rearmar listas y el día con componentes de ui`
 - **T5 — Login y docs** (`S5`, `S8`) · inline · commit `refactor(web): rearmar el login con componentes de ui`
 - **T6 — Kebab-case en los nombres** (`S9`) · inline · rama `refactor/kebab-case` · commit
@@ -154,3 +155,8 @@ refactor salen de ahí.
 2 de 73 y un minuto después dio 73/73. Causa: el fixture siembra con `CURDATE()` a las 23:59 y las pruebas
 vuelven a preguntar `CURDATE()` a las 00:00, así que la base quedó sembrada para ayer. No lo causa el
 slice: queda como issue **#34**.
+
+**L13** — T3 cerrado en `refactor/habito-form` (`d5282a2`, issue #38, PR #39): el formulario de alta de
+hábitos pasa a `Field`/`Input`/`NativeSelect`/`Button`/`Alert`. Los desplegables quedan como `<select>`
+real (S4), así que `habitos.e2e.ts` pasa **sin modificaciones** con su `selectOption`. Verificado:
+`pnpm lint` 0 · `pnpm check` 0 (73/73 + svelte-check 0/0) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2.
