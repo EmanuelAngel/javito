@@ -6,9 +6,9 @@ bun.lock
 bun.lockb
 
 # Componentes vendorizados de shadcn-svelte: los escribe el CLI y se
-# actualizan con `shadcn-svelte update`, no con prettier. Ver S2 del
-# documento de feature odd/tasks/ui-toolchain.md.
-/src/lib/componentes/ui/
+# actualizan con `shadcn-svelte update`, no con prettier. Ver S3 del
+# documento de feature odd/tasks/componentes-ui.md.
+/src/lib/components/ui/
 
 # Miscellaneous
 /static/

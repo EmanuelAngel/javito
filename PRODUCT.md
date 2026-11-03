@@ -108,7 +108,7 @@ El idioma del producto es español rioplatense neutro en la interfaz, con voseo 
 **La identidad visual ya está comprometida en código y se hereda, no se reemplaza:** los temas Rosé Pine
 (Dawn claro, OLED oscuro) y el mapeo semántico de shadcn viven en
 `frontend/web/src/routes/layout.css`, que es la autoridad. Los componentes vienen de shadcn-svelte
-vendorizado en `frontend/web/src/lib/componentes/ui/` (todavía vacío) y los íconos son Lucide, un solo pack,
+vendorizado en `frontend/web/src/lib/components/ui/` y los íconos son Lucide, un solo pack,
 sin shim ni alias. No se usan colores sueltos de Tailwind: se usan los tokens semánticos. No hay modo claro
 u oscuro por defecto: `mode-watcher` sigue al sistema y lo persiste.
 
