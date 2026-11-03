@@ -61,7 +61,13 @@
 	{:else}
 		<ul class="flex flex-col gap-3">
 			{#each estado.dia.habitos as habito (habito.id)}
-				<FilaDelDia {habito} alternar={estado.alternar} subir={estado.subir} bajar={estado.bajar} />
+				<FilaDelDia
+					{habito}
+					fecha={estado.dia.fecha}
+					alternar={estado.alternar}
+					subir={estado.subir}
+					bajar={estado.bajar}
+				/>
 			{/each}
 		</ul>
 	{/if}
