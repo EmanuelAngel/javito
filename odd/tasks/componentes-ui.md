@@ -47,7 +47,9 @@ por una decisión de componente (S4) y va explicado en el body del PR.
 ## Tasks
 
 - **T1 — Paso 0: el alias y los componentes** (`S1`–`S3`) · inline · rama `feat/ui-componentes` ·
-  commit `chore(web): mover el alias de shadcn a la carpeta de componentes`
+  commit `chore(web): mover el alias de shadcn a la carpeta de componentes` · **Hecho** en `899d9d6`
+  (issue #28, PR #31). El commit se llamó `chore(web): mover el alias de shadcn a components y vendorizar los
+  componentes base`.
 - **T2 — Categorías** (`S5`–`S7`) · inline · commit `refactor(web): rearmar el ABM de categorías con componentes de ui`
 - **T3 — Formulario de hábito** (`S4`, `S5`, `S7`) · inline · commit `refactor(web): rearmar el alta de hábitos con componentes de ui`
 - **T4 — Listas y el día** (`S6`, `S7`) · inline · commit `refactor(web): rearmar listas y el día con componentes de ui`
@@ -94,3 +96,39 @@ trabajo sigue en sesión nueva, leyendo este documento y el issue. La carpeta de
 - El e2e es la red: si `getByLabel('Categoría').selectOption(...)` deja de funcionar, es que se usó
   `Select` de bits-ui donde iba `native-select` (S4).
 - El repo no tiene CI: la barrera es la Definition of Done de `docs/proceso/issue-tracking.md`.
+
+**L5** — «Leé el issue #26 y odd/tasks/componentes-ui.md (hasta ## Log). Ejecutá T1: corregir el alias
+  de components.json a $lib/components, correr pnpm exec shadcn-svelte@latest add button input label
+  textarea native-select table badge alert empty separator field spinner desde frontend/web, ajustar
+  .prettierignore/eslint y AGENTS.md, y cerrar con pnpm lint, pnpm check, pnpm test:web y pnpm test:e2e
+  verdes. Sin commits a main, sin push: rama feat/ui-componentes e issue por slice como la vez pasada.»
+
+**L6** — Evidencia de T1 (rama `feat/ui-componentes`, issue #28, commit `899d9d6`):
+- **`pnpm exec shadcn-svelte@latest add …` no existe.** `pnpm exec` no acepta especificador de versión:
+  muere con `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL`. Se usó el binario que fija `devDependencies`:
+  `pnpm exec shadcn-svelte add --yes …` (v1.7.0). `@latest` sí sería válido con `pnpm dlx`, que no es lo
+  que pide S1.
+- **`add` sin `--yes` no instala nada sin TTY**: frena en «Ready to install components and dependencies?»
+  y sale sin escribir archivos.
+- El CLI sumó `bits-ui`, `tailwind-variants` y `@internationalized/date`, y subió `@lucide/svelte` de
+  `^1.57.0` a `^1.66.0`. El lockfile cambia en el mismo commit.
+- Verificado: `pnpm lint` 0 · `pnpm check:web` 0 errores y 0 advertencias (svelte-check sí revisa
+  `components/ui`) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 **sin tocar** `categorias.e2e.ts` ni
+  `habitos.e2e.ts`.
+- **`pnpm check` estaba en rojo por una causa ajena a T1**, ya corregida: ver L7.
+
+**L7** — «con issue aparte» (después de elegir «Opción 1: arreglarlo ahora, seed + prueba weekday-aware»).
+El defecto que dejaba `pnpm check` en rojo era de la prueba del día, no de T1:
+`DiasEndpointTests.La_semana_cuenta_de_lunes_a_domingo_y_solo_los_dias_completados` hardcodeaba 2
+cumplidos esta semana para «Ejercicio pesado» (12) y 1 para 13 y 14, mientras el seed arma la semana en
+curso con `@lunes = CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY` y descarta lo que cae en el futuro: un
+lunes el miércoles no existe, y con `UNIQUE (habito_id, fecha)` dos cumplidos son inalcanzables ese día.
+Se arregló en su propio issue (**#29**, rama `fix/seed-semana`, commit `74f4bad`, integrado en
+`feat/ui-componentes` con el merge `69b1683`): el seed siembra la semana en curso en lunes y martes y la
+prueba calcula lo esperado con los días transcurridos. RED observado con el seed viejo y la prueba nueva
+(esperado 1, obtenido 0); GREEN con 73/73 un lunes.
+
+**L8** — Cierre de T1 en `feat/ui-componentes` (`69b1683`): `pnpm lint` 0 · `pnpm check` 0 (73/73 de API
+y 0 errores/0 advertencias de svelte-check) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 sin tocar los
+e2e. PRs abiertos: **#30** (`fix/seed-semana`, base `main`) y **#31** (`feat/ui-componentes`, apilado
+sobre #30: cambiar la base a `main` cuando mergee).

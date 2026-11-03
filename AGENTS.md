@@ -179,8 +179,11 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   paleta cruda y capa semántica con los roles de shadcn, mapeados a utilidades en `@theme inline`. Claro
   (Dawn) en `:root` y oscuro (OLED) en `.dark`. **No usar colores sueltos** (`bg-blue-500`): usar los
   tokens (`bg-background`, `text-muted-foreground`, `border-border`, …).
-- `frontend/web/src/lib/componentes/ui/` es **vendorizada** de shadcn-svelte: la escribe el CLI. Queda
-  fuera de prettier y de eslint, pero **sí** entra en `svelte-check`. No la reformatees a mano.
+- **Componentes.** `frontend/web/src/lib/components/` es el árbol único: los propios
+  (`CambioDeTema`, `FilaDelDia`, `HabitoForm`, `HabitosLista`) viven en su raíz, y los **vendorizados** de
+  shadcn-svelte en `frontend/web/src/lib/components/ui/`. Esos los escribe el CLI
+  (`pnpm exec shadcn-svelte add …` desde `frontend/web`, con el alias de `components.json`); no se editan
+  ni se reformatean a mano. Quedan fuera de prettier y de eslint, pero **sí** entran en `svelte-check`.
 - Las utilidades y variantes que esos componentes necesitan llegan por
   `@import 'shadcn-svelte/tailwind.css'`. No crees un segundo archivo global de CSS.
 - **Modo claro/oscuro con `mode-watcher`**: `<ModeWatcher />` en `+layout.svelte` aplica y saca la clase

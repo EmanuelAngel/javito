@@ -5,9 +5,9 @@
 		"baseColor": "stone"
 	},
 	"aliases": {
-		"components": "$lib/componentes",
+		"components": "$lib/components",
 		"utils": "$lib/utils",
-		"ui": "$lib/componentes/ui",
+		"ui": "$lib/components/ui",
 		"hooks": "$lib/hooks",
 		"lib": "$lib"
 	},
