@@ -62,6 +62,7 @@ y las rutas de SvelteKit (`+page.svelte`, `+layout.svelte`) no cambian.
 - **T4 — Listas y el día** (`S6`, `S7`) · inline · commit `refactor(web): rearmar listas y el día con componentes de ui`
   · **Hecho** en `34a75ba` (issue #40, PR #41)
 - **T5 — Login y docs** (`S5`, `S8`) · inline · commit `refactor(web): rearmar el login con componentes de ui`
+  · **Hecho** en `e33e4f4` (issue #43, PR #44)
 - **T6 — Kebab-case en los nombres** (`S9`) · inline · rama `refactor/kebab-case` · commit
   `refactor(web): renombrar los componentes a kebab-case`. Va **antes** de T2: renombrar después obliga a
   reescribir los mismos archivos dos veces.
@@ -158,6 +159,10 @@ refactor salen de ahí.
 vuelven a preguntar `CURDATE()` a las 00:00, así que la base quedó sembrada para ayer. No lo causa el
 slice: queda como issue **#34**.
 
+**L16** — T5 cerrado en `refactor/login` (`e33e4f4`, issue #43, PR #44): el login pasa a
+`Field`/`Input`/`Button`/`Alert`. Con T1–T6 las cinco pantallas quedan sobre componentes vendorizados y el
+e2e no cambió ni una línea. Verificado: `pnpm lint` 0 · `pnpm check` 0 · `pnpm test:web` 22/22. El
+`test:e2e` de esa corrida falló por la carrera de #42 (paso 6 de `habitos.e2e.ts`), no por el login.
 **L14** — T4 cerrado en `refactor/listas-y-dia` (`34a75ba`, issue #40, PR #41): `Empty` en los dos estados
 vacíos, `Badge` para frecuencia, meta y archivado, `Alert` + `AlertAction` para el aviso del día y `Button`
 en los tres botones de la fila. La fila sigue siendo un `<li>` porque el e2e la busca por `listitem`; por
