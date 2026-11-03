@@ -61,8 +61,8 @@ reactiva y sale. Ver `odd/tasks/categorias.md`.
 
 ### Puerta 2 — lunes 02/11
 
-- [ ] `HAB-01`, `HAB-02`: crear y ver hábitos.
-- [ ] `REG-01`, `REG-04`: marcar el día y ver la semana.
+- [x] `HAB-01`, `HAB-02`: crear y ver hábitos.
+- [x] `REG-01`, `REG-04`: marcar el día y ver la semana.
 - [ ] `PER-02`: avatar subido y visible en el perfil.
 
 **Si no cierra:** se cae Artículos entero y el plan se replanifica a 5 de 7 requisitos (§4).
