@@ -1,5 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { Alert, AlertAction, AlertDescription } from '$lib/components/ui/alert/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import {
+		Empty,
+		EmptyDescription,
+		EmptyHeader,
+		EmptyTitle
+	} from '$lib/components/ui/empty/index.js';
 	import FilaDelDia from '$lib/components/fila-del-dia.svelte';
 	import { diaLargo } from '$lib/fechas';
 	import { estadoDelDia } from '$lib/hoy.svelte';
@@ -24,32 +32,32 @@
 	</header>
 
 	{#if estado.aviso}
-		<p
-			role="alert"
-			class="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-		>
-			{estado.aviso}
-			<button
-				type="button"
-				onclick={() => estado.descartarAviso()}
-				class="rounded-lg border border-destructive/30 px-3 py-1 text-xs transition-colors hover:bg-destructive/10"
-			>
-				Cerrar
-			</button>
-		</p>
+		<Alert variant="destructive" role="alert">
+			<AlertDescription>{estado.aviso}</AlertDescription>
+			<AlertAction>
+				<Button type="button" variant="outline" size="xs" onclick={() => estado.descartarAviso()}>
+					Cerrar
+				</Button>
+			</AlertAction>
+		</Alert>
 	{/if}
 
 	{#if estado.dia.habitos.length === 0}
-		<p class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-			Todavía no tenés hábitos activos.
-			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a
-				href={resolve('/(app)/habitos')}
-				class="font-medium text-primary underline-offset-4 hover:underline"
-			>
-				Crear uno en Hábitos
-			</a>
-		</p>
+		<Empty class="rounded-xl border border-border bg-card">
+			<EmptyHeader>
+				<EmptyTitle>Sin hábitos activos</EmptyTitle>
+				<EmptyDescription>
+					Todavía no tenés hábitos activos.
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+					<a
+						href={resolve('/(app)/habitos')}
+						class="font-medium text-primary underline-offset-4 hover:underline"
+					>
+						Crear uno en Hábitos
+					</a>
+				</EmptyDescription>
+			</EmptyHeader>
+		</Empty>
 	{:else}
 		<ul class="flex flex-col gap-3">
 			{#each estado.dia.habitos as habito (habito.id)}

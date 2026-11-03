@@ -1,6 +1,13 @@
 <script lang="ts">
 	import type { Categoria } from '$lib/api/categorias';
 	import type { Habito } from '$lib/api/habitos';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import {
+		Empty,
+		EmptyDescription,
+		EmptyHeader,
+		EmptyTitle
+	} from '$lib/components/ui/empty/index.js';
 
 	let {
 		activos,
@@ -34,21 +41,27 @@
 		<h2 class="text-lg font-semibold">Activos</h2>
 
 		{#if activos.length === 0}
-			<p class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-				Todavía no tenés hábitos activos. Creá el primero desde el formulario.
-			</p>
+			<Empty class="rounded-xl border border-border bg-card">
+				<EmptyHeader>
+					<EmptyTitle>Sin hábitos activos</EmptyTitle>
+					<EmptyDescription>
+						Todavía no tenés hábitos activos. Creá el primero desde el formulario.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		{:else}
 			<ul class="flex flex-col gap-3">
 				{#each activos as habito (habito.id)}
 					<li data-test="fila-habito" class="rounded-xl border border-border bg-card px-5 py-4">
 						<div class="flex min-w-0 flex-col gap-1">
 							<span class="truncate font-medium">{habito.titulo}</span>
-							<span class="text-sm text-muted-foreground">
-								{nombreDe(habito.categoriaId)} · {frecuenciaDe(habito)}
+							<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+								<span>{nombreDe(habito.categoriaId)}</span>
+								<Badge variant="secondary">{frecuenciaDe(habito)}</Badge>
 								{#if habito.tipo === 'contador'}
-									· meta {habito.meta} {habito.unidad}
+									<Badge variant="outline">meta {habito.meta} {habito.unidad}</Badge>
 								{/if}
-							</span>
+							</div>
 						</div>
 					</li>
 				{/each}
@@ -70,9 +83,11 @@
 					>
 						<div class="flex min-w-0 flex-col gap-1">
 							<span class="truncate font-medium">{habito.titulo}</span>
-							<span class="text-sm text-muted-foreground">
-								{nombreDe(habito.categoriaId)} · {frecuenciaDe(habito)}
-							</span>
+							<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+								<span>{nombreDe(habito.categoriaId)}</span>
+								<Badge variant="secondary">{frecuenciaDe(habito)}</Badge>
+								<Badge variant="outline">Archivado</Badge>
+							</div>
 						</div>
 					</li>
 				{/each}
