@@ -262,6 +262,9 @@ WHERE h.usuario_id = 2
 --   Practicar dibujo (2/semana): cumple, pausa dos semanas y retoma con 1 de 2.
 --   Practicar cocina (1/semana): una vez cada semana, en días distintos.
 --   Correr (2/semana, hoy archivado): dos semanas de historial antes de archivarlo.
+-- La semana en curso va en lunes y martes, los días que ya transcurrieron sin importar el día en que se
+-- corra el script: el filtro de abajo descarta el futuro. Por eso «Ejercicio pesado» va 1 de 3 un lunes
+-- y 2 de 3 de martes en adelante, y la prueba del día calcula lo esperado en vez de afirmar 2 fijo.
 INSERT INTO registro_habito (habito_id, fecha, valor_alcanzado, meta_objetivo, completado)
 SELECT s.habito_id, @lunes + INTERVAL (s.semana * 7 + s.dia_semana) DAY, 1, 1, TRUE
 FROM (
@@ -269,10 +272,10 @@ FROM (
         ROW(12, -3, 0), ROW(12, -3, 2), ROW(12, -3, 4),
         ROW(12, -2, 0), ROW(12, -2, 1), ROW(12, -2, 3), ROW(12, -2, 5),
         ROW(12, -1, 0), ROW(12, -1, 2), ROW(12, -1, 4),
-        ROW(12, 0, 0), ROW(12, 0, 2),
+        ROW(12, 0, 0), ROW(12, 0, 1),
         ROW(13, -3, 1), ROW(13, -3, 5),
-        ROW(13, 0, 1),
-        ROW(14, -3, 6), ROW(14, -2, 5), ROW(14, -1, 6), ROW(14, 0, 2),
+        ROW(13, 0, 0),
+        ROW(14, -3, 6), ROW(14, -2, 5), ROW(14, -1, 6), ROW(14, 0, 0),
         ROW(17, -3, 1), ROW(17, -3, 3), ROW(17, -2, 2)
 ) AS s (habito_id, semana, dia_semana)
 WHERE @lunes + INTERVAL (s.semana * 7 + s.dia_semana) DAY <= CURDATE();
