@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import FilaDelDia from '$lib/components/FilaDelDia.svelte';
+	import FilaDelDia from '$lib/components/fila-del-dia.svelte';
 	import { diaLargo } from '$lib/fechas';
 	import { estadoDelDia } from '$lib/hoy.svelte';
 	import type { PageProps } from './$types';

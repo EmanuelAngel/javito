@@ -1,6 +1,6 @@
 <script lang="ts">
-	import HabitoForm from '$lib/components/HabitoForm.svelte';
-	import HabitosLista from '$lib/components/HabitosLista.svelte';
+	import HabitoForm from '$lib/components/habito-form.svelte';
+	import HabitosLista from '$lib/components/habitos-lista.svelte';
 	import { estadoDeHabitos } from '$lib/habitos.svelte';
 	import type { PageProps } from './$types';
 

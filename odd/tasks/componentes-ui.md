@@ -44,6 +44,11 @@ por una decisión de componente (S4) y va explicado en el body del PR.
 **S8 — Documentación alineada.** `AGENTS.md` deja de mencionar `src/lib/componentes/ui` y documenta
 `src/lib/components/ui` como el lugar de los vendorizados, con la misma advertencia de no editarlos.
 
+**S9 — Kebab-case en los nombres de archivo.** Todo `.svelte` de la app se nombra en kebab-case
+(`cambio-de-tema.svelte`, `fila-del-dia.svelte`), igual que los vendorizados de `components/ui/`. Los
+identificadores importados siguen en PascalCase (`import FilaDelDia from '$lib/components/fila-del-dia.svelte'`)
+y las rutas de SvelteKit (`+page.svelte`, `+layout.svelte`) no cambian.
+
 ## Tasks
 
 - **T1 — Paso 0: el alias y los componentes** (`S1`–`S3`) · inline · rama `feat/ui-componentes` ·
@@ -54,6 +59,9 @@ por una decisión de componente (S4) y va explicado en el body del PR.
 - **T3 — Formulario de hábito** (`S4`, `S5`, `S7`) · inline · commit `refactor(web): rearmar el alta de hábitos con componentes de ui`
 - **T4 — Listas y el día** (`S6`, `S7`) · inline · commit `refactor(web): rearmar listas y el día con componentes de ui`
 - **T5 — Login y docs** (`S5`, `S8`) · inline · commit `refactor(web): rearmar el login con componentes de ui`
+- **T6 — Kebab-case en los nombres** (`S9`) · inline · rama `refactor/kebab-case` · commit
+  `refactor(web): renombrar los componentes a kebab-case`. Va **antes** de T2: renombrar después obliga a
+  reescribir los mismos archivos dos veces.
 
 Cada tarea cierra con `pnpm lint`, `pnpm check`, `pnpm test:web` y `pnpm test:e2e` en verde. Los PRs se
 abren cuando el autor lo pida. Un issue por slice, como en la feature anterior.
@@ -132,3 +140,17 @@ prueba calcula lo esperado con los días transcurridos. RED observado con el see
 y 0 errores/0 advertencias de svelte-check) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 sin tocar los
 e2e. PRs abiertos: **#30** (`fix/seed-semana`, base `main`) y **#31** (`feat/ui-componentes`, apilado
 sobre #30: cambiar la base a `main` cuando mergee).
+
+**L9** — «Ya mergeé #30 y #31. Además de hacer el refactor este, también haz que los nombres de archivos
+de svelte sean en kebab-case, esa es la convención que usaremos acá»
+
+**L10** — El merge de #31 quedó apuntado a su rama base (`fix/seed-semana`) y no a `main`: `main` recibió
+sólo el squash de #30, así que el contenido de T1 (`components/ui/`, alias, exclusiones) nunca llegó al
+default branch y #28 siguió abierto. Se abrió el **PR #32** desde `chore/ui-componentes` (la punta de
+`fix/seed-semana` después de ese merge), con el mismo contenido de T1 y `Closes #28`. Las ramas del
+refactor salen de ahí.
+
+**L11** — El gate de T6 corrió al filo de la medianoche (lunes 23:59 → martes 00:00): `pnpm check` falló
+2 de 73 y un minuto después dio 73/73. Causa: el fixture siembra con `CURDATE()` a las 23:59 y las pruebas
+vuelven a preguntar `CURDATE()` a las 00:00, así que la base quedó sembrada para ayer. No lo causa el
+slice: queda como issue **#34**.

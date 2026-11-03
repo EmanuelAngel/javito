@@ -130,6 +130,10 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   CRLF en las líneas que corrige y el archivo queda sucio para git.
 - **Unidades de trabajo**: cada commit es una unidad revisable y lleva el código junto a sus pruebas
   y su documentación.
+- **Nombres de archivo**: **kebab-case** para todo `.svelte` de la app (`fila-del-dia.svelte`,
+  `cambio-de-tema.svelte`), igual que los vendorizados de `components/ui/`. Los identificadores que se
+  importan siguen en PascalCase (`import FilaDelDia from '$lib/components/fila-del-dia.svelte'`). Las
+  rutas de SvelteKit (`+page.svelte`, `+layout.svelte`) no se tocan.
 - **Sin ORM**: acceso a datos con ADO.NET puro (`MySqlConnector`), SQL a mano.
 
 ## Arquitectura
@@ -180,8 +184,8 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   (Dawn) en `:root` y oscuro (OLED) en `.dark`. **No usar colores sueltos** (`bg-blue-500`): usar los
   tokens (`bg-background`, `text-muted-foreground`, `border-border`, …).
 - **Componentes.** `frontend/web/src/lib/components/` es el árbol único: los propios
-  (`CambioDeTema`, `FilaDelDia`, `HabitoForm`, `HabitosLista`) viven en su raíz, y los **vendorizados** de
-  shadcn-svelte en `frontend/web/src/lib/components/ui/`. Esos los escribe el CLI
+  (`cambio-de-tema`, `fila-del-dia`, `habito-form`, `habitos-lista`) viven en su raíz, y los
+  **vendorizados** de shadcn-svelte en `frontend/web/src/lib/components/ui/`. Esos los escribe el CLI
   (`pnpm exec shadcn-svelte add …` desde `frontend/web`, con el alias de `components.json`); no se editan
   ni se reformatean a mano. Quedan fuera de prettier y de eslint, pero **sí** entran en `svelte-check`.
 - Las utilidades y variantes que esos componentes necesitan llegan por
