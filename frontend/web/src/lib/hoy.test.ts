@@ -127,4 +127,45 @@ describe('estado del día', () => {
 		expect(llamadas).toEqual([]);
 		expect(estado.dia.habitos[0].registro).toEqual({ valor: 0, completado: false });
 	});
+	it('no deja dos pedidos del mismo hábito en vuelo: el segundo espera al primero', async () => {
+		// Servidor que anota el valor de cada PUT y responde cuando la prueba se lo permite, para poder
+		// mirar cuántos pedidos hay en vuelo sin depender del orden en que resuelvan.
+		const enOrden: number[] = [];
+		const responder: Array<() => void> = [];
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((_url: string, opciones?: RequestInit) => {
+				const { valor } = JSON.parse(String(opciones?.body)) as { valor: number };
+				enOrden.push(valor);
+
+				return new Promise<Response>((resolver) => {
+					responder.push(() => resolver(ok({ valor, metaObjetivo: 10, completado: false })));
+				});
+			})
+		);
+
+		const estado = estadoDelDia(unDia());
+
+		// Dos toques seguidos, sin esperar al primero: 9 → 10 y 10 → 11.
+		const primero = estado.subir(estado.dia.habitos[1]);
+		const segundo = estado.subir(estado.dia.habitos[1]);
+
+		await Promise.resolve();
+
+		// Lo que todavía no puede pasar: los dos pedidos en vuelo a la vez.
+		expect(enOrden).toEqual([10]);
+
+		// Responde el primero: recién ahí sale el valor final, uno solo.
+		responder.shift()?.();
+		await new Promise((resolver) => setTimeout(resolver, 0));
+
+		expect(enOrden).toEqual([10, 11]);
+
+		responder.shift()?.();
+		await primero;
+		await segundo;
+
+		expect(estado.dia.habitos[1].registro?.valor).toBe(11);
+	});
 });

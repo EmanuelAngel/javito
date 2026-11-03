@@ -20,11 +20,17 @@ export function estadoDelDia(inicial: Dia) {
 		};
 	}
 
-	async function guardar(habito: HabitoDelDia, valor: number | null): Promise<void> {
-		const anterior = dia;
-		aviso = '';
-		pintar(habito, valor);
+	// Un solo envío en vuelo por hábito, y el último valor pedido esperando turno. Sin esto, dos
+	// toques seguidos dejan dos PUT compitiendo y la base se queda con el que llega último, no con el
+	// que se tocó último (issue #42).
+	// No son estado de la interfaz —no se leen en la plantilla, sólo ordenan los envíos— así que no
+	// hace falta que sean reactivos.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const enVuelo = new Set<number>();
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const pendiente = new Map<number, number | null>();
 
+	async function enviar(habito: HabitoDelDia, valor: number | null, anterior: Dia): Promise<void> {
 		try {
 			if (valor === null) {
 				await desmarcar(habito.id, dia.fecha);
@@ -41,6 +47,32 @@ export function estadoDelDia(inicial: Dia) {
 			} catch {
 				dia = anterior;
 			}
+		}
+	}
+
+	async function guardar(habito: HabitoDelDia, valor: number | null): Promise<void> {
+		// La foto de antes del primer toque: si todo falla, es a donde se vuelve.
+		const anterior = dia;
+		aviso = '';
+		pintar(habito, valor);
+		pendiente.set(habito.id, valor);
+
+		// Ya hay un envío en curso para este hábito: el bucle de abajo va a tomar este valor cuando
+		// termine, así que este toque no gasta un pedido propio.
+		if (enVuelo.has(habito.id)) return;
+
+		enVuelo.add(habito.id);
+
+		try {
+			let siguiente = pendiente.get(habito.id);
+
+			while (siguiente !== undefined) {
+				pendiente.delete(habito.id);
+				await enviar(habito, siguiente, anterior);
+				siguiente = pendiente.get(habito.id);
+			}
+		} finally {
+			enVuelo.delete(habito.id);
 		}
 	}
 
