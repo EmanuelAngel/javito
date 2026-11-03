@@ -37,6 +37,10 @@ export function estadoDelDia(inicial: Dia) {
 			} else {
 				await marcar(habito.id, dia.fecha, valor);
 			}
+
+			// El pedido llegó: se vuelve a pintar el valor enviado. Importa cuando un envío anterior
+			// falló y la reconciliación trajo la foto del servidor: sin esto la pantalla queda atrás.
+			pintar(habito, valor);
 		} catch {
 			// Revertir a ciegas sería mentir al revés: un timeout puede haber guardado del otro lado.
 			// Primero se pregunta qué quedó; si ni eso se puede, se vuelve a la foto anterior al toque.
