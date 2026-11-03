@@ -48,7 +48,7 @@ por una decisión de componente (S4) y va explicado en el body del PR.
 
 - **T1 — Paso 0: el alias y los componentes** (`S1`–`S3`) · inline · rama `feat/ui-componentes` ·
   commit `chore(web): mover el alias de shadcn a la carpeta de componentes` · **Hecho** en `899d9d6`
-  (issue #28). El commit se llamó `chore(web): mover el alias de shadcn a components y vendorizar los
+  (issue #28, PR #31). El commit se llamó `chore(web): mover el alias de shadcn a components y vendorizar los
   componentes base`.
 - **T2 — Categorías** (`S5`–`S7`) · inline · commit `refactor(web): rearmar el ABM de categorías con componentes de ui`
 - **T3 — Formulario de hábito** (`S4`, `S5`, `S7`) · inline · commit `refactor(web): rearmar el alta de hábitos con componentes de ui`
@@ -130,4 +130,5 @@ prueba calcula lo esperado con los días transcurridos. RED observado con el see
 
 **L8** — Cierre de T1 en `feat/ui-componentes` (`69b1683`): `pnpm lint` 0 · `pnpm check` 0 (73/73 de API
 y 0 errores/0 advertencias de svelte-check) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 sin tocar los
-e2e. Sin push y sin PR: lo abre el autor cuando lo pida.
+e2e. PRs abiertos: **#30** (`fix/seed-semana`, base `main`) y **#31** (`feat/ui-componentes`, apilado
+sobre #30: cambiar la base a `main` cuando mergee).
