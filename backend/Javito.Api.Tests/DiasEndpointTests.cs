@@ -77,12 +77,19 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task La_semana_cuenta_de_lunes_a_domingo_y_solo_los_dias_completados()
     {
-        var dia = await DiaAsync(await HoyAsync());
+        var hoy = await HoyAsync();
+        var dia = await DiaAsync(hoy);
 
         // El seed arma las semanas a mano para que cada una cuente una historia: «Ejercicio pesado»
-        // va 2 de 3 esta semana y cumplió 3 la anterior; «Practicar dibujo» retoma con 1 de 2. Un
-        // conteo de «últimos 7 días» daría 3 en vez de 2 según el día en que se corra.
-        Assert.Equal(2, Assert.Single(dia.Habitos, habito => habito.Id == 12).Semana.Cumplidos);
+        // va 2 de 3 esta semana y cumplió 3 la anterior; «Practicar dibujo» retoma con 1 de 2. La
+        // semana en curso se siembra en lunes y martes, los días que ya transcurrieron sin importar
+        // el día en que se corra, así que lo esperado se calcula: un lunes cuenta 1 y de martes en
+        // adelante 2. Un conteo de «últimos 7 días» daría 3 o más en vez de 1 o 2.
+        var diasTranscurridos = ((int)hoy.DayOfWeek + 6) % 7 + 1;
+        var cumplidosEsperados = Math.Min(2, diasTranscurridos);
+
+        var ejercicio = Assert.Single(dia.Habitos, habito => habito.Id == 12);
+        Assert.Equal(cumplidosEsperados, ejercicio.Semana.Cumplidos);
         Assert.Equal(1, Assert.Single(dia.Habitos, habito => habito.Id == 13).Semana.Cumplidos);
         Assert.Equal(1, Assert.Single(dia.Habitos, habito => habito.Id == 14).Semana.Cumplidos);
     }
