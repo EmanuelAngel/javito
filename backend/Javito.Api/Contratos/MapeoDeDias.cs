@@ -19,8 +19,14 @@ public static class MapeoDeDias
         habito.Meta,
         habito.Unidad,
         new FrecuenciaDto(habito.FrecuenciaTipo, habito.FrecuenciaVeces),
-        new SemanaDto(habito.CumplidosEnLaSemana, Objetivo(habito)),
+        new SemanaDto(
+            habito.Semana.Count(dia => dia.Completado),
+            Objetivo(habito),
+            habito.Semana.Select(ADto).ToList()),
         habito.Valor is null ? null : new RegistroDelDiaDto(habito.Valor.Value, habito.Completado));
+
+    /// <summary>La semana es la que ya viene armada del repositorio: acá sólo se proyecta.</summary>
+    private static DiaDeLaSemanaDto ADto(DiaDeLaSemana dia) => new(dia.Fecha, dia.Completado);
 
     /// <summary>
     /// En un hábito diario el objetivo es la semana entera. En uno semanal es la cuota, y la columna

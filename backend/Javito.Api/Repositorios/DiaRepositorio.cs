@@ -1,3 +1,4 @@
+using System.Globalization;
 using Javito.Api.Datos;
 using Javito.Api.Modelos;
 using MySqlConnector;
@@ -6,7 +7,9 @@ namespace Javito.Api.Repositorios;
 
 /// <summary>
 /// Arma la proyección del día en una sola consulta: el LEFT JOIN trae la marca de la fecha pedida —o
-/// nada, que es «sin marcar»— y la subconsulta cuenta los días completados de la semana en curso.
+/// nada, que es «sin marcar»— y la subconsulta trae las fechas completadas de la semana en curso. Los
+/// siete días se arman acá, cruzando el calendario con esas fechas, para que la regla del lunes viva en
+/// un solo lugar.
 /// </summary>
 public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositorio
 {
@@ -24,7 +27,7 @@ public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositor
                    h.unidad_medida,
                    h.frecuencia_tipo,
                    h.frecuencia_veces,
-                   (SELECT COUNT(*)
+                   (SELECT GROUP_CONCAT(DATE_FORMAT(cumplido.fecha, '%Y-%m-%d') ORDER BY cumplido.fecha)
                     FROM registro_habito cumplido
                     WHERE cumplido.habito_id = h.id
                       AND cumplido.completado = TRUE
@@ -41,8 +44,7 @@ public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositor
 
         // La semana se cuenta de lunes a domingo, como el seed: WEEKDAY() de MySQL también usa el
         // lunes como primer día, y REG-04 dibuja esa misma semana.
-        var desdeElLunes = ((int)fecha.DayOfWeek + 6) % 7;
-        var lunes = fecha.AddDays(-desdeElLunes);
+        var lunes = LunesDe(fecha);
         var domingo = lunes.AddDays(6);
 
         await using var conexion = await fabrica.AbrirAsync(cancellationToken);
@@ -56,26 +58,49 @@ public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositor
         await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
         while (await lector.ReadAsync(cancellationToken))
         {
-            habitos.Add(ADominio(lector));
+            habitos.Add(ADominio(lector, lunes));
         }
 
         return habitos;
     }
 
-    private static HabitoDelDia ADominio(MySqlDataReader lector) => new()
+    private static DateOnly LunesDe(DateOnly fecha) => fecha.AddDays(-(((int)fecha.DayOfWeek + 6) % 7));
+
+    /// <summary>
+    /// Desarma el <c>GROUP_CONCAT</c> de fechas. Viene NULL cuando el hábito no completó ningún día de
+    /// la semana, que es el caso normal de un lunes para un hábito semanal.
+    /// </summary>
+    private static List<DateOnly> ADiasCumplidos(string? fechas) =>
+        string.IsNullOrEmpty(fechas)
+            ? []
+            : fechas
+                .Split(',')
+                .Select(fecha => DateOnly.ParseExact(fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .ToList();
+
+    private static HabitoDelDia ADominio(MySqlDataReader lector, DateOnly lunes)
     {
-        Id = lector.GetInt32(0),
-        Titulo = lector.GetString(1),
-        Categoria = lector.IsDBNull(2) ? null : lector.GetString(2),
-        Tipo = lector.GetString(3),
-        Meta = lector.IsDBNull(4) ? null : lector.GetDecimal(4),
-        Unidad = lector.IsDBNull(5) ? null : lector.GetString(5),
-        FrecuenciaTipo = lector.GetString(6),
-        FrecuenciaVeces = lector.IsDBNull(7) ? null : lector.GetInt32(7),
-        CumplidosEnLaSemana = lector.GetInt32(8),
-        Valor = lector.IsDBNull(9) ? null : lector.GetDecimal(9),
-        // Sin fila de registro la columna viene NULL; el CHECK de la base garantiza que haya fila
-        // siempre que el valor no lo sea, así que el valor manda.
-        Completado = !lector.IsDBNull(10) && lector.GetBoolean(10)
-    };
+        var cumplidos = ADiasCumplidos(lector.IsDBNull(8) ? null : lector.GetString(8));
+
+        return new()
+        {
+            Id = lector.GetInt32(0),
+            Titulo = lector.GetString(1),
+            Categoria = lector.IsDBNull(2) ? null : lector.GetString(2),
+            Tipo = lector.GetString(3),
+            Meta = lector.IsDBNull(4) ? null : lector.GetDecimal(4),
+            Unidad = lector.IsDBNull(5) ? null : lector.GetString(5),
+            FrecuenciaTipo = lector.GetString(6),
+            FrecuenciaVeces = lector.IsDBNull(7) ? null : lector.GetInt32(7),
+            Semana = Enumerable
+                .Range(0, 7)
+                .Select(indice => lunes.AddDays(indice))
+                .Select(fecha => new DiaDeLaSemana(fecha, cumplidos.Contains(fecha)))
+                .ToList(),
+            Valor = lector.IsDBNull(9) ? null : lector.GetDecimal(9),
+            // Sin fila de registro la columna viene NULL; el CHECK de la base garantiza que haya fila
+            // siempre que el valor no lo sea, así que el valor manda.
+            Completado = !lector.IsDBNull(10) && lector.GetBoolean(10)
+        };
+    }
 }

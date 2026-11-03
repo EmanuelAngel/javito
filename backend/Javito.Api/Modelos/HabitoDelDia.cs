@@ -25,8 +25,11 @@ public class HabitoDelDia
 
     public int? FrecuenciaVeces { get; set; }
 
-    /// <summary>Días de la semana en curso (lunes a domingo) con registro completado.</summary>
-    public int CumplidosEnLaSemana { get; set; }
+    /// <summary>
+    /// Los siete días de la semana en curso (lunes a domingo) con su marca. Incluye los días que
+    /// todavía no llegaron, que vienen sin completar.
+    /// </summary>
+    public List<DiaDeLaSemana> Semana { get; set; } = [];
 
     /// <summary>Valor alcanzado en la fecha pedida; <c>null</c> cuando no hay marca.</summary>
     public decimal? Valor { get; set; }

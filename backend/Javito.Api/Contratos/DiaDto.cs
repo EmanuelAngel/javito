@@ -22,8 +22,17 @@ public sealed record HabitoDelDiaDto(
 /// <summary>Frecuencia del hábito: diaria o N veces por semana.</summary>
 public sealed record FrecuenciaDto(string Tipo, int? Veces);
 
-/// <summary>Progreso de la semana en curso: de lunes a domingo.</summary>
-public sealed record SemanaDto(int Cumplidos, int Objetivo);
+/// <summary>
+/// Progreso de la semana en curso: de lunes a domingo, con la marca de cada día y el conteo que resume
+/// el badge. <c>Cumplidos</c> sale de <c>Dias</c>: un solo número, una sola fuente.
+/// </summary>
+public sealed record SemanaDto(int Cumplidos, int Objetivo, IReadOnlyList<DiaDeLaSemanaDto> Dias);
+
+/// <summary>
+/// Un día de la semana con su marca. Los días que todavía no llegaron viajan con
+/// <c>Completado = false</c>, igual que un día pasado sin registrar: distinguirlos es del cliente.
+/// </summary>
+public sealed record DiaDeLaSemanaDto(DateOnly Fecha, bool Completado);
 
 /// <summary>La marca del día. <c>null</c> en el hábito significa que todavía no se marcó.</summary>
 public sealed record RegistroDelDiaDto(decimal Valor, bool Completado);
