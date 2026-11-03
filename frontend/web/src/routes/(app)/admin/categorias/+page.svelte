@@ -1,6 +1,18 @@
 <script lang="ts">
 	import { cambiarActivo, crear, editar, listar, type Categoria } from '$lib/api/categorias';
 	import { ErrorDeApi } from '$lib/api/pedir';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import {
+		Empty,
+		EmptyDescription,
+		EmptyHeader,
+		EmptyTitle
+	} from '$lib/components/ui/empty/index.js';
+	import * as Field from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -126,126 +138,110 @@
 		>
 			<h2 class="text-lg font-semibold">{editando ? 'Editar categoría' : 'Nueva categoría'}</h2>
 
-			<label class="flex flex-col gap-1.5">
-				<span class="text-sm font-medium">Nombre</span>
-				<input
-					type="text"
-					bind:value={nombre}
-					required
-					maxlength="60"
-					class="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				/>
-				{#if errorNombre}
-					<span class="text-sm text-destructive">{errorNombre}</span>
-				{/if}
-			</label>
+			<Field.Group>
+				<Field.Field data-invalid={errorNombre !== ''}>
+					<Field.Label for="categoria-nombre">Nombre</Field.Label>
+					<Input
+						id="categoria-nombre"
+						bind:value={nombre}
+						required
+						maxlength={60}
+						aria-invalid={errorNombre !== ''}
+					/>
+					<Field.Error errors={errorNombre ? [{ message: errorNombre }] : []} />
+				</Field.Field>
 
-			<label class="flex flex-col gap-1.5">
-				<span class="text-sm font-medium">Descripción</span>
-				<input
-					type="text"
-					bind:value={descripcion}
-					maxlength="255"
-					class="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				/>
-				{#if errorDescripcion}
-					<span class="text-sm text-destructive">{errorDescripcion}</span>
-				{/if}
-			</label>
+				<Field.Field data-invalid={errorDescripcion !== ''}>
+					<Field.Label for="categoria-descripcion">Descripción</Field.Label>
+					<Input
+						id="categoria-descripcion"
+						bind:value={descripcion}
+						maxlength={255}
+						aria-invalid={errorDescripcion !== ''}
+					/>
+					<Field.Error errors={errorDescripcion ? [{ message: errorDescripcion }] : []} />
+				</Field.Field>
+			</Field.Group>
 
 			{#if mensajeError}
-				<p
-					class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-				>
-					{mensajeError}
-				</p>
+				<Alert variant="destructive" role="alert">
+					<AlertDescription>{mensajeError}</AlertDescription>
+				</Alert>
 			{/if}
 
 			<div class="flex gap-2">
-				<button
-					type="submit"
-					disabled={enviando}
-					class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-				>
+				<Button type="submit" disabled={enviando}>
 					{editando ? 'Guardar cambios' : 'Crear categoría'}
-				</button>
+				</Button>
 				{#if editando}
-					<button
-						type="button"
-						onclick={prepararAlta}
-						class="rounded-lg border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-accent"
-					>
-						Cancelar
-					</button>
+					<Button type="button" variant="outline" onclick={prepararAlta}>Cancelar</Button>
 				{/if}
 			</div>
 		</form>
 
 		<section class="flex flex-1 flex-col gap-4">
-			<label class="flex flex-col gap-1.5">
-				<span class="text-sm font-medium">Buscar por nombre</span>
-				<input
-					type="search"
-					bind:value={busqueda}
-					placeholder="Filtrar por nombre…"
-					class="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				/>
-			</label>
+			<Field.Field>
+				<Field.Label for="buscar">Buscar por nombre</Field.Label>
+				<Input id="buscar" type="search" bind:value={busqueda} placeholder="Filtrar por nombre…" />
+			</Field.Field>
 
-			<div class="overflow-x-auto rounded-xl border border-border bg-card">
-				<table class="w-full text-sm">
-					<thead class="border-b border-border text-left text-muted-foreground">
-						<tr>
-							<th class="px-4 py-3 font-medium">Nombre</th>
-							<th class="px-4 py-3 font-medium">Descripción</th>
-							<th class="px-4 py-3 font-medium">Estado</th>
-							<th class="px-4 py-3 text-right font-medium">Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each filtradas as categoria (categoria.id)}
-							<tr class="border-b border-border last:border-0">
-								<td class="px-4 py-3">{categoria.nombre}</td>
-								<td class="px-4 py-3 text-muted-foreground">{categoria.descripcion ?? '—'}</td>
-								<td class="px-4 py-3">
-									<span
-										class="inline-flex rounded-full border border-border px-2 py-0.5 text-xs font-medium {categoria.activo
-											? 'bg-primary/10 text-primary'
-											: 'bg-muted text-muted-foreground'}"
+			{#if filtradas.length === 0}
+				<Empty class="rounded-xl border border-border bg-card">
+					<EmptyHeader>
+						<EmptyTitle>Sin categorías</EmptyTitle>
+						<EmptyDescription>No hay categorías que coincidan con la búsqueda.</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			{:else}
+				<div class="overflow-x-auto rounded-xl border border-border bg-card">
+					<Table.Root>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head>Nombre</Table.Head>
+								<Table.Head>Descripción</Table.Head>
+								<Table.Head>Estado</Table.Head>
+								<Table.Head class="text-right">Acciones</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each filtradas as categoria (categoria.id)}
+								<Table.Row>
+									<Table.Cell>{categoria.nombre}</Table.Cell>
+									<Table.Cell class="text-muted-foreground"
+										>{categoria.descripcion ?? '—'}</Table.Cell
 									>
-										{categoria.activo ? 'Activa' : 'Inactiva'}
-									</span>
-								</td>
-								<td class="px-4 py-3">
-									<div class="flex justify-end gap-2">
-										<button
-											type="button"
-											onclick={() => prepararEdicion(categoria)}
-											class="rounded-lg border border-border bg-background px-3 py-1.5 transition-colors hover:bg-accent"
-										>
-											Editar
-										</button>
-										<button
-											type="button"
-											disabled={enviando}
-											onclick={() => alternarActivo(categoria)}
-											class="rounded-lg border border-border bg-background px-3 py-1.5 transition-colors hover:bg-accent disabled:opacity-50"
-										>
-											{categoria.activo ? 'Desactivar' : 'Reactivar'}
-										</button>
-									</div>
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="4" class="px-4 py-6 text-center text-muted-foreground">
-									No hay categorías que coincidan con la búsqueda.
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+									<Table.Cell>
+										<Badge variant={categoria.activo ? 'secondary' : 'outline'}>
+											{categoria.activo ? 'Activa' : 'Inactiva'}
+										</Badge>
+									</Table.Cell>
+									<Table.Cell>
+										<div class="flex justify-end gap-2">
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												onclick={() => prepararEdicion(categoria)}
+											>
+												Editar
+											</Button>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={enviando}
+												onclick={() => alternarActivo(categoria)}
+											>
+												{categoria.activo ? 'Desactivar' : 'Reactivar'}
+											</Button>
+										</div>
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
+			{/if}
 		</section>
 	</div>
 </main>
