@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import CambioDeTema from '$lib/components/CambioDeTema.svelte';
+	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import type { LayoutProps } from './$types';
 

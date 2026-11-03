@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import CambioDeTema from '$lib/components/CambioDeTema.svelte';
+	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
 	import { ErrorDeApi, pedir } from '$lib/api/pedir';
