@@ -10,10 +10,10 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
-	// `src/lib/componentes/ui` es código vendorizado de shadcn-svelte: lo escribe el CLI y se
+	// `src/lib/components/ui` es código vendorizado de shadcn-svelte: lo escribe el CLI y se
 	// actualiza con `shadcn-svelte update`, así que no se lintea. El typecheck (svelte-check) sí
-	// lo cubre. Ver S2 en odd/tasks/ui-toolchain.md.
-	{ ignores: ['src/lib/componentes/ui/**'] },
+	// lo cubre. Ver S3 en odd/tasks/componentes-ui.md.
+	{ ignores: ['src/lib/components/ui/**'] },
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,

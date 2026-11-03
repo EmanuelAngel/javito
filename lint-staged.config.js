@@ -15,7 +15,7 @@ export default {
 	// Espeja `pnpm lint:web`, que formatea con prettier todo el SPA (incluye css, html y md).
 	'frontend/web/**/*.{ts,js,svelte,json,yml,yaml,css,html,md}':
 		'pnpm --dir frontend/web exec prettier --write',
-	// `--no-warn-ignored` silencia el aviso por `src/lib/componentes/ui/`: es código vendorizado
+	// `--no-warn-ignored` silencia el aviso por `src/lib/components/ui/`: es código vendorizado
 	// de shadcn-svelte y `eslint.config.js` lo ignora a propósito.
 	'frontend/web/**/*.{ts,js,svelte}':
 		'pnpm --dir frontend/web exec eslint --fix --no-warn-ignored',
