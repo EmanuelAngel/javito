@@ -115,10 +115,19 @@ trabajo sigue en sesión nueva, leyendo este documento y el issue. La carpeta de
 - Verificado: `pnpm lint` 0 · `pnpm check:web` 0 errores y 0 advertencias (svelte-check sí revisa
   `components/ui`) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 **sin tocar** `categorias.e2e.ts` ni
   `habitos.e2e.ts`.
-- **`pnpm check` no queda verde por una causa ajena a T1**:
-  `DiasEndpointTests.La_semana_cuenta_de_lunes_a_domingo_y_solo_los_dias_completados` espera 2 cumplidos
-  esta semana para «Ejercicio pesado» (12) y obtiene 1. El seed arma la semana con
-  `@lunes = CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY` y filtra `<= CURDATE()`, así que un lunes o un
-  martes la fila del miércoles todavía no existe y la historia «va 2 de 3» no se puede contar. `backend/`
-  y `database.sql` quedaron idénticos a `main` en este slice: el defecto es preexistente y depende del
-  día en que se corre. No se tocó: queda a decisión del autor.
+- **`pnpm check` estaba en rojo por una causa ajena a T1**, ya corregida: ver L7.
+
+**L7** — «con issue aparte» (después de elegir «Opción 1: arreglarlo ahora, seed + prueba weekday-aware»).
+El defecto que dejaba `pnpm check` en rojo era de la prueba del día, no de T1:
+`DiasEndpointTests.La_semana_cuenta_de_lunes_a_domingo_y_solo_los_dias_completados` hardcodeaba 2
+cumplidos esta semana para «Ejercicio pesado» (12) y 1 para 13 y 14, mientras el seed arma la semana en
+curso con `@lunes = CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY` y descarta lo que cae en el futuro: un
+lunes el miércoles no existe, y con `UNIQUE (habito_id, fecha)` dos cumplidos son inalcanzables ese día.
+Se arregló en su propio issue (**#29**, rama `fix/seed-semana`, commit `74f4bad`, integrado en
+`feat/ui-componentes` con el merge `69b1683`): el seed siembra la semana en curso en lunes y martes y la
+prueba calcula lo esperado con los días transcurridos. RED observado con el seed viejo y la prueba nueva
+(esperado 1, obtenido 0); GREEN con 73/73 un lunes.
+
+**L8** — Cierre de T1 en `feat/ui-componentes` (`69b1683`): `pnpm lint` 0 · `pnpm check` 0 (73/73 de API
+y 0 errores/0 advertencias de svelte-check) · `pnpm test:web` 22/22 · `pnpm test:e2e` 2/2 sin tocar los
+e2e. Sin push y sin PR: lo abre el autor cuando lo pida.
