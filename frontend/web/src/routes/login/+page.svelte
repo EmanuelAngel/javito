@@ -4,6 +4,10 @@
 	import { sesion } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
 	import { ErrorDeApi, pedir } from '$lib/api/pedir';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Field from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import type { PageProps } from './$types';
 
 	type RespuestaDeSesion = {
@@ -82,49 +86,45 @@
 	</header>
 
 	<form class="flex flex-col gap-4 rounded-xl border border-border bg-card p-6" onsubmit={entrar}>
-		<label class="flex flex-col gap-1.5">
-			<span class="text-sm font-medium">Email</span>
-			<input
-				type="email"
-				bind:value={email}
-				required
-				autocomplete="email"
-				placeholder="usuario@javito.local"
-				class="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			/>
-			{#if errorDeCampo('Email')}
-				<span class="text-sm text-destructive">{errorDeCampo('Email')}</span>
-			{/if}
-		</label>
+		<Field.Group>
+			<Field.Field data-invalid={errorDeCampo('Email') !== ''}>
+				<Field.Label for="sesion-email">Email</Field.Label>
+				<Input
+					id="sesion-email"
+					type="email"
+					bind:value={email}
+					required
+					autocomplete="email"
+					placeholder="usuario@javito.local"
+					aria-invalid={errorDeCampo('Email') !== ''}
+				/>
+				<Field.Error errors={errorDeCampo('Email') ? [{ message: errorDeCampo('Email') }] : []} />
+			</Field.Field>
 
-		<label class="flex flex-col gap-1.5">
-			<span class="text-sm font-medium">Contraseña</span>
-			<input
-				type="password"
-				bind:value={password}
-				required
-				autocomplete="current-password"
-				class="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			/>
-			{#if errorDeCampo('Password')}
-				<span class="text-sm text-destructive">{errorDeCampo('Password')}</span>
-			{/if}
-		</label>
+			<Field.Field data-invalid={errorDeCampo('Password') !== ''}>
+				<Field.Label for="sesion-password">Contraseña</Field.Label>
+				<Input
+					id="sesion-password"
+					type="password"
+					bind:value={password}
+					required
+					autocomplete="current-password"
+					aria-invalid={errorDeCampo('Password') !== ''}
+				/>
+				<Field.Error
+					errors={errorDeCampo('Password') ? [{ message: errorDeCampo('Password') }] : []}
+				/>
+			</Field.Field>
+		</Field.Group>
 
 		{#if mensajeError}
-			<p
-				class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-			>
-				{mensajeError}
-			</p>
+			<Alert variant="destructive" role="alert">
+				<AlertDescription>{mensajeError}</AlertDescription>
+			</Alert>
 		{/if}
 
-		<button
-			type="submit"
-			disabled={enviando}
-			class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-		>
+		<Button type="submit" disabled={enviando}>
 			{enviando ? 'Ingresando…' : 'Entrar'}
-		</button>
+		</Button>
 	</form>
 </main>
