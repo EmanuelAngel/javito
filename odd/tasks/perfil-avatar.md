@@ -75,3 +75,29 @@ almacenamiento configurable, porque acá las pruebas corren contra el mismo árb
 repo; (4) montar el directorio con `PhysicalFileProvider` en `/uploads` en vez de depender del webroot
 implícito. El resto —ruta relativa en la columna, `guid` como nombre, borrado idempotente y compensación
 en el controlador— pasa tal cual, y sirve igual para la portada de `ART-01`.
+
+**L3** — Cierre. **T1** (`82b3719`): `Archivos/` con `IAlmacenDeArchivos` + `AlmacenDeArchivosLocal`,
+`FirmasDeImagen` (firma JPEG/PNG/WebP) y `ReglasDeArchivos` (topes y errores con `codigo`),
+`PerfilController` con `POST avatar` y `avatarUrl` en `UsuarioDto`; 6 pruebas de endpoint nuevas, 80/80 de
+API. **T2** (`ec9573d`): `avatar.svelte` (imagen o inicial), ruta `/perfil`, header leyendo de la sesión
+para repintar sin recargar, `urlDeArchivo` para volver absoluta la ruta del almacén, y `pedir.ts` deja de
+estampar `Content-Type: application/json` cuando el cuerpo es `FormData`; vitest 37/37 (dos de componente)
+y un e2e nuevo.
+
+Tres decisiones que costaron pensarlas:
+
+- **El tope del cuerpo multipart.** Con 6 MB, un cuerpo de 7 MB no llegaba al controlador: el lector de
+  formularios fallaba, MVC se lo tragaba y quedaba `archivo_requerido`, un mensaje que miente. El tope se
+  alineó con el de Kestrel (30 MB) para que todo cuerpo aceptado pase por la validación del almacén y
+  reciba el `413` con el límite en MB. Por encima de 30 MB responde Kestrel, antes de la API.
+- **El `Input` vendorizado no sirve para archivos.** Enlaza `value` además de `files`, Svelte reescribe el
+  `value` de un input de archivo y el navegador tira `InvalidStateError` → la pantalla se caía al 500. Lo
+  encontró el e2e, no la prueba de componente: el campo de archivo se reemplazó por un `<input type="file">`
+  propio y el vendorizado no se toca (regla del repo).
+- **`pedir.ts` cambió para todos.** La condición pasó de «hay cuerpo» a «el cuerpo es un string»: ningún
+  llamador existente manda un cuerpo que no sea JSON o nada, así que para ellos no cambia nada, y la prueba
+  nueva deja fijado que el JSON sigue saliendo con `application/json`.
+
+Gate: `pnpm lint` 0 · `pnpm check` 0 (80/80 de API y svelte-check 0/0) · `pnpm test:web` 37/37 ·
+`pnpm test:e2e` 3/3 (el recorrido nuevo incluido, sin tocar los dos que ya estaban). La rama
+`feat/perfil-avatar` queda con las dos unidades; falta tu decisión de mergear o no.
