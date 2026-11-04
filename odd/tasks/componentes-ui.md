@@ -64,8 +64,8 @@ y las rutas de SvelteKit (`+page.svelte`, `+layout.svelte`) no cambian.
 - **T5 — Login y docs** (`S5`, `S8`) · inline · commit `refactor(web): rearmar el login con componentes de ui`
   · **Hecho** en `e33e4f4` (issue #43, PR #44)
 - **T6 — Kebab-case en los nombres** (`S9`) · inline · rama `refactor/kebab-case` · commit
-  `refactor(web): renombrar los componentes a kebab-case`. Va **antes** de T2: renombrar después obliga a
-  reescribir los mismos archivos dos veces.
+  `refactor(web): renombrar los componentes a kebab-case` · **Hecho** en `c90d61a` (issue #33, PR #35).
+  Va **antes** de T2: renombrar después obliga a reescribir los mismos archivos dos veces.
 
 Cada tarea cierra con `pnpm lint`, `pnpm check`, `pnpm test:web` y `pnpm test:e2e` en verde. Los PRs se
 abren cuando el autor lo pida. Un issue por slice, como en la feature anterior.
@@ -198,3 +198,11 @@ repinte. Corregido en `e63ba64`: el envío que llega vuelve a pintar el valor qu
 juntan en uno, toque en el borde, encolado durante un fallo, dos hábitos en paralelo—: RED en la del
 encolado (9 en vez de 11) y GREEN 27/27. Gate completo: `pnpm lint` 0 · `pnpm check` 0 · `pnpm test:web`
 27/27 · `pnpm test:e2e` 2/2.
+
+**L19** — **Feature cerrada.** Los seis slices y el fix de la carrera entraron a `main` por squash:
+T6 `c90d61a` (#35) · T2 `1a00161` (#37) · T3 `910d1d2` (#39) · T4 `ed736bc` (#41) · T5 `ec5df35` (#44)
+· #42 `e2ff274` (#45). `main` está sincronizado con `origin/main` y no quedan ramas remotas de la feature.
+Los issues de la adopción (#26, #28, #33, #36, #38, #40, #42, #43) están cerrados.
+Trabajo que **no** es de esta feature y quedó abierto a propósito: **#34** (el fixture de pruebas se rompe
+al cruzar la medianoche), **#46** (detectar escrituras concurrentes en la marca del día) y **#27**
+(validar en el cliente antes del round-trip).

@@ -13,6 +13,14 @@ export type Frecuencia = {
 export type Semana = {
 	cumplidos: number;
 	objetivo: number;
+	// Los siete días de la semana en curso, de lunes a domingo. Los que todavía no llegaron viajan
+	// sin completar, igual que un día pasado sin marcar: distinguirlos es de la pantalla.
+	dias: DiaDeLaSemana[];
+};
+
+export type DiaDeLaSemana = {
+	fecha: string;
+	completado: boolean;
 };
 
 export type RegistroDelDia = {

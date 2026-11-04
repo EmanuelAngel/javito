@@ -1,8 +1,27 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Dia } from './api/dias';
+import type { Dia, Semana } from './api/dias';
 import { estadoDelDia } from './hoy.svelte';
 
 const AVISO = 'No se pudo guardar. Probá de nuevo.';
+
+/** Los siete días de la semana del 1/1/2001 —que fue lunes— con la marca que se pida. */
+function semana(cumplidos: number[], objetivo: number): Semana {
+	const fechas = [
+		'2001-01-01',
+		'2001-01-02',
+		'2001-01-03',
+		'2001-01-04',
+		'2001-01-05',
+		'2001-01-06',
+		'2001-01-07'
+	];
+
+	return {
+		cumplidos: cumplidos.length,
+		objetivo,
+		dias: fechas.map((fecha, indice) => ({ fecha, completado: cumplidos.includes(indice) }))
+	};
+}
 
 /** Dos hábitos: uno sí/no sin marcar y un contador en 9 de 10. */
 function unDia(): Dia {
@@ -17,7 +36,7 @@ function unDia(): Dia {
 				meta: null,
 				unidad: null,
 				frecuencia: { tipo: 'diaria', veces: null },
-				semana: { cumplidos: 2, objetivo: 7 },
+				semana: semana([1, 2], 7),
 				registro: null
 			},
 			{
@@ -28,7 +47,7 @@ function unDia(): Dia {
 				meta: 10,
 				unidad: 'páginas',
 				frecuencia: { tipo: 'diaria', veces: null },
-				semana: { cumplidos: 0, objetivo: 7 },
+				semana: semana([], 7),
 				registro: { valor: 9, completado: false }
 			}
 		]
@@ -84,6 +103,23 @@ describe('estado del día', () => {
 		expect(estado.aviso).toBe('');
 	});
 
+	it('el toque pinta también el día de hoy en la semana', async () => {
+		servidor(ok({ valor: 1, metaObjetivo: 1, completado: true }));
+		const estado = estadoDelDia(unDia());
+
+		const pendiente = estado.alternar(estado.dia.habitos[0]);
+
+		// El conteo del badge y el punto de hoy salen de la misma marca: si divergen, la tarjeta
+		// diría «3 de 7 esta semana» con el lunes vacío.
+		expect(estado.dia.habitos[0].semana.cumplidos).toBe(3);
+		expect(estado.dia.habitos[0].semana.dias[0]).toEqual({
+			fecha: '2001-01-01',
+			completado: true
+		});
+
+		await pendiente;
+	});
+
 	it('si el pedido falla, vuelve a lo que dice el servidor y avisa', async () => {
 		servidor(new Response('', { status: 500 }), ok(unDia()));
 		const estado = estadoDelDia(unDia());
@@ -92,6 +128,7 @@ describe('estado del día', () => {
 
 		expect(estado.dia.habitos[0].registro).toBeNull();
 		expect(estado.dia.habitos[0].semana.cumplidos).toBe(2);
+		expect(estado.dia.habitos[0].semana.dias[0].completado).toBe(false);
 		expect(estado.aviso).toBe(AVISO);
 	});
 
@@ -113,6 +150,7 @@ describe('estado del día', () => {
 
 		expect(estado.dia.habitos[1].registro).toEqual({ valor: 10, completado: true });
 		expect(estado.dia.habitos[1].semana.cumplidos).toBe(1);
+		expect(estado.dia.habitos[1].semana.dias[0].completado).toBe(true);
 	});
 
 	it('bajar en cero no gasta un pedido ni escribe una marca', async () => {
