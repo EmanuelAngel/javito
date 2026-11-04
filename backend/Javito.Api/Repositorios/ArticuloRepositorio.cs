@@ -50,6 +50,15 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
         return await lector.ReadAsync(cancellationToken) ? ADominio(lector) : null;
     }
 
+    /// <summary>
+    /// Las columnas que necesita una tarjeta del catálogo. El cuerpo (<c>MEDIUMTEXT</c>) queda afuera
+    /// a propósito: traer seis artículos completos de la base para mostrar títulos y resúmenes es
+    /// justo lo que HU-ART-04 pide evitar. El cuerpo lo lee <see cref="BuscarAsync"/>.
+    /// </summary>
+    private const string ColumnasDelCatalogo = """
+        id, usuario_id, categoria_id, titulo, resumen, imagen_portada_url, fecha_publicacion, activo
+        """;
+
     public async Task<(IReadOnlyList<Articulo> Elementos, int Total)> ListarCatalogoAsync(
         int? categoriaId,
         int limite,
@@ -66,7 +75,7 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
         // Desempate por id: dos artículos publicados el mismo día tienen que salir siempre igual, o la
         // paginación repite y saltea filas entre dos requests.
         var sql = $"""
-            SELECT {Columnas} {filtro}
+            SELECT {ColumnasDelCatalogo} {filtro}
             ORDER BY fecha_publicacion DESC, id DESC
             LIMIT @limite OFFSET @desplazamiento
             """;
@@ -84,7 +93,7 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
             await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
             while (await lector.ReadAsync(cancellationToken))
             {
-                elementos.Add(ADominio(lector));
+                elementos.Add(ADominioDelCatalogo(lector));
             }
         }
 
@@ -93,6 +102,22 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
 
         return (elementos, Convert.ToInt32(await conteo.ExecuteScalarAsync(cancellationToken)));
     }
+
+    /// <summary>
+    /// El artículo sin su cuerpo: <c>ContenidoMarkdown</c> queda vacío porque la consulta del catálogo
+    /// no lo pide. Nadie tiene que leer ese campo desde acá: el detalle se lee con <see cref="BuscarAsync"/>.
+    /// </summary>
+    private static Articulo ADominioDelCatalogo(MySqlDataReader lector) => new()
+    {
+        Id = lector.GetInt32(0),
+        UsuarioId = lector.GetInt32(1),
+        CategoriaId = lector.GetInt32(2),
+        Titulo = lector.GetString(3),
+        Resumen = lector.GetString(4),
+        ImagenPortadaUrl = lector.IsDBNull(5) ? null : lector.GetString(5),
+        FechaPublicacion = lector.GetDateTime(6),
+        Activo = lector.GetBoolean(7)
+    };
 
     private static Articulo ADominio(MySqlDataReader lector) => new()
     {

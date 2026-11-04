@@ -139,6 +139,32 @@ public class ArticulosCatalogoEndpointTests(FabricaDeApi fabrica) : IAsyncLifeti
         Assert.NotEmpty(mensajes.EnumerateArray());
     }
 
+    [Theory]
+    [InlineData("tamanioDePagina=1", 1)]
+    [InlineData("tamanioDePagina=50", 50)]
+    public async Task Catalogo_acepta_los_dos_bordes_del_tamanio_de_pagina(string consulta, int esperado)
+    {
+        // Los bordes del rango aceptado: el tope de 50 no es un rechazo, y 1 no cae al default.
+        var pagina = await PedirAsync($"/api/articulos?{consulta}");
+
+        Assert.Equal(esperado, Numero(pagina, "tamanioDePagina"));
+    }
+
+    [Theory]
+    [InlineData("pagina=abc")]
+    [InlineData("pagina=2147483648")]
+    public async Task Catalogo_con_una_pagina_que_no_es_un_entero_devuelve_400(string consulta)
+    {
+        var respuesta = await _usuario.GetAsync($"/api/articulos?{consulta}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+
+        var problema = await JsonAsync(respuesta);
+        Assert.True(
+            problema.GetProperty("errors").TryGetProperty("Pagina", out _),
+            "Una página que no entra en un entero tiene que nombrar el campo Pagina.");
+    }
+
     // --- S5: el catálogo ---------------------------------------------------------------------
 
     [Fact]
