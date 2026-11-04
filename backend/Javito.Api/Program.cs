@@ -132,7 +132,11 @@ app.UseCors(PoliticaCorsSpa);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(archivos.Ruta),
-    RequestPath = AlmacenDeArchivosLocal.PrefijoWeb
+    RequestPath = AlmacenDeArchivosLocal.PrefijoWeb,
+    // El contenido lo eligió un usuario: el navegador no adivina el tipo, lo toma de la extensión con
+    // la que lo guardamos (que sale de la firma del archivo, no de su nombre).
+    OnPrepareResponse = respuesta =>
+        respuesta.Context.Response.Headers.XContentTypeOptions = "nosniff"
 });
 
 // El orden importa: sin UseAuthentication, UseAuthorization no tiene principal que autorizar y

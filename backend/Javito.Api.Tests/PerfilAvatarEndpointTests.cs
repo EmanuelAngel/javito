@@ -65,8 +65,31 @@ public class PerfilAvatarEndpointTests(FabricaDeApi fabrica) : IClassFixture<Fab
         Assert.Equal("image/png", servido.Content.Headers.ContentType?.MediaType);
         Assert.Equal(PngValido, await servido.Content.ReadAsByteArrayAsync());
 
+        // El archivo lo subió un usuario: el navegador no adivina el tipo, lo toma de la extensión.
+        Assert.Equal("nosniff", servido.Headers.GetValues("X-Content-Type-Options").Single());
+
         // Y es la misma que ve el SPA al revalidar la sesión.
         Assert.Equal(usuario.AvatarUrl, await AvatarEnDiscoAsync(_cliente));
+    }
+
+    [Fact]
+    public async Task Un_jpeg_llamado_png_se_guarda_y_se_sirve_como_jpg()
+    {
+        // La extensión sale de la firma, no del nombre: si se guardara `disfraz.png`, el navegador
+        // recibiría un tipo que no es el del contenido.
+        var jpeg = new byte[]
+        {
+            0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+        };
+
+        var respuesta = await SubirAsync(jpeg, "retrato.png");
+        var usuario = await respuesta.Content.ReadFromJsonAsync<UsuarioDto>();
+
+        Assert.NotNull(usuario);
+        Assert.Matches(@"^/uploads/avatares/[0-9a-f]{32}\.jpg$", usuario.AvatarUrl);
+        Assert.Equal(
+            "image/jpeg",
+            (await _cliente.GetAsync(usuario.AvatarUrl)).Content.Headers.ContentType?.MediaType);
     }
 
     // --- S1 y S8: sólo imágenes, validadas por el servidor -----------------------------------
@@ -146,6 +169,21 @@ public class PerfilAvatarEndpointTests(FabricaDeApi fabrica) : IClassFixture<Fab
 
         var problema = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("no_autenticado", problema.GetProperty("codigo").GetString());
+
+        Assert.Equal(antes, ArchivosEnDisco());
+    }
+
+    [Fact]
+    public async Task Un_archivo_vacio_se_rechaza_y_no_guarda_nada()
+    {
+        var antes = ArchivosEnDisco();
+
+        var respuesta = await SubirAsync([], "vacio.png");
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+
+        var problema = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("archivo_vacio", problema.GetProperty("codigo").GetString());
 
         Assert.Equal(antes, ArchivosEnDisco());
     }
