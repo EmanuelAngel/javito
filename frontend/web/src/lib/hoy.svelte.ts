@@ -15,7 +15,7 @@ export function estadoDelDia(inicial: Dia) {
 		dia = {
 			...dia,
 			habitos: dia.habitos.map((actual) =>
-				actual.id === habito.id ? conValor(actual, valor) : actual
+				actual.id === habito.id ? conValor(actual, valor, dia.fecha) : actual
 			)
 		};
 	}
@@ -111,8 +111,12 @@ export function estadoDelDia(inicial: Dia) {
 	};
 }
 
-/** La fila con su marca nueva y el conteo semanal movido un lugar, sin volver a pedir el día. */
-function conValor(habito: HabitoDelDia, valor: number | null): HabitoDelDia {
+/**
+ * La fila con su marca nueva, el conteo semanal movido un lugar y el día de hoy pintado, sin volver a
+ * pedir el día. El conteo y el punto salen de la misma marca: si uno cambia y el otro no, la tarjeta
+ * diría «3 de 7» con el día de hoy vacío.
+ */
+function conValor(habito: HabitoDelDia, valor: number | null, fecha: string): HabitoDelDia {
 	const meta = habito.meta ?? 1;
 	const antes = habito.registro?.completado ?? false;
 	const registro = valor === null ? null : { valor, completado: valor >= meta };
@@ -122,6 +126,12 @@ function conValor(habito: HabitoDelDia, valor: number | null): HabitoDelDia {
 	return {
 		...habito,
 		registro,
-		semana: { ...habito.semana, cumplidos: Math.max(0, habito.semana.cumplidos + salto) }
+		semana: {
+			...habito.semana,
+			cumplidos: Math.max(0, habito.semana.cumplidos + salto),
+			dias: habito.semana.dias.map((dia) =>
+				dia.fecha === fecha ? { ...dia, completado: despues } : dia
+			)
+		}
 	};
 }

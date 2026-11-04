@@ -3,16 +3,19 @@
 	import MinusIcon from '@lucide/svelte/icons/minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { HabitoDelDia } from '$lib/api/dias';
+	import SemanaDelHabito from '$lib/components/semana-del-habito.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	let {
 		habito,
+		fecha,
 		alternar,
 		subir,
 		bajar
 	}: {
 		habito: HabitoDelDia;
+		fecha: string;
 		alternar: (habito: HabitoDelDia) => void;
 		subir: (habito: HabitoDelDia) => void;
 		bajar: (habito: HabitoDelDia) => void;
@@ -46,6 +49,9 @@
 				<span>{progreso}</span>
 			{/if}
 		</div>
+
+		<!-- La semana de la tarjeta: siete días con su marca, de lunes a domingo (HU-REG-04). -->
+		<SemanaDelHabito semana={habito.semana} hoy={fecha} />
 	</div>
 
 	{#if esContador}

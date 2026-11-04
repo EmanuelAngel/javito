@@ -119,6 +119,38 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.Equal(16, dia.Habitos.Count);
         Assert.All(dia.Habitos, habito => Assert.Null(habito.Registro));
         Assert.All(dia.Habitos, habito => Assert.Equal(0, habito.Semana.Cumplidos));
+        Assert.All(
+            dia.Habitos,
+            habito => Assert.All(habito.Semana.Dias, diaDeLaSemana => Assert.False(diaDeLaSemana.Completado)));
+    }
+
+    [Fact]
+    public async Task La_semana_trae_los_siete_dias_de_lunes_a_domingo_con_su_marca()
+    {
+        var hoy = await HoyAsync();
+        var dia = await DiaAsync(hoy);
+
+        // La semana es la del calendario, no «los últimos siete días»: arranca el lunes de la fecha
+        // pedida y termina el domingo, aunque el domingo todavía no haya llegado.
+        var transcurridos = ((int)hoy.DayOfWeek + 6) % 7;
+        var lunes = hoy.AddDays(-transcurridos);
+        var esperados = Enumerable.Range(0, 7).Select(indice => lunes.AddDays(indice)).ToList();
+
+        var ejercicio = Assert.Single(dia.Habitos, habito => habito.Id == 12);
+
+        Assert.Equal(esperados, ejercicio.Semana.Dias.Select(diaDeLaSemana => diaDeLaSemana.Fecha));
+
+        // El seed siembra la semana en curso en lunes y martes y descarta el futuro, así que de martes
+        // en adelante hay 2 cumplidos y el resto de la semana queda sin marca.
+        var cumplidosEsperados = Math.Min(2, transcurridos + 1);
+        Assert.Equal(
+            Enumerable.Range(0, 7).Select(indice => indice < cumplidosEsperados),
+            ejercicio.Semana.Dias.Select(diaDeLaSemana => diaDeLaSemana.Completado));
+
+        // El conteo del badge sale de los días, no de una consulta aparte: si divergen, la tarjeta
+        // diría «2 de 3» con un solo día pintado.
+        Assert.Equal(cumplidosEsperados, ejercicio.Semana.Cumplidos);
+        Assert.Equal(cumplidosEsperados, ejercicio.Semana.Dias.Count(diaDeLaSemana => diaDeLaSemana.Completado));
     }
 
     [Fact]
@@ -177,6 +209,8 @@ internal sealed record HabitoDelDiaDePrueba(
 
 internal sealed record FrecuenciaDePrueba(string Tipo, int? Veces);
 
-internal sealed record SemanaDePrueba(int Cumplidos, int Objetivo);
+internal sealed record SemanaDePrueba(int Cumplidos, int Objetivo, List<DiaDeLaSemanaDePrueba> Dias);
+
+internal sealed record DiaDeLaSemanaDePrueba(DateOnly Fecha, bool Completado);
 
 internal sealed record RegistroDePrueba(decimal Valor, bool Completado);
