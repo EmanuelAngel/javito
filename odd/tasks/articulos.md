@@ -134,3 +134,11 @@ e2e · artículo <timestamp>` por corrida y su PNG en `backend/Javito.Api/wwwroo
 Se sumaron además los bordes que faltaban del contrato: `tamanioDePagina` 1 y 50 se aceptan, y una
 `pagina` que no es un entero (`abc`, `2147483648`) da 400 nombrando el campo. Backend **118/118**,
 frontend **49/49**, `svelte-check` y `dotnet format` limpios.
+
+**L7 — entrega.** Issues **#58** (`ART-01`, publicar) y **#57** (`ART-04`, catálogo). PRs encadenados
+**#59** (`feat/api-articulos` → `main`) y **#60** (`feat/web-articulos` → `feat/api-articulos`, que
+GitHub reapunta solo al mergear el primero). Las ramas se rearmaron por capa desde los mismos commits
+—`540146a` se aplicó sobre `0de7feb` para que la rama de la API no arrastre código del SPA— y el
+contenido de `feat/web-articulos` quedó idéntico al árbol original (`git diff` vacío antes de borrar la
+rama de trabajo). Peso ponderado: 738 en la API, 1260 en el SPA; los dos por encima del techo de 600
+del presupuesto, con autorización explícita del usuario para revisar PRs de ese tamaño.
