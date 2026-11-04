@@ -29,11 +29,7 @@ public class DiasController(IDiaRepositorio repositorio) : ControllerBase
 
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
         {
-            return RespuestasDeError.De(new ErrorDeNegocio(
-                "no_autenticado",
-                "Sesión requerida",
-                "El token no identifica a ningún usuario. Volvé a iniciar sesión.",
-                StatusCodes.Status401Unauthorized));
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         var habitos = await repositorio.ListarAsync(usuarioId, dia, cancellationToken);

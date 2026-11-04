@@ -136,34 +136,19 @@ public class CategoriasController(ICategoriaRepositorio repositorio) : Controlle
     }
 
     /// <summary>
-    /// ProblemDetails con el `codigo` estable que consume el SPA. Es el equivalente del
-    /// `ModelState.AddModelError` del ABM de la cátedra: los errores previstos se devuelven, no se
-    /// lanzan.
+    /// Los errores previstos se devuelven, no se lanzan: el `codigo` estable es lo que lee el SPA.
     /// </summary>
-    private ObjectResult Problema(int estado, string codigo, string titulo, string detalle)
-    {
-        var problema = Problem(
-            statusCode: estado,
-            title: titulo,
-            detail: detalle,
-            extensions: new Dictionary<string, object?> { ["codigo"] = codigo });
-
-        problema.ContentTypes.Add("application/problem+json");
-
-        return problema;
-    }
-
-    private ObjectResult NombreRepetido(string nombre) => Problema(
-        StatusCodes.Status409Conflict,
+    private static ObjectResult NombreRepetido(string nombre) => RespuestasDeError.De(new ErrorDeNegocio(
         "nombre_repetido",
         "Nombre repetido",
-        $"Ya existe una categoría con el nombre «{nombre}».");
+        $"Ya existe una categoría con el nombre «{nombre}».",
+        StatusCodes.Status409Conflict));
 
-    private ObjectResult NoEncontrada(int id) => Problema(
-        StatusCodes.Status404NotFound,
+    private static ObjectResult NoEncontrada(int id) => RespuestasDeError.De(new ErrorDeNegocio(
         "no_encontrado",
         "Categoría inexistente",
-        $"No hay ninguna categoría con id {id}.");
+        $"No hay ninguna categoría con id {id}.",
+        StatusCodes.Status404NotFound));
 
     private static string? NormalizarDescripcion(string? descripcion) =>
         string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();

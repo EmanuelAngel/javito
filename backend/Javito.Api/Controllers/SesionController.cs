@@ -1,5 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Javito.Api.Contratos;
 using Javito.Api.Repositorios;
 using Javito.Api.Seguridad;
@@ -21,8 +19,6 @@ public class SesionController(IUsuarioRepositorio usuarios, ServicioDeTokens tok
     /// </summary>
     private const string DetalleDeCredencialesInvalidas = "El email o la contraseña no son correctos.";
 
-    private const string DetalleDeSesionIlegible = "El token no identifica una cuenta. Volvé a iniciar sesión.";
-
     [HttpPost]
     [ProducesResponseType<SesionDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -37,11 +33,11 @@ public class SesionController(IUsuarioRepositorio usuarios, ServicioDeTokens tok
             || !BCrypt.Net.BCrypt.Verify(credenciales.Password, usuario.PasswordHash)
             || !usuario.Activo)
         {
-            return Unauthorized(MapeoDeErrores.ProblemDetails(new ErrorDeNegocio(
+            return RespuestasDeError.De(new ErrorDeNegocio(
                 "credenciales_invalidas",
                 "No se pudo iniciar sesión",
                 DetalleDeCredencialesInvalidas,
-                StatusCodes.Status401Unauthorized)));
+                StatusCodes.Status401Unauthorized));
         }
 
         return Ok(new SesionDto(tokens.Emitir(usuario), MapeoDeUsuarios.ADto(usuario)));
@@ -62,23 +58,15 @@ public class SesionController(IUsuarioRepositorio usuarios, ServicioDeTokens tok
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> YoAsync(CancellationToken cancellationToken)
     {
-        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (!int.TryParse(sub, out var id))
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var id))
         {
-            return Unauthorized(MapeoDeErrores.ProblemDetails(SesionIlegible()));
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         var usuario = await usuarios.BuscarPorIdAsync(id, cancellationToken);
 
         return usuario is null
-            ? Unauthorized(MapeoDeErrores.ProblemDetails(SesionIlegible()))
+            ? RespuestasDeError.De(ErroresDeSesion.SesionIlegible())
             : Ok(MapeoDeUsuarios.ADto(usuario));
     }
-
-    private static ErrorDeNegocio SesionIlegible() => new(
-        "no_autenticado",
-        "Sesión requerida",
-        DetalleDeSesionIlegible,
-        StatusCodes.Status401Unauthorized);
 }
