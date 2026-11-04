@@ -63,7 +63,11 @@ reactiva y sale. Ver `odd/tasks/categorias.md`.
 
 - [x] `HAB-01`, `HAB-02`: crear y ver hábitos.
 - [x] `REG-01`, `REG-04`: marcar el día y ver la semana.
-- [ ] `PER-02`: avatar subido y visible en el perfil.
+- [x] `PER-02`: avatar subido y visible en el perfil.
+
+Cerrada con el recorrido de extremo a extremo (`frontend/web/e2e/perfil.e2e.ts`), que sube el avatar
+desde `/perfil` y comprueba que la barra superior se repinta sin recargar. La infraestructura de archivos
+que estrena queda lista para reusarla `ART-01`. Ver `odd/tasks/perfil-avatar.md`.
 
 **Si no cierra:** se cae Artículos entero y el plan se replanifica a 5 de 7 requisitos (§4).
 
