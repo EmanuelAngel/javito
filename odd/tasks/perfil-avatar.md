@@ -101,3 +101,12 @@ Tres decisiones que costaron pensarlas:
 Gate: `pnpm lint` 0 · `pnpm check` 0 (80/80 de API y svelte-check 0/0) · `pnpm test:web` 37/37 ·
 `pnpm test:e2e` 3/3 (el recorrido nuevo incluido, sin tocar los dos que ya estaban). La rama
 `feat/perfil-avatar` queda con las dos unidades; falta tu decisión de mergear o no.
+
+**L4** — Verificación independiente (`gentle-ai-verify`, read-only) sobre `82b3719..eccfafd`: ningún
+defecto bloqueante. Tres huecos de cobertura, dos cerrados acá: una subida de JPEG con nombre `.png`
+—ahora la prueba fija que la extensión sale de la firma y que se sirve como `image/jpeg`— y el archivo
+vacío, que no tenía prueba. El tercero, la compensación cuando la fila no se actualiza
+(`PerfilController`), sigue sin prueba: por HTTP es inalcanzable y hacerla exigiría un doble del
+repositorio, que este proyecto no usa en sus pruebas de endpoint. De la misma pasada salió el `nosniff`
+al servir `/uploads`: el contenido lo elige un usuario y el navegador tiene que tomar el tipo de la
+extensión con la que lo guardamos, no adivinarlo.
