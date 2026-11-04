@@ -195,7 +195,11 @@ Se graba **cuando el requisito se cierra**, no todo el 05/11: un GIF por puerta 
 2. **Archivos tiene dos consumidores** (`PER-02` y `ART-01`) y una sola implementación válida: si la
    subida y la validación se escriben dos veces, se pierden 4 h y probablemente `RT-03`.
 3. **El paginado también**: `ART-04` fija el helper. Escribirlo pensando en que después lo usen Historial
-   y Usuarios no cuesta nada; reescribirlo cuesta 3 h.
+   y Usuarios no cuesta nada; reescribirlo cuesta 3 h. El helper quedó en `Paginacion/` y la metadata
+   viaja en español —`pagina`, `tamanioDePagina`, `totalDeRegistros`, `totalDePaginas`— porque el
+   contrato de esta API es en español. La consigna la nombra en inglés (`pageNumber`, `pageSize`,
+   `totalRecords`, `totalPages`): es la misma metadata, y en la defensa conviene mostrar la
+   equivalencia en vez de esperar que la encuentren.
 4. **La defensa es después del cierre y solo para promocionar.** No hay que ensayar el 05/11: hay que
    entregar. Pero el README se lee en voz alta, así que la matriz se escribe para ser leída.
 
