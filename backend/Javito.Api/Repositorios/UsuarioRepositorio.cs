@@ -14,6 +14,21 @@ public sealed class UsuarioRepositorio(IDbConnectionFactory fabrica) : IUsuarioR
     public Task<Usuario?> BuscarPorIdAsync(int id, CancellationToken cancellationToken = default) =>
         BuscarAsync("id = @valor", id, cancellationToken);
 
+    public async Task<bool> ActualizarAvatarAsync(
+        int id,
+        string? avatarUrl,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE usuario SET avatar_url = @avatar WHERE id = @id";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@avatar", avatarUrl);
+        comando.Parameters.AddWithValue("@id", id);
+
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     private async Task<Usuario?> BuscarAsync(
         string condicion,
         object valor,

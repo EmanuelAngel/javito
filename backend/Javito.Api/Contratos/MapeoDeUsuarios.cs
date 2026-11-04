@@ -6,5 +6,5 @@ namespace Javito.Api.Contratos;
 public static class MapeoDeUsuarios
 {
     public static UsuarioDto ADto(Usuario usuario) =>
-        new(usuario.Id, usuario.Nombre, usuario.Email, usuario.Rol);
+        new(usuario.Id, usuario.Nombre, usuario.Email, usuario.Rol, usuario.AvatarUrl);
 }

@@ -18,6 +18,16 @@ public sealed class FabricaDeApi : WebApplicationFactory<Program>
     private readonly string _cadena;
     private readonly string _entorno;
 
+    /// <summary>
+    /// Raíz de los archivos subidos durante la prueba. Un temporal por fábrica: sin esto el almacén
+    /// escribiría dentro de <c>backend/Javito.Api/wwwroot/uploads</c>, que es del proceso de
+    /// desarrollo y no de los tests.
+    /// </summary>
+    private readonly string _rutaDeArchivos =
+        Path.Combine(Path.GetTempPath(), $"javito-archivos-{Guid.NewGuid():N}");
+
+    public string RutaDeArchivos => _rutaDeArchivos;
+
     public FabricaDeApi() : this(BaseDeDatosDePrueba.CadenaDeConexion, "Development", prepararBase: true)
     {
     }
@@ -45,5 +55,16 @@ public sealed class FabricaDeApi : WebApplicationFactory<Program>
         builder.UseEnvironment(_entorno);
         builder.UseSetting("ConnectionStrings:Javito", _cadena);
         builder.UseSetting("Jwt:Clave", ClaveDeJwtDePruebas);
+        builder.UseSetting("Archivos:Ruta", _rutaDeArchivos);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing && Directory.Exists(_rutaDeArchivos))
+        {
+            Directory.Delete(_rutaDeArchivos, recursive: true);
+        }
     }
 }

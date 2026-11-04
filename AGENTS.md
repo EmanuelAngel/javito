@@ -167,6 +167,21 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   `MapInboundClaims = false` y `RoleClaimType = "rol"` son obligatorios: sin lo primero ASP.NET Core
   remapea los claims, sin lo segundo `[Authorize(Roles=...)]` no encuentra el rol. Los nombres de rol
   viven como constantes en `Seguridad/Roles.cs`: el atributo exige un valor conocido al compilar.
+- **Archivos.** `Archivos/` guarda las imágenes subidas: `IAlmacenDeArchivos` (`GuardarImagenAsync(archivo,
+  subcarpeta)` / `Borrar(ruta)`) con `AlmacenDeArchivosLocal` detrás. Escribe en
+  `{raíz}/{subcarpeta}/{guid}.{ext}` y devuelve la **ruta relativa web** (`/uploads/avatares/…`), que es
+  lo que entra en la columna (`usuario.avatar_url`, `articulo.imagen_portada_url`): nunca blobs en la
+  base, nunca el nombre del cliente en el disco. Es genérico porque tiene dos consumidores: el avatar
+  (`PER-02`) y la portada del artículo (`ART-01`). La raíz sale de `Archivos:Ruta` y por defecto es
+  `backend/Javito.Api/wwwroot/uploads` (ignorada por git y creada al arrancar); se sirve como estático en
+  `/uploads` con un `PhysicalFileProvider`, así que **la lectura es pública** y sólo la subida pasa por
+  autorización. La validación mira la **firma** del archivo (JPEG, PNG, WebP), no la extensión ni el
+  `Content-Type`: un HTML renombrado nunca llega al disco, y la extensión con la que se guarda sale del
+  tipo detectado. Los rechazos son `ProblemDetails` con `codigo` (`archivo_requerido`, `archivo_vacio`,
+  `archivo_no_es_imagen`, `archivo_demasiado_grande`); el tope de la imagen es 5 MB y el del cuerpo
+  multipart coincide con el de Kestrel (30 MB) para que todo cuerpo aceptado pase por esa validación. El
+  reemplazo lo orquesta el controlador, no el almacén: guardar el nuevo, actualizar la fila, borrar el
+  anterior; si la fila no se actualiza, se borra el nuevo y la cuenta sigue con el de antes.
 - **Consumo desde la SPA.** El contrato es el JSON, no el schema: no se genera cliente ni tipos desde
   OpenAPI. `frontend/web/src/lib/api/pedir.ts` envuelve `fetch` (suma `Authorization`, parsea
   `ProblemDetails` en `ErrorDeApi`) y cada recurso tiene su módulo (`api/categorias.ts`) con la interface
