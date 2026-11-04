@@ -33,7 +33,7 @@ public class HabitosController(
     {
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
         {
-            return RespuestasDeError.De(SesionIlegible());
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         var habitos = await repositorio.ListarAsync(usuarioId, activo, cancellationToken);
@@ -50,7 +50,7 @@ public class HabitosController(
     {
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
         {
-            return RespuestasDeError.De(SesionIlegible());
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         var titulo = (entrada.Titulo ?? string.Empty).Trim();
@@ -93,18 +93,20 @@ public class HabitosController(
         {
             if (entrada.Meta is null || entrada.Meta <= 0)
             {
-                return RespuestasDeError.De(ErrorDeNegocio(
+                return RespuestasDeError.De(new ErrorDeNegocio(
                     "meta_requerida",
                     "Falta la meta",
-                    "Un hábito de contador necesita una meta diaria mayor que cero."));
+                    "Un hábito de contador necesita una meta diaria mayor que cero.",
+                    StatusCodes.Status400BadRequest));
             }
 
             if (string.IsNullOrWhiteSpace(entrada.Unidad))
             {
-                return RespuestasDeError.De(ErrorDeNegocio(
+                return RespuestasDeError.De(new ErrorDeNegocio(
                     "unidad_requerida",
                     "Falta la unidad",
-                    "Un hábito de contador necesita la unidad que se cuenta (vasos, páginas, minutos…)."));
+                    "Un hábito de contador necesita la unidad que se cuenta (vasos, páginas, minutos…).",
+                    StatusCodes.Status400BadRequest));
             }
 
             meta = entrada.Meta;
@@ -117,10 +119,11 @@ public class HabitosController(
         {
             if (entrada.Frecuencia!.Veces is not { } cuota || cuota < 1 || cuota > CuotaMaxima)
             {
-                return RespuestasDeError.De(ErrorDeNegocio(
+                return RespuestasDeError.De(new ErrorDeNegocio(
                     "frecuencia_fuera_de_rango",
                     "Frecuencia fuera de rango",
-                    $"Un hábito semanal se repite entre 1 y {CuotaMaxima} veces por semana."));
+                    $"Un hábito semanal se repite entre 1 y {CuotaMaxima} veces por semana.",
+                    StatusCodes.Status400BadRequest));
             }
 
             veces = cuota;
@@ -216,28 +219,31 @@ public class HabitosController(
     {
         if (categoriaId is null)
         {
-            return (null, RespuestasDeError.De(ErrorDeNegocio(
+            return (null, RespuestasDeError.De(new ErrorDeNegocio(
                 "categoria_requerida",
                 "Falta la categoría",
-                "Elegí la categoría del hábito: el catálogo compartido es obligatorio en el alta.")));
+                "Elegí la categoría del hábito: el catálogo compartido es obligatorio en el alta.",
+                StatusCodes.Status400BadRequest)));
         }
 
         var categoria = await categorias.BuscarAsync(categoriaId.Value, cancellationToken);
 
         if (categoria is null)
         {
-            return (null, RespuestasDeError.De(ErrorDeNegocio(
+            return (null, RespuestasDeError.De(new ErrorDeNegocio(
                 "categoria_inexistente",
                 "Categoría inexistente",
-                $"No hay ninguna categoría con id {categoriaId}.")));
+                $"No hay ninguna categoría con id {categoriaId}.",
+                StatusCodes.Status400BadRequest)));
         }
 
         return categoria.Activo
             ? (categoria, null)
-            : (null, RespuestasDeError.De(ErrorDeNegocio(
+            : (null, RespuestasDeError.De(new ErrorDeNegocio(
                 "categoria_inactiva",
                 "Categoría inactiva",
-                $"«{categoria.Nombre}» está inactiva: elegí una del catálogo vigente.")));
+                $"«{categoria.Nombre}» está inactiva: elegí una del catálogo vigente.",
+                StatusCodes.Status400BadRequest)));
     }
 
     /// <summary>
@@ -261,7 +267,7 @@ public class HabitosController(
 
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
         {
-            return (null, null, RespuestasDeError.De(SesionIlegible()));
+            return (null, null, RespuestasDeError.De(ErroresDeSesion.SesionIlegible()));
         }
 
         var habito = await repositorio.BuscarAsync(id, usuarioId, cancellationToken);
@@ -273,10 +279,11 @@ public class HabitosController(
 
         if (!habito.Activo)
         {
-            return (null, null, RespuestasDeError.De(ErrorDeNegocio(
+            return (null, null, RespuestasDeError.De(new ErrorDeNegocio(
                 "habito_archivado",
                 "Hábito archivado",
-                $"«{habito.Titulo}» está archivado: reactivalo antes de marcarlo.")));
+                $"«{habito.Titulo}» está archivado: reactivalo antes de marcarlo.",
+                StatusCodes.Status400BadRequest)));
         }
 
         return (dia, habito, null);
@@ -285,12 +292,13 @@ public class HabitosController(
     private static bool EsBinario(string tipo) =>
         tipo is TiposDeHabito.SiNo or TiposDeHabito.Abstinencia;
 
-    private static ErrorDeNegocio ValorFueraDeRango(string tipo) => ErrorDeNegocio(
+    private static ErrorDeNegocio ValorFueraDeRango(string tipo) => new(
         "valor_fuera_de_rango",
         "Valor fuera de rango",
         EsBinario(tipo)
             ? $"Un hábito «{tipo}» se marca con valor 1: para desmarcarlo se borra la marca."
-            : "El valor tiene que ir de 0 a 999999,99.");
+            : "El valor tiene que ir de 0 a 999999,99.",
+        StatusCodes.Status400BadRequest);
 
     private static string TipoInvalido() =>
         $"El tipo tiene que ser {TiposDeHabito.SiNo}, {TiposDeHabito.Contador} o {TiposDeHabito.Abstinencia}.";
@@ -299,15 +307,6 @@ public class HabitosController(
         $"La frecuencia tiene que ser {TiposDeHabito.Diaria} o {TiposDeHabito.Semanal}.";
 
     /// <summary>Los errores previstos se devuelven, no se lanzan: el manejador queda para lo imprevisto.</summary>
-    private static ErrorDeNegocio ErrorDeNegocio(string codigo, string titulo, string detalle) =>
-        new(codigo, titulo, detalle, StatusCodes.Status400BadRequest);
-
-    private static ErrorDeNegocio SesionIlegible() => new(
-        "no_autenticado",
-        "Sesión requerida",
-        "El token no identifica a ningún usuario. Volvé a iniciar sesión.",
-        StatusCodes.Status401Unauthorized);
-
     private static ObjectResult NoEncontrado(int id) => RespuestasDeError.De(new ErrorDeNegocio(
         "no_encontrado",
         "Hábito inexistente",

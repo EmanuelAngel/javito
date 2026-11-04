@@ -152,16 +152,27 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
   el repositorio que la ejecuta; los helpers de archivos y JWT no son capas.
 - **Errores.** Todo error de la API es `ProblemDetails`: 400 de validación, 404 de ruta inexistente y
   reglas de negocio como `ErrorDeNegocio` con un `codigo` estable. El cliente decide por `codigo`,
-  nunca comparando textos. El 401 y el 403 de `JwtBearer` también: corren fuera de MVC, así que se
-  escriben en `OnChallenge`/`OnForbidden` (`Contratos/RespuestasDeError.cs`); sin eso saldrían con el
-  cuerpo vacío. **Los errores previstos se devuelven, no se lanzan:** el controlador chequea la regla
-  con un método del repositorio (`BuscarPorNombreAsync`) y devuelve `Problem` con su `codigo`; la
-  excepción queda para lo que nadie previó, y el `IExceptionHandler` la convierte en un 500 con el
-  mismo formato. El índice `UNIQUE` de la base sigue siendo la última línea de defensa: en una carrera
-  entre dos altas del mismo nombre se responde 500 en vez de 409, nunca se guarda un duplicado.
+  nunca comparando textos. Hay **un solo lugar** donde se escribe: `Contratos/RespuestasDeError.cs`.
+  Desde una acción de MVC se devuelve con `RespuestasDeError.De(error)` —nunca con un `Problem(...)`
+  armado a mano ni con una factory privada por controlador—; fuera de MVC, el 401 y el 403 de
+  `JwtBearer` se escriben con `RespuestasDeError.EscribirAsync(...)` en `OnChallenge`/`OnForbidden`,
+  porque corren antes del pipeline y sin eso saldrían con el cuerpo vacío. Los errores de sesión
+  previstos viven en `Contratos/ErroresDeSesion.cs` (`SesionIlegible()`), que es el único texto del
+  `no_autenticado`: el challenge y el `sub` ilegible lo comparten, así el mismo `codigo` no se explica
+  de cuatro formas según qué controlador atienda. **Los errores previstos se devuelven, no se lanzan:**
+  el controlador chequea la regla con un método del repositorio (`BuscarPorNombreAsync`) y devuelve
+  `RespuestasDeError.De(new ErrorDeNegocio(codigo, titulo, detalle, estado))`; la excepción queda para
+  lo que nadie previó, y el `IExceptionHandler` la convierte en un 500 con el mismo formato. El estado
+  va **explícito** en cada `ErrorDeNegocio`: su default es 409, y esconderlo detrás de una factory es
+  como se duplican los errores. El índice `UNIQUE` de la base sigue siendo la última línea de defensa:
+  en una carrera entre dos altas del mismo nombre se responde 500 en vez de 409, nunca se guarda un
+  duplicado.
 - **Seguridad.** `Seguridad/` guarda el helper de JWT, no una capa: `OpcionesDeJwt` (configuración con
   fail-fast), `ServicioDeTokens` (firma), `ReclamosDeSesion` (los nombres `sub`, `rol`, `nombre`,
   `email`) y `EsquemaDeSeguridadEnOpenApi` (declara `bearer` para que Scalar pueda mandar el token).
+  El id del usuario se lee del token con `ReclamosDeSesion.TryUsuarioId(User, out var id)`: parsear el
+  `sub` a mano en el controlador es la otra forma de duplicar el mismo 401, porque cada copia se
+  acuerda de un texto distinto.
   `Jwt:Clave` vive en `dotnet user-secrets`; sin ella la API **no arranca**. La sesión dura 8 h sin
   refresh y `activo` se valida **solo en el login**: el token vale lo que dura.
   `MapInboundClaims = false` y `RoleClaimType = "rol"` son obligatorios: sin lo primero ASP.NET Core

@@ -73,11 +73,9 @@ builder.Services
             OnChallenge = contexto =>
             {
                 contexto.HandleResponse();
-                return RespuestasDeError.EscribirAsync(contexto.HttpContext, new ErrorDeNegocio(
-                    "no_autenticado",
-                    "Sesión requerida",
-                    "Falta el token o ya venció. Volvé a iniciar sesión.",
-                    StatusCodes.Status401Unauthorized));
+                return RespuestasDeError.EscribirAsync(
+                    contexto.HttpContext,
+                    ErroresDeSesion.SesionIlegible());
             },
             OnForbidden = contexto => RespuestasDeError.EscribirAsync(contexto.HttpContext, new ErrorDeNegocio(
                 "sin_permiso",

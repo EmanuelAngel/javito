@@ -1,8 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Javito.Api.Archivos;
 using Javito.Api.Contratos;
 using Javito.Api.Repositorios;
+using Javito.Api.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,8 +19,6 @@ public class PerfilController(IUsuarioRepositorio usuarios, IAlmacenDeArchivos a
     /// <summary>Subcarpeta del almacén. La elige el servidor, nunca el cliente.</summary>
     private const string SubcarpetaDeAvatares = "avatares";
 
-    private const string DetalleDeSesionIlegible = "El token no identifica una cuenta. Volvé a iniciar sesión.";
-
     /// <summary>
     /// Guarda la imagen y deja la cuenta apuntando a ella. El avatar anterior se borra **después** de
     /// que la fila quedó actualizada: si la escritura falla, se borra la imagen nueva y la cuenta sigue
@@ -36,30 +33,28 @@ public class PerfilController(IUsuarioRepositorio usuarios, IAlmacenDeArchivos a
         [FromForm] IFormFile? archivo,
         CancellationToken cancellationToken)
     {
-        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (!int.TryParse(sub, out var id))
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var id))
         {
-            return Unauthorized(MapeoDeErrores.ProblemDetails(SesionIlegible()));
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         var usuario = await usuarios.BuscarPorIdAsync(id, cancellationToken);
 
         if (usuario is null)
         {
-            return Unauthorized(MapeoDeErrores.ProblemDetails(SesionIlegible()));
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
         if (archivo is null)
         {
-            return Problema(ReglasDeArchivos.Faltante());
+            return RespuestasDeError.De(ReglasDeArchivos.Faltante());
         }
 
         var guardado = await almacen.GuardarImagenAsync(archivo, SubcarpetaDeAvatares, cancellationToken);
 
         if (guardado.Error is not null)
         {
-            return Problema(guardado.Error);
+            return RespuestasDeError.De(guardado.Error);
         }
 
         var anterior = usuario.AvatarUrl;
@@ -78,24 +73,4 @@ public class PerfilController(IUsuarioRepositorio usuarios, IAlmacenDeArchivos a
 
         return Ok(MapeoDeUsuarios.ADto(usuario));
     }
-
-    /// <summary>ProblemDetails con el `codigo` estable que consume el SPA.</summary>
-    private ObjectResult Problema(ErrorDeNegocio error)
-    {
-        var problema = Problem(
-            statusCode: error.Estado,
-            title: error.Titulo,
-            detail: error.Message,
-            extensions: new Dictionary<string, object?> { ["codigo"] = error.Codigo });
-
-        problema.ContentTypes.Add("application/problem+json");
-
-        return problema;
-    }
-
-    private static ErrorDeNegocio SesionIlegible() => new(
-        "no_autenticado",
-        "Sesión requerida",
-        DetalleDeSesionIlegible,
-        StatusCodes.Status401Unauthorized);
 }
