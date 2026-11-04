@@ -1,8 +1,11 @@
+using Javito.Api.Archivos;
 using Javito.Api.Contratos;
 using Javito.Api.Datos;
 using Javito.Api.Repositorios;
 using Javito.Api.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
@@ -16,6 +19,19 @@ builder.Services.AddControllers();
 // una ruta inexistente y el 500 que nadie atajó. Los errores de negocio los traduce su manejador.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorDeErroresDeNegocio>();
+
+// Archivos subidos: la raíz sale de configuración para que las pruebas apunten a un temporal y no
+// al wwwroot del proyecto. Se sirven como estáticos en /uploads, con el montaje explícito.
+builder.Services.AddSingleton(new OpcionesDeArchivos(
+    builder.Configuration["Archivos:Ruta"]
+        ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads")));
+builder.Services.AddSingleton<IAlmacenDeArchivos, AlmacenDeArchivosLocal>();
+
+// El tope del cuerpo multipart se alinea con el de Kestrel (30 MB) para que todo cuerpo que el
+// servidor acepte pase por la validación del almacén y reciba su mensaje de 5 MB, en vez de morir en
+// un corte del lector de formularios que el SPA no sabría explicar.
+builder.Services.Configure<FormOptions>(
+    opciones => opciones.MultipartBodyLengthLimit = ReglasDeArchivos.TamanoMaximoDelCuerpoEnBytes);
 
 builder.Services.AddScoped<IDbConnectionFactory, MySqlConnectionFactory>();
 builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
@@ -91,6 +107,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// El montaje estático necesita la carpeta: en desarrollo nace vacía y está ignorada por git.
+var archivos = app.Services.GetRequiredService<OpcionesDeArchivos>();
+Directory.CreateDirectory(archivos.Ruta);
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -106,6 +126,18 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.UseCors(PoliticaCorsSpa);
+
+// Los archivos subidos son públicos por URL: se leen por ruta y no pasan por autorización. Lo que
+// queda protegido es la subida, no la lectura del avatar ya publicado.
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(archivos.Ruta),
+    RequestPath = AlmacenDeArchivosLocal.PrefijoWeb,
+    // El contenido lo eligió un usuario: el navegador no adivina el tipo, lo toma de la extensión con
+    // la que lo guardamos (que sale de la firma del archivo, no de su nombre).
+    OnPrepareResponse = respuesta =>
+        respuesta.Context.Response.Headers.XContentTypeOptions = "nosniff"
+});
 
 // El orden importa: sin UseAuthentication, UseAuthorization no tiene principal que autorizar y
 // [Authorize] rechazaría toda request con token válido.
