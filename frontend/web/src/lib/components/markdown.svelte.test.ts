@@ -50,6 +50,19 @@ describe('markdown', () => {
 		expect(enlace?.getAttribute('href') ?? '').not.toContain('javascript:');
 	});
 
+	it('descarta SVG con onload, iframes y style', () => {
+		// Vectores que `marked` deja pasar como HTML crudo: si DOMPurify fallara en uno solo, el
+		// artículo publicado sería un XSS almacenado en el navegador de cada lector.
+		const raiz = montar(
+			'<svg onload="alert(1)"><circle r="1" /></svg>\n\n<iframe src="https://example.com"></iframe>\n\n<style>body{display:none}</style>\n\n[a](JaVaScRiPt:alert(1))'
+		);
+
+		expect(raiz.querySelector('svg[onload]')).toBeNull();
+		expect(raiz.querySelector('iframe')).toBeNull();
+		expect(raiz.querySelector('style')).toBeNull();
+		expect(raiz.querySelector('a')?.getAttribute('href') ?? '').not.toMatch(/javascript:/i);
+	});
+
 	it('sin contenido no rompe ni deja el contenedor vacío de estilo', () => {
 		const raiz = montar('');
 

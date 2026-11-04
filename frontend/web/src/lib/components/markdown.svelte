@@ -13,8 +13,17 @@
 	// renderiza en el navegador de cada lector. Sin DOMPurify, un `<img onerror>` guardado en un
 	// artículo es un XSS almacenado que se dispara en todas las cuentas. `{@html}` nunca recibe la
 	// salida de `marked` sin pasar por acá.
+	//
+	// `FORBID_TAGS: ['style']` no es de más: el perfil por defecto de DOMPurify deja pasar `<style>`,
+	// y con eso un artículo puede tapar la interfaz entera (`body{display:none}`). `USE_PROFILES`
+	// acota además a HTML: SVG y MathML no tienen nada que hacer en un artículo sobre hábitos.
 	const html = $derived(
-		browser ? DOMPurify.sanitize(marked.parse(contenido, { async: false })) : ''
+		browser
+			? DOMPurify.sanitize(marked.parse(contenido, { async: false }), {
+					USE_PROFILES: { html: true },
+					FORBID_TAGS: ['style']
+				})
+			: ''
 	);
 </script>
 
