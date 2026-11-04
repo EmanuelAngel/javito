@@ -118,3 +118,19 @@ historias `ART-02` (edición y reemplazo de portada), `ART-03` (baja lógica) y 
 son las que terminan de contar el módulo. El e2e deja en la base de desarrollo un artículo `Pruebas
 e2e · artículo <timestamp>` por corrida y su PNG en `backend/Javito.Api/wwwroot/uploads/articulos/`:
 `pnpm db:reset` borra las filas y el PNG se limpia con la carpeta.
+
+**L6 — la verificación independiente encontró dos cosas y se corrigieron.**
+
+1. El perfil por defecto de DOMPurify **deja pasar `<style>`**: un artículo publicado podía tapar la
+   interfaz entera con `body{display:none}`. No es ejecución de código, es defacing, y alcanza a
+   todas las cuentas. El renderizador pasó a sanitizar con `USE_PROFILES: { html: true }` y
+   `FORBID_TAGS: ['style']`, y la prueba cubre ahora SVG con `onload`, `iframe` y `style` además de
+   los vectores que ya cubría. La prueba se escribió primero y falló: `expected <style> to be null`.
+2. El catálogo **traía `contenido_markdown` desde MySQL** aunque el DTO no lo mande: la afirmación de
+   L5 valía para el payload y no para la consulta. El listado usa ahora su propia lista de columnas
+   (`ColumnasDelCatalogo`, sin el `MEDIUMTEXT`) y su propio lector, y el detalle sigue leyendo el
+   cuerpo con `BuscarAsync`.
+
+Se sumaron además los bordes que faltaban del contrato: `tamanioDePagina` 1 y 50 se aceptan, y una
+`pagina` que no es un entero (`abc`, `2147483648`) da 400 nombrando el campo. Backend **118/118**,
+frontend **49/49**, `svelte-check` y `dotnet format` limpios.
