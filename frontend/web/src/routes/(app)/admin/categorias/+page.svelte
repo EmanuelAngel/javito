@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cambiarActivo, crear, editar, listar, type Categoria } from '$lib/api/categorias';
-	import { ErrorDeApi } from '$lib/api/pedir';
+	import { CAMPOS_POR_CODIGO_DE_CATEGORIA, mapearErroresDeFormulario } from '$lib/api/errores';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -63,21 +63,11 @@
 	}
 
 	function mostrarError(error: unknown) {
-		if (!(error instanceof ErrorDeApi)) {
-			mensajeError = 'No se pudo contactar a la WebAPI. ¿Está levantada?';
-			return;
-		}
+		const { campos, mensaje } = mapearErroresDeFormulario(error, CAMPOS_POR_CODIGO_DE_CATEGORIA);
 
-		// El 400 trae los errores por campo, con claves en PascalCase (convención de MVC).
-		if (error.estado === 400) {
-			errorNombre = error.errores?.['Nombre']?.[0] ?? '';
-			errorDescripcion = error.errores?.['Descripcion']?.[0] ?? '';
-			if (!errorNombre && !errorDescripcion) mensajeError = error.message;
-		} else if (error.codigo === 'nombre_repetido') {
-			errorNombre = error.message;
-		} else {
-			mensajeError = error.message;
-		}
+		errorNombre = campos['nombre'] ?? '';
+		errorDescripcion = campos['descripcion'] ?? '';
+		mensajeError = mensaje;
 	}
 
 	async function refrescar() {

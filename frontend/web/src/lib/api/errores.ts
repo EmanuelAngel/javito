@@ -13,8 +13,8 @@ export type ErroresDeFormulario = {
 };
 
 /**
- * Código de negocio -> campo del formulario. Es específico del alta de hábitos (S6); cada
- * formulario nuevo pasa su propio mapa. Cualquier código que no esté acá cae al mensaje general.
+ * Código de negocio -> campo del formulario. Cada formulario pasa el suyo: el alta de hábitos (S6)
+ * y el ABM de categorías. Cualquier código que no esté acá cae al mensaje general.
  */
 export const CAMPOS_POR_CODIGO_DE_HABITO: Record<string, string> = {
 	categoria_requerida: 'categoriaId',
@@ -23,6 +23,11 @@ export const CAMPOS_POR_CODIGO_DE_HABITO: Record<string, string> = {
 	meta_requerida: 'meta',
 	unidad_requerida: 'unidad',
 	frecuencia_fuera_de_rango: 'veces'
+};
+
+/** El único código de negocio del ABM de categorías: un nombre repetido es un error del campo Nombre. */
+export const CAMPOS_POR_CODIGO_DE_CATEGORIA: Record<string, string> = {
+	nombre_repetido: 'nombre'
 };
 
 /**

@@ -3,7 +3,8 @@
 	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
 	import { sesion, type Usuario } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
-	import { ErrorDeApi, pedir } from '$lib/api/pedir';
+	import { mapearErroresDeFormulario } from '$lib/api/errores';
+	import { pedir } from '$lib/api/pedir';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Field from '$lib/components/ui/field/index.js';
@@ -22,7 +23,7 @@
 	let password = $state('');
 	let enviando = $state(false);
 	let mensajeError = $state('');
-	let erroresPorCampo = $state<Record<string, string[]>>({});
+	let erroresPorCampo = $state<Record<string, string>>({});
 
 	// ?destino= lo puso el guard: después de entrar se vuelve ahí. Ya sale validado del load,
 	// pero el destino no se usa si no pasa por destinoSeguro.
@@ -49,25 +50,20 @@
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			await goto(destino);
 		} catch (error) {
-			if (error instanceof ErrorDeApi) {
-				// El 400 trae los errores por campo; el resto, un mensaje para el formulario.
-				if (error.estado === 400) {
-					erroresPorCampo = error.errores ?? {};
-					mensajeError = 'Revisá los datos del formulario.';
-				} else {
-					mensajeError = error.message;
-				}
-			} else {
-				mensajeError = 'No se pudo contactar a la WebAPI. ¿Está levantada?';
-			}
+			const { campos, mensaje } = mapearErroresDeFormulario(error);
+
+			erroresPorCampo = campos;
+			// Un 400 de validación pinta cada campo y, además, el aviso general del formulario; el 401
+			// de credenciales y el resto caen en el mensaje que trae el error.
+			mensajeError = Object.keys(campos).length > 0 ? 'Revisá los datos del formulario.' : mensaje;
 		} finally {
 			enviando = false;
 		}
 	}
 
-	// El backend interpola las claves por clase: Email, Password (convención de MVC).
-	function errorDeCampo(campo: 'Email' | 'Password'): string {
-		return erroresPorCampo[campo]?.[0] ?? '';
+	// El mapeo compartido entrega las claves en camelCase: `Email` -> `email`, `Password` -> `password`.
+	function errorDeCampo(campo: 'email' | 'password'): string {
+		return erroresPorCampo[campo] ?? '';
 	}
 </script>
 
@@ -88,7 +84,7 @@
 
 	<form class="flex flex-col gap-4 rounded-xl border border-border bg-card p-6" onsubmit={entrar}>
 		<Field.Group>
-			<Field.Field data-invalid={errorDeCampo('Email') !== ''}>
+			<Field.Field data-invalid={errorDeCampo('email') !== ''}>
 				<Field.Label for="sesion-email">Email</Field.Label>
 				<Input
 					id="sesion-email"
@@ -97,12 +93,12 @@
 					required
 					autocomplete="email"
 					placeholder="usuario@javito.local"
-					aria-invalid={errorDeCampo('Email') !== ''}
+					aria-invalid={errorDeCampo('email') !== ''}
 				/>
-				<Field.Error errors={errorDeCampo('Email') ? [{ message: errorDeCampo('Email') }] : []} />
+				<Field.Error errors={errorDeCampo('email') ? [{ message: errorDeCampo('email') }] : []} />
 			</Field.Field>
 
-			<Field.Field data-invalid={errorDeCampo('Password') !== ''}>
+			<Field.Field data-invalid={errorDeCampo('password') !== ''}>
 				<Field.Label for="sesion-password">Contraseña</Field.Label>
 				<Input
 					id="sesion-password"
@@ -110,10 +106,10 @@
 					bind:value={password}
 					required
 					autocomplete="current-password"
-					aria-invalid={errorDeCampo('Password') !== ''}
+					aria-invalid={errorDeCampo('password') !== ''}
 				/>
 				<Field.Error
-					errors={errorDeCampo('Password') ? [{ message: errorDeCampo('Password') }] : []}
+					errors={errorDeCampo('password') ? [{ message: errorDeCampo('password') }] : []}
 				/>
 			</Field.Field>
 		</Field.Group>

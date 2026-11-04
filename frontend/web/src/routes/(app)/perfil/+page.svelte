@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { mapearErroresDeFormulario } from '$lib/api/errores';
 	import { FORMATOS_DEL_AVATAR, TAMANO_MAXIMO_DEL_AVATAR, subirAvatar } from '$lib/api/perfil';
-	import { ErrorDeApi } from '$lib/api/pedir';
 	import Avatar from '$lib/components/avatar.svelte';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import * as Field from '$lib/components/ui/field/index.js';
@@ -48,10 +48,9 @@
 			sesion.refrescarUsuario(await subirAvatar(archivo));
 			mensajeOk = 'Tu avatar ya está actualizado.';
 		} catch (error) {
-			mensajeError =
-				error instanceof ErrorDeApi
-					? error.message
-					: 'No se pudo contactar a la WebAPI. ¿Está levantada?';
+			// Esta pantalla no tiene campos de formulario: sólo interesa el mensaje general, que ya
+			// resuelve el mapeo compartido (regla de negocio, 500 o fallo de red).
+			mensajeError = mapearErroresDeFormulario(error).mensaje;
 		} finally {
 			enviando = false;
 		}
