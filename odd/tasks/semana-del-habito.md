@@ -63,3 +63,7 @@ Tres decisiones que costaron pensarlas:
 
 Gate: `pnpm lint` 0 · `pnpm check` 0 (74/74 de API y svelte-check 0/0) · `pnpm test:web` 32/32 ·
 `pnpm test:e2e` 2/2 **sin modificar los e2e**. La Puerta 2 queda a un renglón: `PER-02`.
+
+**L4** — Mergeado en `main` con squash (**#48**, `7f22776`). La rama remota se borró y la local también.
+Con esto la Puerta 2 queda a un renglón: el avatar (`PER-02`), que trae la infra de archivos que después
+usa la portada de Artículos (`RT-03`).
