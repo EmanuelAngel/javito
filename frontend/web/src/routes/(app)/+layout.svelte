@@ -1,14 +1,18 @@
 <script lang="ts">
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
-	import UserIcon from '@lucide/svelte/icons/user';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import Avatar from '$lib/components/avatar.svelte';
 	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
+
+	// El header lee la sesión y no el `data` del load: subir el avatar en /perfil refresca el estado
+	// y la barra se repinta sin recargar ni volver a navegar (HU-PER-02, S5).
+	const usuario = $derived(sesion.usuario ?? data.usuario);
 
 	// Redirect centralizado del 401 (S5): si pedir cierra la sesión mientras estás dentro
 	// de (app), acá se manda a /login una sola vez, recordando a dónde ibas.
@@ -62,15 +66,16 @@
 						Categorías
 					</a>
 				{/if}
-				<span class="hidden text-sm text-muted-foreground sm:inline">{data.usuario.nombre}</span>
+				<span class="hidden text-sm text-muted-foreground sm:inline">{usuario.nombre}</span>
 				<CambioDeTema />
-				<!-- Avatar placeholder: el perfil real entra con el módulo de usuario -->
-				<span
-					class="grid size-9 place-items-center rounded-full border border-border bg-background text-muted-foreground"
-					aria-hidden="true"
+				<!-- El avatar es el acceso al perfil: es el gesto que la historia promete. -->
+				<a
+					href={resolve('/(app)/perfil')}
+					aria-label="Mi perfil"
+					class="rounded-full transition-opacity hover:opacity-80"
 				>
-					<UserIcon class="size-4" />
-				</span>
+					<Avatar nombre={usuario.nombre} avatarUrl={usuario.avatarUrl} />
+				</a>
 				<button
 					type="button"
 					onclick={salir}

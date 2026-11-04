@@ -9,3 +9,11 @@
 // cuando haya un entorno donde se pueda verificar el valor en el navegador.
 // Ver odd/tasks/scaffold-monorepo.md, L9.
 export const API_URL = 'http://localhost:5256';
+
+/**
+ * Las rutas del almacén (`/uploads/avatares/…`) viajan relativas porque la base no sabe de puertos.
+ * Acá se vuelven absolutas contra la API: un `<img>` no puede resolverlas contra el origen del SPA.
+ */
+export function urlDeArchivo(ruta: string): string {
+	return `${API_URL}${ruta}`;
+}
