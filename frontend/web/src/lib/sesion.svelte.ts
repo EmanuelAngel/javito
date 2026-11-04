@@ -12,6 +12,8 @@ export type Usuario = {
 	nombre: string;
 	email: string;
 	rol: string;
+	// Ruta relativa al almacén de la API (`/uploads/avatares/…`), o null si la cuenta no subió una.
+	avatarUrl: string | null;
 };
 
 export type Sesion = {

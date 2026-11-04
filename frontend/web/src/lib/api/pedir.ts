@@ -31,7 +31,9 @@ export async function pedir<T>(ruta: string, opciones: OpcionesDePedido = {}): P
 	const cabeceras = new Headers(resto.headers);
 
 	if (sesion.token) cabeceras.set('Authorization', `Bearer ${sesion.token}`);
-	if (resto.body) cabeceras.set('Content-Type', 'application/json');
+	// Sólo un cuerpo JSON lleva su Content-Type. Un FormData (la subida del avatar) tiene que salir sin
+	// él: el navegador agrega el multipart con su boundary y, si lo pisamos, el servidor no lo parsea.
+	if (typeof resto.body === 'string') cabeceras.set('Content-Type', 'application/json');
 
 	const respuesta = await fetch(`${API_URL}${ruta}`, { ...resto, headers: cabeceras });
 

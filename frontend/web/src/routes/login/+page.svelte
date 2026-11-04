@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
-	import { sesion } from '$lib/sesion.svelte';
+	import { sesion, type Usuario } from '$lib/sesion.svelte';
 	import { destinoSeguro } from '$lib/navegacion';
 	import { ErrorDeApi, pedir } from '$lib/api/pedir';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
@@ -10,9 +10,10 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import type { PageProps } from './$types';
 
+	// El tipo del usuario sale de la sesión y no se repite acá: el contrato es uno solo.
 	type RespuestaDeSesion = {
 		token: string;
-		usuario: { id: number; nombre: string; email: string; rol: string };
+		usuario: Usuario;
 	};
 
 	let { data }: PageProps = $props();

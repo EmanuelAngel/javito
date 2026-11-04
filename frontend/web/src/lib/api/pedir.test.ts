@@ -44,4 +44,33 @@ describe('pedir', () => {
 
 		await expect(pedir('/api/x')).rejects.toBeInstanceOf(ErrorDeApi);
 	});
+
+	it('un cuerpo JSON viaja con Content-Type application/json', async () => {
+		const fetchFalso = vi.fn<(ruta: string, opciones: RequestInit) => Promise<Response>>(
+			async () => new Response('{}')
+		);
+		vi.stubGlobal('fetch', fetchFalso);
+
+		await pedir('/api/categorias', { method: 'POST', body: JSON.stringify({ nombre: 'x' }) });
+
+		const [, opciones] = fetchFalso.mock.calls[0];
+		expect(new Headers(opciones.headers).get('Content-Type')).toBe('application/json');
+	});
+
+	it('un cuerpo FormData no lleva Content-Type JSON: el boundary lo pone el navegador', async () => {
+		// El avatar viaja como multipart. Si `pedir` estampa application/json, el servidor no puede
+		// parsear el formulario y toda subida falla con un 400 que no explica nada.
+		const fetchFalso = vi.fn<(ruta: string, opciones: RequestInit) => Promise<Response>>(
+			async () => new Response('{}')
+		);
+		vi.stubGlobal('fetch', fetchFalso);
+
+		const formulario = new FormData();
+		formulario.append('archivo', new Blob([new Uint8Array([1, 2, 3])]), 'foto.png');
+
+		await pedir('/api/perfil/avatar', { method: 'POST', body: formulario });
+
+		const [, opciones] = fetchFalso.mock.calls[0];
+		expect(new Headers(opciones.headers).has('Content-Type')).toBe(false);
+	});
 });
