@@ -34,6 +34,7 @@ builder.Services.Configure<FormOptions>(
     opciones => opciones.MultipartBodyLengthLimit = ReglasDeArchivos.TamanoMaximoDelCuerpoEnBytes);
 
 builder.Services.AddScoped<IDbConnectionFactory, MySqlConnectionFactory>();
+builder.Services.AddScoped<IArticuloRepositorio, ArticuloRepositorio>();
 builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 builder.Services.AddScoped<IDiaRepositorio, DiaRepositorio>();
 builder.Services.AddScoped<IHabitoRepositorio, HabitoRepositorio>();
