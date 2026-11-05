@@ -14,9 +14,16 @@ public interface IHabitoRepositorio
     /// Los hábitos del usuario: los activos primero y cada grupo por título. Sin filtro vienen los
     /// dos, que es lo que necesita la pantalla para separarlos sin pedir dos veces.
     /// </summary>
+    /// <param name="q">
+    /// Pedazo del título, tal como lo escribe la persona. Vacío o en blanco no filtra. `%`, `_` y la
+    /// barra se buscan literales: son comodines de LIKE, no texto. Con texto, además, sólo entran los
+    /// activos: la búsqueda existe para agregar un hábito a una rutina, y uno archivado no se agrega
+    /// (HU-RUT-02), así que pedir `q` junto a `activo=false` devuelve vacío a propósito.
+    /// </param>
     Task<IReadOnlyList<Habito>> ListarAsync(
         int usuarioId,
         bool? activo,
+        string? q,
         CancellationToken cancellationToken = default);
 
     /// <summary>Inserta el hábito y devuelve el id que le asignó la base.</summary>

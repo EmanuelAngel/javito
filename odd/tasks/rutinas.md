@@ -57,3 +57,10 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 - **D5** — Los escritores van en serie, no en paralelo: `BaseDeDatosDePrueba` recrea el schema
   `javito_test` desde `database.sql` al arrancar cada fixture, así que dos `dotnet test` simultáneos se
   pisan.
+- **D6** — La búsqueda **no** lleva tope de resultados. Se propuso un `LIMIT` por higiene, pero con los
+  hábitos de una cuenta doméstica un tope sólo esconde coincidencias que la persona espera ver; el `q`
+  ya acota. Sí se conserva el escape de `%`, `_` y `\` en el patrón, que era el bug real de `LIKE`.
+- **D7** — La búsqueda exige `activo = TRUE` **dentro del SQL de la búsqueda**
+  (`AND (@patron IS NULL OR (activo = TRUE AND titulo LIKE …))`): la regla de S5 es del servidor y no
+  del SPA, y pedir `q` junto a `activo=false` devuelve vacío a propósito. Lo encontró la prueba de S5,
+  que nació roja.
