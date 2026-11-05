@@ -131,29 +131,50 @@ public sealed class RutinaRepositorio(IDbConnectionFactory fabrica) : IRutinaRep
         int habitoId,
         CancellationToken cancellationToken = default)
     {
-        // INSERT … SELECT: el lugar se calcula dentro de la misma sentencia, así que el CHECK
-        // (orden >= 1) y la numeración no dependen de lo que haya leído antes otro pedido.
-        const string insertar = """
-            INSERT INTO rutina_habito (rutina_id, habito_id, orden)
-            SELECT @rutinaId, @habitoId, COALESCE(MAX(orden), 0) + 1
-            FROM rutina_habito
-            WHERE rutina_id = @rutinaId
-            """;
-
         await using var conexion = await fabrica.AbrirAsync(cancellationToken);
-        await using var comando = new MySqlCommand(insertar, conexion);
-        comando.Parameters.AddWithValue("@rutinaId", rutinaId);
-        comando.Parameters.AddWithValue("@habitoId", habitoId);
+        await using var transaccion = await conexion.BeginTransactionAsync(cancellationToken);
 
-        await comando.ExecuteNonQueryAsync(cancellationToken);
+        // Se bloquea primero la fila de la rutina, que es la raíz del agregado: dos altas simultáneas
+        // hacen fila acá. Calcular el `MAX(orden)` con un INSERT … SELECT sobre la tabla hija tomaba
+        // locks de rango, y dos de esos se matan entre sí: InnoDB devuelve 1213 y el alta se perdía con
+        // un 500 (lo pinta RutinasConcurrenciaEndpointTests).
+        await using (var bloquear = new MySqlCommand(
+            "SELECT id FROM rutina WHERE id = @rutinaId FOR UPDATE",
+            conexion,
+            transaccion))
+        {
+            bloquear.Parameters.AddWithValue("@rutinaId", rutinaId);
+            await bloquear.ExecuteScalarAsync(cancellationToken);
+        }
 
-        await using var orden = new MySqlCommand(
-            "SELECT orden FROM rutina_habito WHERE rutina_id = @rutinaId AND habito_id = @habitoId",
-            conexion);
-        orden.Parameters.AddWithValue("@rutinaId", rutinaId);
-        orden.Parameters.AddWithValue("@habitoId", habitoId);
+        // Con el lock tomado nadie más numera esta rutina, así que la lectura ya ve el último commit.
+        int orden;
+        await using (var ultimo = new MySqlCommand(
+            "SELECT COALESCE(MAX(orden), 0) + 1 FROM rutina_habito WHERE rutina_id = @rutinaId",
+            conexion,
+            transaccion))
+        {
+            ultimo.Parameters.AddWithValue("@rutinaId", rutinaId);
+            orden = Convert.ToInt32(await ultimo.ExecuteScalarAsync(cancellationToken));
+        }
 
-        return Convert.ToInt32(await orden.ExecuteScalarAsync(cancellationToken));
+        await using (var insertar = new MySqlCommand(
+            "INSERT INTO rutina_habito (rutina_id, habito_id, orden) " +
+            "VALUES (@rutinaId, @habitoId, @orden)",
+            conexion,
+            transaccion))
+        {
+            insertar.Parameters.AddWithValue("@rutinaId", rutinaId);
+            insertar.Parameters.AddWithValue("@habitoId", habitoId);
+            insertar.Parameters.AddWithValue("@orden", orden);
+            await insertar.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaccion.CommitAsync(cancellationToken);
+
+        // El lugar se devuelve calculado, no releído: si otra transacción borra la fila justo después
+        // del commit, una relectura devolvería null y el alta exitosa terminaría en 500.
+        return orden;
     }
 
     public async Task<bool> QuitarHabitoAsync(

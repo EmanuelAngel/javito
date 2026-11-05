@@ -37,6 +37,8 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 - **T5** · S4 · inline · `6d04e07` · `feat(web): pantalla de rutinas con buscador asíncrono de hábitos`
 - **T6** · todas · inline · este commit · `docs(odd): cerrar la Puerta 3`
 
+- **T7** · S6-S7 · inline · este commit · `fix(api): serializar el alta de hábitos en una rutina`
+
 ## Cierre
 
 | Regla | Dónde se prueba |
@@ -44,6 +46,7 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 | S1-S3 | `backend/Javito.Api.Tests/RutinasEndpointTests.cs` |
 | S4-S5 | `backend/Javito.Api.Tests/BusquedaDeHabitosEndpointTests.cs` |
 | S6-S8 | `backend/Javito.Api.Tests/RutinasHabitosEndpointTests.cs` |
+| S6-S7 bajo concurrencia | `backend/Javito.Api.Tests/RutinasConcurrenciaEndpointTests.cs` |
 | Debounce, abort y respuesta vieja | `frontend/web/src/lib/busqueda.test.ts` |
 
 - `RT-01` — las pruebas de agregar y quitar escriben y borran filas reales de `rutina_habito` en
@@ -56,8 +59,8 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 
 | Comando | Resultado |
 | :--- | :--- |
-| `dotnet test` (suite completa) | 140/140 |
-| `dotnet test --filter ~Rutinas` | 16/16 |
+| `dotnet test` (suite completa) | 142/142 |
+| `dotnet test --filter ~Rutinas` | 18/18 |
 | `dotnet test --filter ~BusquedaDeHabitos` | 6/6 |
 | `pnpm check` | exit 0 |
 | `pnpm lint` | exit 0 |
@@ -104,3 +107,19 @@ Ninguna advertencia nueva. Las dos `CS8602` del build son preexistentes
   escenificarlo. La historia se reconstruyó con `git reset --mixed` a `97d83fa`, achicando el árbol a
   T3 y reaplicando T4 desde un snapshot: quedan `73035d6` (T3) y `8fa9b3d` (T4), ambos íntegros. Regla
   para lo que sigue: **no se toca ningún archivo mientras hay un commit corriendo**.
+- **D9 — Deadlock en altas simultáneas, encontrado por la verificación independiente.** El
+  `INSERT … SELECT COALESCE(MAX(orden), 0) + 1 FROM rutina_habito` tomaba locks de rango sobre la
+  tabla hija: dos altas a la misma rutina se mataban con `1213 Deadlock found` y una se perdía con 500
+  (medido: 4/20 con dos POST a 0 ms; 8/24 en la corrida del verificador; a 40 ms de desfase, 0/20).
+  Nunca corrompía datos: el `orden` no se repetía ni el UNIQUE se violaba. Ahora el repositorio abre
+  una transacción, bloquea la fila de `rutina` con `FOR UPDATE` —la raíz del agregado— y recién
+  entonces numera e inserta. Se descartó reintentar ante el 1213: tapar el síntoma deja el lock
+  tomado igual y esconde el problema en cada alta. La misma reescritura eliminó un hallazgo menor: el
+  orden se devuelve calculado, así que ya no hay un `Convert.ToInt32(null)` si otra transacción borra
+  la fila entre el INSERT y la relectura.
+- **D10 — Hallazgos que se dejan como están, a propósito.** `[StringLength(60)]` valida antes del
+  `Trim()`, así que un nombre de 60 caracteres con un espacio final da 400 aunque recortado entre en
+  la columna: es el mismo comportamiento que `CategoriaEntradaDto` y desde el SPA es inalcanzable
+  (`maxlength=60` más recorte en `rutinas.svelte.ts`). `ExisteHabitoAsync` y `QuitarHabitoAsync` no
+  filtran por `usuario_id`: su único llamador ya validó el dueño antes, y agregarles el filtro es
+  defensa en profundidad para un llamador futuro, no un defecto hoy.
