@@ -58,7 +58,23 @@
 				>
 					Hábitos
 				</a>
+				<!-- El catálogo lo lee cualquier usuario con sesión: no hay catálogo público, pero
+					 tampoco hace falta un rol. -->
+				<a
+					href={resolve('/(app)/articulos')}
+					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+				>
+					Artículos
+				</a>
 				{#if data.usuario.rol === 'Administrador'}
+					<!-- Publicar es sólo de Administración. El servidor rechaza igual con 403; esconder el
+						 enlace sólo evita ofrecer un camino que termina en un error. -->
+					<a
+						href={resolve('/(app)/articulos/nuevo')}
+						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Publicar
+					</a>
 					<a
 						href={resolve('/(app)/admin/categorias')}
 						class="text-sm text-muted-foreground transition-colors hover:text-foreground"

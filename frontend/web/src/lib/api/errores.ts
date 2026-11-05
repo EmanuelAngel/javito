@@ -31,6 +31,14 @@ export const CAMPOS_POR_CODIGO_DE_CATEGORIA: Record<string, string> = {
 };
 
 /**
+ * Códigos del alta de artículos (HU-ART-01). `categoria_invalida` cubre las dos caras de la misma
+ * regla —la categoría no existe o está retirada— y las dos señalan el desplegable de categoría.
+ */
+export const CAMPOS_POR_CODIGO_DE_ARTICULO: Record<string, string> = {
+	categoria_invalida: 'categoriaId'
+};
+
+/**
  * La pregunta canónica: ¿qué mensajes muestro y dónde? Nunca compara textos: decide por
  * `codigo` y por la clave de campo, que es lo estable del contrato.
  */
