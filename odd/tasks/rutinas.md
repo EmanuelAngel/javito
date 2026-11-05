@@ -30,10 +30,10 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 
 ## Tasks
 
-- **T1** · S1-S3 · inline · `feat(api): agregar alta y consulta de rutinas`
-- **T2** · S4-S5 · inline · `feat(api): buscar hábitos por nombre para armar rutinas`
-- **T3** · S2, S6-S7 · inline · `feat(api): agregar y ordenar hábitos dentro de una rutina`
-- **T4** · S8 · inline · `feat(api): quitar un hábito de una rutina sin archivarlo`
+- **T1** · S1-S3 · inline · `d3ac1d9` · `feat(api): agregar alta y consulta de rutinas`
+- **T2** · S4-S5 · inline · `97d83fa` · `feat(api): buscar hábitos por nombre para armar rutinas`
+- **T3** · S2, S6-S7 · inline · `73035d6` · `feat(api): agregar hábitos a una rutina`
+- **T4** · S8 · inline · `8fa9b3d` · `feat(api): quitar un hábito de una rutina sin archivarlo`
 - **T5** · S4 · inline · `feat(web): pantalla de rutinas con buscador asíncrono de hábitos`
 - **T6** · todas · inline · `docs(odd): cerrar la Puerta 3`
 
@@ -64,3 +64,9 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
   (`AND (@patron IS NULL OR (activo = TRUE AND titulo LIKE …))`): la regla de S5 es del servidor y no
   del SPA, y pedir `q` junto a `activo=false` devuelve vacío a propósito. Lo encontró la prueba de S5,
   que nació roja.
+- **D8 — Incidente, reparado.** El primer commit de T3 (`ca9603a`) quedó con
+  `RutinasController.cs` **vacío** y arrastró el código y las pruebas de T4: se editó el árbol mientras
+  el `git commit` estaba en vuelo, y el stash/restore de `lint-staged` escribió el archivo después de
+  escenificarlo. La historia se reconstruyó con `git reset --mixed` a `97d83fa`, achicando el árbol a
+  T3 y reaplicando T4 desde un snapshot: quedan `73035d6` (T3) y `8fa9b3d` (T4), ambos íntegros. Regla
+  para lo que sigue: **no se toca ningún archivo mientras hay un commit corriendo**.
