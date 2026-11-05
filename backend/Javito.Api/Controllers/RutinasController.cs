@@ -14,7 +14,7 @@ namespace Javito.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/rutinas")]
-public class RutinasController(IRutinaRepositorio repositorio) : ControllerBase
+public class RutinasController(IRutinaRepositorio repositorio, IHabitoRepositorio habitos) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<RutinaDto>>(StatusCodes.Status200OK)]
@@ -84,6 +84,57 @@ public class RutinasController(IRutinaRepositorio repositorio) : ControllerBase
     }
 
     /// <summary>
+    /// Cuelga un hábito propio y activo al final de la rutina. El hábito se valida contra el dueño del
+    /// token: uno ajeno responde igual que uno inexistente, y uno archivado se rechaza porque la
+    /// historia pide elegirlo entre los activos.
+    /// </summary>
+    [HttpPost("{id:int}/habitos")]
+    [ProducesResponseType<HabitoEnRutinaDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AgregarHabitoAsync(
+        int id,
+        [FromBody] AgregarHabitoDto entrada,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        if (await repositorio.BuscarAsync(id, usuarioId, cancellationToken) is null)
+        {
+            return NoEncontrada(id);
+        }
+
+        var habitoId = entrada.HabitoId!.Value;
+        var habito = await habitos.BuscarAsync(habitoId, usuarioId, cancellationToken);
+
+        if (habito is null)
+        {
+            return HabitoInexistente(habitoId);
+        }
+
+        if (!habito.Activo)
+        {
+            return HabitoArchivado(habito.Titulo);
+        }
+
+        if (await repositorio.ExisteHabitoAsync(id, habitoId, cancellationToken))
+        {
+            return HabitoRepetido(habito.Titulo);
+        }
+
+        var orden = await repositorio.AgregarHabitoAsync(id, habitoId, cancellationToken);
+
+        return Created(
+            $"/api/rutinas/{id}/habitos/{habitoId}",
+            new HabitoEnRutinaDto(habito.Id, habito.Titulo, orden));
+    }
+
+    /// <summary>
     /// Los errores previstos se devuelven, no se lanzan: el `codigo` estable es lo que lee el SPA.
     /// </summary>
     private static ObjectResult NoEncontrada(int id) => RespuestasDeError.De(new ErrorDeNegocio(
@@ -91,6 +142,26 @@ public class RutinasController(IRutinaRepositorio repositorio) : ControllerBase
         "Rutina inexistente",
         $"No hay ninguna rutina con id {id} en tu cuenta.",
         StatusCodes.Status404NotFound));
+
+    // El hábito que falla es el del cuerpo del alta, no una ruta inexistente: por eso 400, igual que
+    // la categoría de un hábito nuevo.
+    private static ObjectResult HabitoInexistente(int habitoId) => RespuestasDeError.De(new ErrorDeNegocio(
+        "habito_inexistente",
+        "Hábito inexistente",
+        $"No hay ningún hábito con id {habitoId} en tu cuenta.",
+        StatusCodes.Status400BadRequest));
+
+    private static ObjectResult HabitoArchivado(string titulo) => RespuestasDeError.De(new ErrorDeNegocio(
+        "habito_archivado",
+        "Hábito archivado",
+        $"«{titulo}» está archivado: reactivalo antes de agregarlo a una rutina.",
+        StatusCodes.Status400BadRequest));
+
+    private static ObjectResult HabitoRepetido(string titulo) => RespuestasDeError.De(new ErrorDeNegocio(
+        "habito_ya_en_rutina",
+        "Hábito repetido",
+        $"«{titulo}» ya está en esta rutina.",
+        StatusCodes.Status409Conflict));
 
     private static string? NormalizarDescripcion(string? descripcion) =>
         string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();

@@ -110,6 +110,52 @@ public sealed class RutinaRepositorio(IDbConnectionFactory fabrica) : IRutinaRep
         return habitos;
     }
 
+    public async Task<bool> ExisteHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql =
+            "SELECT 1 FROM rutina_habito WHERE rutina_id = @rutinaId AND habito_id = @habitoId";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@rutinaId", rutinaId);
+        comando.Parameters.AddWithValue("@habitoId", habitoId);
+
+        return await comando.ExecuteScalarAsync(cancellationToken) is not null;
+    }
+
+    public async Task<int> AgregarHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default)
+    {
+        // INSERT … SELECT: el lugar se calcula dentro de la misma sentencia, así que el CHECK
+        // (orden >= 1) y la numeración no dependen de lo que haya leído antes otro pedido.
+        const string insertar = """
+            INSERT INTO rutina_habito (rutina_id, habito_id, orden)
+            SELECT @rutinaId, @habitoId, COALESCE(MAX(orden), 0) + 1
+            FROM rutina_habito
+            WHERE rutina_id = @rutinaId
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(insertar, conexion);
+        comando.Parameters.AddWithValue("@rutinaId", rutinaId);
+        comando.Parameters.AddWithValue("@habitoId", habitoId);
+
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+
+        await using var orden = new MySqlCommand(
+            "SELECT orden FROM rutina_habito WHERE rutina_id = @rutinaId AND habito_id = @habitoId",
+            conexion);
+        orden.Parameters.AddWithValue("@rutinaId", rutinaId);
+        orden.Parameters.AddWithValue("@habitoId", habitoId);
+
+        return Convert.ToInt32(await orden.ExecuteScalarAsync(cancellationToken));
+    }
+
     private static Rutina ADominio(MySqlDataReader lector) => new()
     {
         Id = lector.GetInt32(0),

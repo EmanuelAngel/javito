@@ -24,4 +24,23 @@ public interface IRutinaRepositorio
         int rutinaId,
         int usuarioId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Si el hábito ya está en la rutina. Es lo que responde 409 con un `codigo` legible; el índice
+    /// UNIQUE de la tabla sigue siendo la última línea por si dos altas se cruzan.
+    /// </summary>
+    Task<bool> ExisteHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cuelga el hábito al final de la rutina y devuelve el lugar que le tocó. El `MAX(orden) + 1` se
+    /// resuelve en la misma sentencia que inserta: como SELECT y después INSERT, dos altas simultáneas
+    /// se pelearían el mismo lugar.
+    /// </summary>
+    Task<int> AgregarHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default);
 }
