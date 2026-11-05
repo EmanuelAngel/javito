@@ -156,6 +156,24 @@ public sealed class RutinaRepositorio(IDbConnectionFactory fabrica) : IRutinaRep
         return Convert.ToInt32(await orden.ExecuteScalarAsync(cancellationToken));
     }
 
+    public async Task<bool> QuitarHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default)
+    {
+        // Sólo cae la relación: la fila de habito no se toca, así que el hábito sigue activo y en sus
+        // otras rutinas. Los huecos que quedan en `orden` los normaliza RUT-03 cuando llegue.
+        const string sql =
+            "DELETE FROM rutina_habito WHERE rutina_id = @rutinaId AND habito_id = @habitoId";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@rutinaId", rutinaId);
+        comando.Parameters.AddWithValue("@habitoId", habitoId);
+
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     private static Rutina ADominio(MySqlDataReader lector) => new()
     {
         Id = lector.GetInt32(0),

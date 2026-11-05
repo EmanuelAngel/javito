@@ -43,4 +43,13 @@ public interface IRutinaRepositorio
         int rutinaId,
         int habitoId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saca el hábito de la rutina sin tocarlo: el hábito sigue activo y en sus otras rutinas. Devuelve
+    /// <c>false</c> cuando no estaba, que deja el mismo estado igual.
+    /// </summary>
+    Task<bool> QuitarHabitoAsync(
+        int rutinaId,
+        int habitoId,
+        CancellationToken cancellationToken = default);
 }

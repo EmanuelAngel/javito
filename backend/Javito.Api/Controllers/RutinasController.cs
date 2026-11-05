@@ -135,6 +135,34 @@ public class RutinasController(IRutinaRepositorio repositorio, IHabitoRepositori
     }
 
     /// <summary>
+    /// Saca el hábito de la rutina sin archivarlo (S8). Descolgar uno que no está es idempotente a
+    /// propósito: deja el mismo estado y un doble toque no tiene por qué dar 404.
+    /// </summary>
+    [HttpDelete("{id:int}/habitos/{habitoId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> QuitarHabitoAsync(
+        int id,
+        int habitoId,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        if (await repositorio.BuscarAsync(id, usuarioId, cancellationToken) is null)
+        {
+            return NoEncontrada(id);
+        }
+
+        await repositorio.QuitarHabitoAsync(id, habitoId, cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Los errores previstos se devuelven, no se lanzan: el `codigo` estable es lo que lee el SPA.
     /// </summary>
     private static ObjectResult NoEncontrada(int id) => RespuestasDeError.De(new ErrorDeNegocio(

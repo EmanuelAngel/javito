@@ -152,6 +152,53 @@ public class RutinasHabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.Equal("no_encontrado", await CodigoAsync(respuesta));
     }
 
+    // --- S8: quitar un hábito de la rutina sin archivarlo -------------------------------------
+
+    [Fact]
+    public async Task Quitar_el_habito_lo_deja_activo_y_fuera_de_la_rutina()
+    {
+        var rutina = await CrearRutinaAsync(_usuario, $"{Prefijo}Quitar");
+        await AgregarAsync(_usuario, rutina.Id, HabitoActivo);
+
+        var respuesta = await _usuario.DeleteAsync($"/api/rutinas/{rutina.Id}/habitos/{HabitoActivo}");
+
+        Assert.Equal(HttpStatusCode.NoContent, respuesta.StatusCode);
+
+        var detalle = await _usuario.GetFromJsonAsync<RutinaDetalleDto>($"/api/rutinas/{rutina.Id}");
+
+        Assert.NotNull(detalle);
+        Assert.Empty(detalle.Habitos);
+
+        // Lo que pide la historia: se cae la relación, no el hábito.
+        var habitos = await _usuario.GetFromJsonAsync<List<HabitoDePrueba>>("/api/habitos");
+        var habito = Assert.Single(habitos!, candidato => candidato.Id == HabitoActivo);
+
+        Assert.True(habito.Activo);
+    }
+
+    [Fact]
+    public async Task Quitar_un_habito_que_no_esta_en_la_rutina_es_idempotente()
+    {
+        var rutina = await CrearRutinaAsync(_usuario, $"{Prefijo}Idempotente");
+
+        var primera = await _usuario.DeleteAsync($"/api/rutinas/{rutina.Id}/habitos/{HabitoActivo}");
+        var segunda = await _usuario.DeleteAsync($"/api/rutinas/{rutina.Id}/habitos/{HabitoActivo}");
+
+        Assert.Equal(HttpStatusCode.NoContent, primera.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, segunda.StatusCode);
+    }
+
+    [Fact]
+    public async Task No_se_pueden_quitar_habitos_de_una_rutina_ajena()
+    {
+        var delAdmin = await CrearRutinaAsync(_admin, $"{Prefijo}Quitar ajena");
+
+        var respuesta = await _usuario.DeleteAsync($"/api/rutinas/{delAdmin.Id}/habitos/{HabitoActivo}");
+
+        Assert.Equal(HttpStatusCode.NotFound, respuesta.StatusCode);
+        Assert.Equal("no_encontrado", await CodigoAsync(respuesta));
+    }
+
     private static async Task<RutinaDto> CrearRutinaAsync(HttpClient cliente, string nombre)
     {
         var respuesta = await cliente.PostAsJsonAsync("/api/rutinas", new { nombre });
