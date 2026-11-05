@@ -34,8 +34,42 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 - **T2** · S4-S5 · inline · `97d83fa` · `feat(api): buscar hábitos por nombre para armar rutinas`
 - **T3** · S2, S6-S7 · inline · `73035d6` · `feat(api): agregar hábitos a una rutina`
 - **T4** · S8 · inline · `8fa9b3d` · `feat(api): quitar un hábito de una rutina sin archivarlo`
-- **T5** · S4 · inline · `feat(web): pantalla de rutinas con buscador asíncrono de hábitos`
-- **T6** · todas · inline · `docs(odd): cerrar la Puerta 3`
+- **T5** · S4 · inline · `6d04e07` · `feat(web): pantalla de rutinas con buscador asíncrono de hábitos`
+- **T6** · todas · inline · este commit · `docs(odd): cerrar la Puerta 3`
+
+## Cierre
+
+| Regla | Dónde se prueba |
+| :--- | :--- |
+| S1-S3 | `backend/Javito.Api.Tests/RutinasEndpointTests.cs` |
+| S4-S5 | `backend/Javito.Api.Tests/BusquedaDeHabitosEndpointTests.cs` |
+| S6-S8 | `backend/Javito.Api.Tests/RutinasHabitosEndpointTests.cs` |
+| Debounce, abort y respuesta vieja | `frontend/web/src/lib/busqueda.test.ts` |
+
+- `RT-01` — las pruebas de agregar y quitar escriben y borran filas reales de `rutina_habito` en
+  `javito_test`: la N:M queda con filas, no con la tabla vacía.
+- `RT-06` — el buscador consulta al servidor con debounce de 250 ms y aborta el pedido anterior. El
+  GIF del plan de cierre se graba con `pnpm dev:api` + `pnpm dev:web`: crear una rutina y escribir en
+  el buscador. Falta sólo eso, que es evidencia manual.
+
+### Verificación observada
+
+| Comando | Resultado |
+| :--- | :--- |
+| `dotnet test` (suite completa) | 140/140 |
+| `dotnet test --filter ~Rutinas` | 16/16 |
+| `dotnet test --filter ~BusquedaDeHabitos` | 6/6 |
+| `pnpm check` | exit 0 |
+| `pnpm lint` | exit 0 |
+| `pnpm test:web` | 53/53 en 12 archivos |
+| `pnpm test:e2e` | 4/4, sin modificar ningún e2e |
+| `svelte-check` | 0 errores, 0 advertencias (sólo las tres esperadas de SvelteKit) |
+| `svelte_autofixer` | sin issues en los cinco `.svelte` |
+| build del commit de T3 (`73035d6`) | 0 errores, en un worktree aparte |
+
+Ninguna advertencia nueva. Las dos `CS8602` del build son preexistentes
+(`EsquemaDeSeguridadEnOpenApi.cs:43` y `HabitosController.cs:172`).
+
 
 ## Log
 
