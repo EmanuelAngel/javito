@@ -38,6 +38,7 @@ builder.Services.AddScoped<IArticuloRepositorio, ArticuloRepositorio>();
 builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 builder.Services.AddScoped<IDiaRepositorio, DiaRepositorio>();
 builder.Services.AddScoped<IHabitoRepositorio, HabitoRepositorio>();
+builder.Services.AddScoped<IRutinaRepositorio, RutinaRepositorio>();
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 
 // Sin Jwt:Clave no hay API que arranque: el fallo ocurre al construir la aplicación y no en la

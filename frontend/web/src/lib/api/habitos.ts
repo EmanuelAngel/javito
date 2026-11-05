@@ -46,3 +46,12 @@ export function crear(datos: DatosDeHabito): Promise<Habito> {
 		body: JSON.stringify(datos)
 	});
 }
+
+/**
+ * Busca entre los hábitos activos de quien pregunta, para agregarlos a una rutina (HU-RUT-02).
+ * El servidor impone las dos reglas —sólo míos, sólo activos— así que la pantalla no las repite; el
+ * `signal` lo usa el buscador para abortar el pedido anterior cuando se sigue escribiendo.
+ */
+export function buscar(texto: string, signal: AbortSignal): Promise<Habito[]> {
+	return pedir<Habito[]>(`/api/habitos?activo=true&q=${encodeURIComponent(texto)}`, { signal });
+}

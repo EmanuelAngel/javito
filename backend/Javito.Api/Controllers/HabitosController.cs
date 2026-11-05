@@ -29,6 +29,7 @@ public class HabitosController(
     [ProducesResponseType<IReadOnlyList<HabitoDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> ListarAsync(
         [FromQuery] bool? activo,
+        [FromQuery] string? q,
         CancellationToken cancellationToken)
     {
         if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
@@ -36,7 +37,7 @@ public class HabitosController(
             return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
-        var habitos = await repositorio.ListarAsync(usuarioId, activo, cancellationToken);
+        var habitos = await repositorio.ListarAsync(usuarioId, activo, q, cancellationToken);
 
         return Ok(habitos.Select(MapeoDeHabitos.ADto).ToList());
     }

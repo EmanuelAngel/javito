@@ -58,6 +58,12 @@
 				>
 					Hábitos
 				</a>
+				<a
+					href={resolve('/(app)/rutinas')}
+					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+				>
+					Rutinas
+				</a>
 				<!-- El catálogo lo lee cualquier usuario con sesión: no hay catálogo público, pero
 					 tampoco hace falta un rol. -->
 				<a
