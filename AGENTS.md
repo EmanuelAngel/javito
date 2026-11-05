@@ -224,25 +224,46 @@ pruebas quedan afuera a propósito: son verificaciones de cierre (`pnpm check`),
 
 ## Trampas conocidas de SvelteKit 3
 
+**Antes de entregar o commitear un `.svelte`, pasalo por `svelte_autofixer`** (MCP de Svelte,
+`mcp__svelte__svelte_autofixer`, con la versión de `frontend/web/package.json`). Sus propias
+instrucciones lo marcan como obligatorio antes de devolver código, y atrapa justo las trampas que
+siguen. Si el componente es vendorizado de shadcn, leé además `.agents/skills/shadcn-svelte/SKILL.md`
+en vez de deducir sus props.
+
 Verificado a golpes en este repo; no está en la doc evidente.
 
+- **`$app/environment` está deprecado.** `browser` y `dev` se importan de **`$app/env`**. La advertencia
+  `app_environment_deprecated` sale por consola y no rompe nada.
+- **`goto` cambió de opciones.** `keepFocus` y `noScroll` **no existen**: los unifica `reset`
+  (`reset: false` deja scroll y foco como estaban). `replaceState` e `invalidateAll` siguen ahí pero
+  deprecados, a favor de `replace` y `refreshAll`.
+- **`bind:this` en un componente vendorizado da la instancia, no el elemento.** El `Input` de
+  shadcn-svelte expone `ref`: usá `bind:ref` para llegar al `<input>` real.
+- **`{@html}` es error de lint** (`svelte/no-at-html-tags`) y no se "arregla". Se deshabilita en la
+  línea, en markup, con `<!-- eslint-disable-next-line svelte/no-at-html-tags -->` y el motivo escrito.
+- **Leer `data` al inicializar estado** marca `state_referenced_locally`. Se acalla con
+  `// svelte-ignore state_referenced_locally` y una línea que diga por qué es una instantánea.
 - **`$lib` fue eliminado.** El error es `module_removed_lib`. Este repo lo conserva con la opción
   `alias: { $lib: 'src/lib' }` del plugin de SvelteKit en `vite.config.ts`, que el propio kit documenta
   en ese error y que está **deprecada a propósito**: sacarla rompe el build y shadcn-svelte importa
-  `$lib` en todo lo que genera. Las advertencias `config_option_deprecated_alias` y `tsconfig_invalid`
-  de `pnpm check` y `pnpm build` son consecuencia esperada de esa decisión, no un error a arreglar.
-  `$lib` también está mapeado en `paths` de `tsconfig.json`, que es donde el CLI de shadcn lo resuelve
-  (no hay `svelte.config.js`).
+  `$lib` en todo lo que genera. `$lib` también está mapeado en `paths` de `tsconfig.json`, que es donde
+  el CLI de shadcn lo resuelve (no hay `svelte.config.js`).
+- **Estas tres advertencias son las únicas esperadas** en `pnpm check` y `pnpm build`:
+  `config_option_deprecated_alias`, `tsconfig_invalid` (consecuencia de lo anterior) y
+  `transform_index_html_unsupported` (de vitest, solo en las pruebas). **Cualquier otra advertencia de
+  SvelteKit es un error a arreglar**: una lista de excepciones demasiado ancha enseña a ignorar el
+  bloque entero, y así se pierden las deprecaciones que sí importan.
 - **El alias `#lib`** (subpath imports de `frontend/web/package.json`) existe para los assets, pero
   `#lib/*` no resuelve en TypeScript si el especificador no lleva extensión. Para módulos `.ts`, usá
   import relativo.
-- **El patrón `#lib/*` no resuelve en TypeScript** si el especificador no lleva extensión.
-  `#lib/assets/favicon.svg` funciona porque la tiene; para un módulo `.ts`, usá import relativo.
 - **`$env/*` fue reemplazado** por `src/env.ts` + `defineEnvVars`, expuesto desde `$app/env/public`.
   `$env/dynamic/public` sobrevive como shim sin tipos y con advertencia de deprecación. Hoy la
   configuración vive en `src/lib/config.ts`.
 - **La config del adapter está en `vite.config.ts`**, no en `svelte.config.js`.
 - **`pnpm build` verde no implica `pnpm check` verde.** Corré los dos.
+- **Ningún `+page.svelte` supera las 150 líneas** contando `<script>` y markup. Si lo pasa, se parte:
+estado y pedidos afuera de la pantalla, piezas como componentes. Ver el issue #63 y la skill
+`.agents/skills/svelte-proyecto/SKILL.md`.
 
 ## Alcance y límite
 
