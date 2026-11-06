@@ -184,7 +184,7 @@ Queda escuchando en `http://localhost:5256`. Verificación:
 
 ```sh
 curl http://localhost:5256/api/health
-# {"estado":"ok","servicio":"Javito.Api"}
+# {"estado":"ok","servicio":"Javito.Api","baseDeDatos":"ok"}
 ```
 
 La documentación interactiva (Scalar) queda en `http://localhost:5256/scalar/v1`, y el documento OpenAPI
