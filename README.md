@@ -131,22 +131,53 @@ javito/
 | pnpm | 10.26.1 |
 | MySQL | 8.0.46 |
 
-### 1. Herramientas de la raíz
+Los pasos van en este orden porque cada uno depende del anterior: la API no arranca sin los secretos y
+necesita la base cargada, y el SPA necesita la API levantada. Todos los comandos se corren desde la raíz
+del repositorio.
+
+### 1. Dependencias
 
 ```sh
 pnpm install
+pnpm --dir frontend/web install
 ```
 
-Instala `commitlint`, `lint-staged` y `husky`, y activa los hooks de Git mediante el script
-`prepare`. Si los hooks no se disparan, corré `pnpm run prepare`. El formato y el lint del SPA viven en
-el frontend: la raíz ya no tiene prettier. El hook `pre-commit` corre, sobre los archivos en stage,
-`prettier --write` y `eslint --fix` del SPA y `dotnet format` de los `.cs`: el alcance de `pnpm lint`,
-acotado a lo que se commitea.
+El primero instala las herramientas de la raíz (`commitlint`, `lint-staged`, `husky`) y activa los hooks
+de Git; el segundo, las dependencias del SPA.
 
-### 2. Backend
+### 2. Base de datos
+
+Con MySQL corriendo:
 
 ```sh
-dotnet run --project backend/Javito.Api --launch-profile http
+pnpm db:reset
+```
+
+Corre `mysql -u root -p < database.sql` y pide la contraseña de root. `database.sql` crea la base `javito`
+**desde cero**: borra lo que hubiera y vuelve a cargar las 7 tablas con los datos de prueba.
+
+El script arranca con `SET NAMES utf8mb4;` porque la terminal de Windows habla `cp850`: sin esa línea los
+acentos se guardan corruptos. Las fechas de los registros son relativas al día en que se ejecuta, así que
+la semana en curso siempre tiene datos.
+
+### 3. Secretos
+
+La contraseña de la base y la clave de los JWT viven fuera del repositorio, en `dotnet user-secrets`.
+`ConnectionStrings:Javito` está en `backend/Javito.Api/appsettings.Development.json` **sin contraseña**;
+la cadena completa se carga así:
+
+```sh
+dotnet user-secrets set "ConnectionStrings:Javito" "Server=localhost;Port=3306;Database=javito;User ID=root;Password=TU_CLAVE" --project backend/Javito.Api
+dotnet user-secrets set "Jwt:Clave" "TU_CLAVE_DE_AL_MENOS_32_CARACTERES" --project backend/Javito.Api
+```
+
+Sin `Jwt:Clave` **la API no arranca**: falla al construirse, con un mensaje que dice cómo cargarla.
+Necesita 32 caracteres o más.
+
+### 4. Backend
+
+```sh
+pnpm dev:api
 ```
 
 Queda escuchando en `http://localhost:5256`. Verificación:
@@ -156,88 +187,42 @@ curl http://localhost:5256/api/health
 # {"estado":"ok","servicio":"Javito.Api"}
 ```
 
-Con el perfil `http` el documento OpenAPI queda en `http://localhost:5256/openapi/v1.json`.
+La documentación interactiva (Scalar) queda en `http://localhost:5256/scalar/v1`, y el documento OpenAPI
+en `http://localhost:5256/openapi/v1.json`.
 
-Pruebas y formato (desde la raíz del repositorio):
+La sesión dura **8 horas y no se renueva**. Los endpoints de acceso son `POST /api/sesion` (login) y
+`GET /api/sesion/yo` (quién soy, para validar la sesión al recargar). El resto exige
+`Authorization: Bearer <token>`; sin él responde 401 con `codigo: "no_autenticado"`.
 
-```sh
-pnpm check       # dotnet build + dotnet test + svelte-check
-pnpm lint        # verifica el formato sin escribir
-pnpm format      # aplica el formato
-```
-
-El resto de los atajos está en la tabla de `AGENTS.md`; `pnpm run` los lista.
-
-### 3. Frontend
+### 5. Frontend
 
 ```sh
-pnpm --dir frontend/web install
-pnpm --dir frontend/web dev
+pnpm dev:web
 ```
 
-Queda en `http://localhost:5173`. La pantalla inicial consulta `GET /api/health` y muestra
-*"Conectado a Javito.Api"* cuando el vínculo entre capas funciona.
+Queda en `http://localhost:5173`. Sin sesión, el SPA lleva a `/login`: se entra con cualquiera de los
+[usuarios de prueba](#usuarios-de-prueba).
 
 El backend habilita exactamente ese origen desde `Cors:AllowedOrigins`
 (`backend/Javito.Api/appsettings.Development.json`). La política es **fail-closed**: sin orígenes
 configurados no habilita ninguno. La URL de la API vive en un único lugar:
 `frontend/web/src/lib/config.ts`.
 
-Otros comandos:
+### 6. Pruebas y formato
 
 ```sh
-pnpm --dir frontend/web check   # svelte-check
-pnpm --dir frontend/web lint    # prettier --check + eslint
-pnpm --dir frontend/web test:unit
-pnpm --dir frontend/web build
+pnpm check       # dotnet build + dotnet test + svelte-check
+pnpm test:web    # vitest
+pnpm test:e2e    # recorridos de Playwright: levantan la API y el SPA por su cuenta
+pnpm lint        # verifica el formato sin escribir
+pnpm format      # aplica el formato
 ```
 
-> Con SvelteKit 3, `pnpm build` puede pasar con `pnpm check` en rojo. Corré los dos.
+Las pruebas del backend usan un schema aparte, `javito_test`, que el fixture recrea en cada corrida: por
+eso **`pnpm check` necesita MySQL prendido** y los secretos del paso 3. `pnpm test:e2e` necesita además
+que no haya otra `Javito.Api` corriendo. El resto de los atajos está en `AGENTS.md`; `pnpm run` los lista.
 
-### 4. Base de datos
-
-`database.sql` crea la base `javito` **desde cero**: borra lo que hubiera y vuelve a cargar la estructura
-con las 7 tablas y los datos de prueba. Con MySQL corriendo:
-
-```sh
-mysql --table < database.sql
-```
-
-`--table` imprime con formato las consultas que corras después, útil para revisar lo que quedó cargado.
-Si no querés escribir la contraseña cada vez, guardala una vez con `mysql_config_editor` y usá
-`mysql --login-path=<nombre> --table < database.sql`.
-
-El script arranca con `SET NAMES utf8mb4;` porque la terminal de Windows habla `cp850`: sin esa línea los
-acentos se guardan corruptos. No hay que configurar nada más por eso.
-
-Las fechas de los registros son relativas al día en que se ejecuta el script, así que la semana en curso
-siempre tiene datos, sin importar cuándo lo cargues.
-
-El backend se conecta con `ConnectionStrings:Javito`, que está en
-`backend/Javito.Api/appsettings.Development.json` **sin contraseña**: el secreto vive fuera del
-repositorio, en `dotnet user-secrets`.
-
-```sh
-dotnet user-secrets set "ConnectionStrings:Javito" "Server=localhost;Port=3306;Database=javito;User ID=root;Password=TU_CLAVE" --project backend/Javito.Api
-```
-
-La clave con la que se firman los JWT también vive fuera del repositorio. Sin ella **la API no
-arranca**: falla al construirse, con un mensaje que dice cómo cargarla. Necesita 32 caracteres o más.
-
-```sh
-dotnet user-secrets set "Jwt:Clave" "TU_CLAVE_DE_AL_MENOS_32_CARACTERES" --project backend/Javito.Api
-```
-
-La sesión dura **8 horas y no se renueva**. Los endpoints de acceso son `POST /api/sesion` (login) y
-`GET /api/sesion/yo` (quién soy, para validar la sesión al recargar). El resto exige
-`Authorization: Bearer <token>`; sin él responde 401 con `codigo: "no_autenticado"`.
-
-`pnpm db:reset` recrea la base de desarrollo desde `database.sql`. Las pruebas usan un schema
-aparte, `javito_test`, que el fixture recrea en cada corrida: por eso **`pnpm check:api` necesita MySQL
-prendido**, y falla con un mensaje que dice qué correr cuando no lo está.
-
-Con la API levantada, la documentación interactiva (Scalar) queda en
-`http://localhost:5256/scalar/v1`.
+> Con SvelteKit 3, `pnpm build:web` puede pasar con `pnpm check` en rojo. Corré los dos.
 
 ### Nota sobre el build estático
 
