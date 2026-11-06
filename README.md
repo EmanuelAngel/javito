@@ -1,8 +1,10 @@
 # Javito
 
-Registro diario de hábitos personales, gráficos de consistencia y artículos educativos sobre ciencia del comportamiento.
-
-> *Javito* suena a *hábito*. Nombre provisional, con chiste rioplatense.
+Javito es una aplicación web para registrar hábitos diarios. Cada usuario crea sus hábitos, los marca día
+a día desde la pantalla *Hoy* y ve la semana de cada uno de un vistazo; además puede agruparlos en rutinas.
+El Administrador gestiona las categorías y publica artículos sobre ciencia del comportamiento con imagen de
+portada, que todos leen en un catálogo paginado. Es una SPA en SvelteKit que consume una Web API REST en
+ASP.NET Core con JWT, sobre MySQL.
 
 Proyecto Integrador Final de **Laboratorio 2** (Desarrollo de Software Full Stack).
 **Entrega: `2026-11-05`** · Modalidad individual · Angel Emanuel — emanuelangelsbr@gmail.com
@@ -29,6 +31,37 @@ El seguimiento de hábitos falla por problemas de las herramientas existentes:
 
 ---
 
+## Matriz de Evidencias de Requerimientos Mínimos
+
+Los enlaces apuntan a la línea exacta del código. Las evidencias en `frontend/web/e2e/` son recorridos de
+extremo a extremo con Playwright: reproducen cada funcionalidad en el navegador con `pnpm test:e2e`.
+
+| Requerimiento Mínimo | Estado | Enlace al Código / Controladores | Evidencia (Captura / GIF / Video) |
+|---|---|---|---|
+| 1. 7 tablas, relación 1:N y N:M | Cumplido | [database.sql#L101 (`rutina_habito`, N:M)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/database.sql#L101-L112) · [database.sql#L51 (`habito`, 1:N y dependiente de `usuario` + `categoria`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/database.sql#L51-L68) | [DER en Mermaid](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der) |
+| 2. Login, logout, roles y avatar | Cumplido | [SesionController.cs#L22 (login)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/SesionController.cs#L22) · [sesion.svelte.ts#L91 (logout)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/sesion.svelte.ts#L91) · [CategoriasController.cs#L31 (sólo Administrador)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/CategoriasController.cs#L30-L31) · [ArticulosController.cs#L33 (sólo Administrador)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L32-L33) · [PerfilController.cs#L27 (avatar)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/PerfilController.cs#L27) | [perfil.e2e.ts](frontend/web/e2e/perfil.e2e.ts) (sube el avatar y la barra lo muestra sin recargar) · [categorias.e2e.ts](frontend/web/e2e/categorias.e2e.ts) (login y logout) |
+| 3. Manejo de archivos (portada de artículo) | Cumplido | [ArticulosController.cs#L62](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L62) · [AlmacenDeArchivosLocal.cs#L15](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Archivos/AlmacenDeArchivosLocal.cs#L15) · [FirmasDeImagen.cs (valida la firma, no la extensión)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Archivos/FirmasDeImagen.cs) | [articulos.e2e.ts](frontend/web/e2e/articulos.e2e.ts) (publica un artículo con portada) |
+| 4. ABM en SvelteKit + AJAX (categorías) | Cumplido | [CategoriasController.cs](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/CategoriasController.cs#L19-L106) · [admin/categorias/+page.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/routes/(app)/admin/categorias/+page.svelte) · [api/categorias.ts](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/api/categorias.ts) | [categorias.e2e.ts](frontend/web/e2e/categorias.e2e.ts) (alta, edición, búsqueda, baja lógica y reactivación sin recargar) |
+| 5. Paginado por servidor (catálogo de artículos) | Cumplido | [ArticulosController.cs#L111](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L111) · [ArticuloRepositorio.cs#L80 (`LIMIT`/`OFFSET`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Repositorios/ArticuloRepositorio.cs#L80) · [ParametrosDePagina.cs](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Paginacion/ParametrosDePagina.cs#L15) · [paginador.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/components/paginador.svelte) | [articulos.e2e.ts](frontend/web/e2e/articulos.e2e.ts) (navega con `?pagina=`) |
+| 6. Selección asíncrona (hábitos de una rutina) | Cumplido | [HabitosController.cs#L32 (`?q=` en el servidor)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/HabitosController.cs#L28-L40) · [buscador-de-habitos.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/components/buscador-de-habitos.svelte) · [busqueda.ts](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/busqueda.ts) | [busqueda.test.ts](frontend/web/src/lib/busqueda.test.ts) |
+| 7. Web API + JWT | Cumplido | [Program.cs#L52 (`AddJwtBearer`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Program.cs#L52) · [ServicioDeTokens.cs#L14](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Seguridad/ServicioDeTokens.cs#L14) · [pedir.ts (manda el `Bearer`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/api/pedir.ts) | La SPA consume la API de forma nativa; para probarla a mano, Scalar en `http://localhost:5256/scalar/v1` |
+
+La metadata del paginado viaja en español (`pagina`, `tamanioDePagina`, `totalDeRegistros`,
+`totalDePaginas`): es la misma que la consigna nombra `pageNumber`, `pageSize`, `totalRecords` y
+`totalPages`.
+
+### Requisitos adicionales para promocionar
+
+- [x] `.gitignore` específico y sin artefactos de compilación
+- [x] Diagrama Entidad-Relación adjunto ([DER en Mermaid](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der))
+- [x] `README.md` con descripción y guía paso a paso
+- [x] `database.sql` con estructura y datos de prueba precargados
+- [x] Credenciales de prueba por rol
+- [x] Colección de Postman/Bruno: no aplica, la SPA consume la Web API de forma nativa
+- [x] Todo el proyecto corriendo en `localhost` sin errores (`pnpm check`: build, 142 pruebas del backend y `svelte-check` en verde)
+
+---
+
 ## Stack
 
 | Capa | Tecnología |
@@ -38,7 +71,7 @@ El seguimiento de hábitos falla por problemas de las herramientas existentes:
 | Base de datos | MySQL 8.0 |
 | Acceso a datos | ADO.NET puro (`MySqlConnector`, **sin ORM**) |
 | Autenticación | JWT con roles (`Administrador`, `Usuario`) |
-| Documentación de API | OpenAPI / Swagger |
+| Documentación de API | OpenAPI + Scalar |
 
 ---
 
@@ -229,37 +262,6 @@ Vienen cargados en `database.sql`, con la contraseña **`Javito2026`** para los 
 
 Las contraseñas están guardadas como hash bcrypt. El login (`POST /api/sesion`) las verifica y devuelve
 un JWT con el rol del usuario.
-
----
-
-## Matriz de Evidencias de Requerimientos Mínimos
-
-Los enlaces apuntan a la línea exacta del código. Las evidencias en `frontend/web/e2e/` son recorridos de
-extremo a extremo con Playwright: reproducen cada funcionalidad en el navegador con `pnpm test:e2e`.
-
-| Requerimiento Mínimo | Estado | Enlace al Código / Controladores | Evidencia (Captura / GIF / Video) |
-|---|---|---|---|
-| 1. 7 tablas, relación 1:N y N:M | Cumplido | [database.sql#L101 (`rutina_habito`, N:M)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/database.sql#L101-L112) · [database.sql#L51 (`habito`, 1:N y dependiente de `usuario` + `categoria`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/database.sql#L51-L68) | [DER en Mermaid](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der) |
-| 2. Login, logout, roles y avatar | Cumplido | [SesionController.cs#L22 (login)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/SesionController.cs#L22) · [sesion.svelte.ts#L91 (logout)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/sesion.svelte.ts#L91) · [CategoriasController.cs#L31 (sólo Administrador)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/CategoriasController.cs#L30-L31) · [ArticulosController.cs#L33 (sólo Administrador)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L32-L33) · [PerfilController.cs#L27 (avatar)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/PerfilController.cs#L27) | [perfil.e2e.ts](frontend/web/e2e/perfil.e2e.ts) (sube el avatar y la barra lo muestra sin recargar) · [categorias.e2e.ts](frontend/web/e2e/categorias.e2e.ts) (login y logout) |
-| 3. Manejo de archivos (portada de artículo) | Cumplido | [ArticulosController.cs#L62](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L62) · [AlmacenDeArchivosLocal.cs#L15](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Archivos/AlmacenDeArchivosLocal.cs#L15) · [FirmasDeImagen.cs (valida la firma, no la extensión)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Archivos/FirmasDeImagen.cs) | [articulos.e2e.ts](frontend/web/e2e/articulos.e2e.ts) (publica un artículo con portada) |
-| 4. ABM en SvelteKit + AJAX (categorías) | Cumplido | [CategoriasController.cs](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/CategoriasController.cs#L19-L106) · [admin/categorias/+page.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/routes/(app)/admin/categorias/+page.svelte) · [api/categorias.ts](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/api/categorias.ts) | [categorias.e2e.ts](frontend/web/e2e/categorias.e2e.ts) (alta, edición, búsqueda, baja lógica y reactivación sin recargar) |
-| 5. Paginado por servidor (catálogo de artículos) | Cumplido | [ArticulosController.cs#L111](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/ArticulosController.cs#L111) · [ArticuloRepositorio.cs#L80 (`LIMIT`/`OFFSET`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Repositorios/ArticuloRepositorio.cs#L80) · [ParametrosDePagina.cs](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Paginacion/ParametrosDePagina.cs#L15) · [paginador.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/components/paginador.svelte) | [articulos.e2e.ts](frontend/web/e2e/articulos.e2e.ts) (navega con `?pagina=`) |
-| 6. Selección asíncrona (hábitos de una rutina) | Cumplido | [HabitosController.cs#L32 (`?q=` en el servidor)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Controllers/HabitosController.cs#L28-L40) · [buscador-de-habitos.svelte](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/components/buscador-de-habitos.svelte) · [busqueda.ts](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/busqueda.ts) | [busqueda.test.ts](frontend/web/src/lib/busqueda.test.ts) |
-| 7. Web API + JWT | Cumplido | [Program.cs#L52 (`AddJwtBearer`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Program.cs#L52) · [ServicioDeTokens.cs#L14](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/backend/Javito.Api/Seguridad/ServicioDeTokens.cs#L14) · [pedir.ts (manda el `Bearer`)](https://github.com/EmanuelAngel/javito/blob/1deda39438cc8cdbcc98aa5e60412f9d0cc9b822/frontend/web/src/lib/api/pedir.ts) | La SPA consume la API de forma nativa; para probarla a mano, Scalar en `http://localhost:5256/scalar/v1` |
-
-La metadata del paginado viaja en español (`pagina`, `tamanioDePagina`, `totalDeRegistros`,
-`totalDePaginas`): es la misma que la consigna nombra `pageNumber`, `pageSize`, `totalRecords` y
-`totalPages`.
-
-### Requisitos adicionales para promocionar
-
-- [x] `.gitignore` específico y sin artefactos de compilación
-- [x] Diagrama Entidad-Relación adjunto ([DER en Mermaid](docs/proyecto/propuesta.md#21-diagrama-entidad-relación-der))
-- [x] `README.md` con descripción y guía paso a paso
-- [x] `database.sql` con estructura y datos de prueba precargados
-- [x] Credenciales de prueba por rol
-- [x] Colección de Postman/Bruno: no aplica, la SPA consume la Web API de forma nativa
-- [x] Todo el proyecto corriendo en `localhost` sin errores (`pnpm check`: build, 142 pruebas del backend y `svelte-check` en verde)
 
 ---
 
