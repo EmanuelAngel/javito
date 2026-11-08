@@ -170,6 +170,30 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Una_categoria_inexistente_tambien_se_rechaza_al_editar()
+    {
+        var creado = await CrearAsync(UnSiNo("Prueba Categoría inexistente al editar"));
+
+        var respuesta = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            UnSiNo("Prueba Categoría inexistente al editar") with { CategoriaId = 9999 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Equal("categoria_inexistente", await CodigoAsync(respuesta));
+        Assert.Equal(1, (await BuscarAsync(creado.Id)).CategoriaId);
+    }
+
+    [Fact]
+    public async Task Un_habito_sin_categoria_aparece_en_el_dia_sin_categoria()
+    {
+        var creado = await CrearAsync(UnSiNo("Prueba Sin categoría en el día") with { CategoriaId = null });
+
+        var dia = await DiaAsync(await BaseDeDatosDePrueba.HoyAsync());
+
+        Assert.Null(Assert.Single(dia.Habitos, habito => habito.Id == creado.Id).Categoria);
+    }
+
+    [Fact]
     public async Task La_frecuencia_semanal_exige_entre_uno_y_seis()
     {
         var sinCuota = await _cliente.PostAsJsonAsync(
