@@ -89,7 +89,7 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     {
         await _cliente.PostAsJsonAsync("/api/habitos", UnSiNo("Prueba Caminar"));
 
-        var dia = await _cliente.GetFromJsonAsync<DiaDePrueba>($"/api/dias/{await HoyAsync():yyyy-MM-dd}");
+        var dia = await _cliente.GetFromJsonAsync<DiaDePrueba>($"/api/dias/{await BaseDeDatosDePrueba.HoyAsync():yyyy-MM-dd}");
 
         Assert.NotNull(dia);
         var creado = Assert.Single(dia.Habitos, habito => habito.Titulo == "Prueba Caminar");
@@ -184,16 +184,6 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         var problema = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
 
         return problema.GetProperty("codigo").GetString();
-    }
-
-    private static async Task<DateOnly> HoyAsync()
-    {
-        await using var conexion = new MySqlConnection(BaseDeDatosDePrueba.CadenaDeConexion);
-        await conexion.OpenAsync();
-
-        await using var comando = new MySqlCommand("SELECT CURDATE()", conexion);
-
-        return DateOnly.FromDateTime((DateTime)(await comando.ExecuteScalarAsync())!);
     }
 
     /// <summary>Borra los hábitos que crean estas pruebas y sus marcas, si alguna quedó.</summary>

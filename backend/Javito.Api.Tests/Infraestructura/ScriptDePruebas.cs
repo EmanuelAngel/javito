@@ -11,7 +11,7 @@ internal static partial class ScriptDePruebas
 {
     public static string LeerDatabaseSql() => File.ReadAllText(RutaDeDatabaseSql());
 
-    public static string Adaptar(string script)
+    public static string Adaptar(string script, DateOnly hoy)
     {
         // El DROP del script apuntaba a la base de desarrollo y la borraba en cada corrida.
         var adaptado = PatronDrop().Replace(
@@ -21,6 +21,10 @@ internal static partial class ScriptDePruebas
             adaptado,
             $"CREATE DATABASE {BaseDeDatosDePrueba.Nombre} ");
         adaptado = PatronUse().Replace(adaptado, $"USE {BaseDeDatosDePrueba.Nombre};");
+
+        // El seed es relativo a hoy. Si cada sentencia preguntara CURDATE(), una corrida que cruza la
+        // medianoche sembraría un día y las pruebas consultarían el siguiente (#34).
+        adaptado = adaptado.Replace("CURDATE()", $"DATE('{hoy:yyyy-MM-dd}')", StringComparison.Ordinal);
 
         foreach (Match sentencia in PatronSentenciaDeBase().Matches(adaptado))
         {
