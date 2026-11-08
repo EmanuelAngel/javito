@@ -4,21 +4,54 @@
 
 	type Props = {
 		detalle: RutinaDetalle | null;
+		enviando: boolean;
 		alQuitar: (habitoId: number) => void;
+		alEditar: () => void;
+		// Desactivar es baja lógica (HU-RUT-05): sin confirmación, porque Reactivar la deshace entera.
+		alCambiarActivo: (activo: boolean) => void;
 	};
 
-	let { detalle, alQuitar }: Props = $props();
+	let { detalle, enviando, alQuitar, alEditar, alCambiarActivo }: Props = $props();
 </script>
 
 {#if detalle === null}
 	<p class="text-sm text-muted-foreground">Elegí una rutina para ver sus hábitos.</p>
 {:else}
 	<div class="flex flex-col gap-3">
-		<div>
-			<h2 class="text-xl font-semibold tracking-tight">{detalle.nombre}</h2>
-			{#if detalle.descripcion}
-				<p class="text-sm text-muted-foreground">{detalle.descripcion}</p>
-			{/if}
+		<div class="flex flex-wrap items-start justify-between gap-3">
+			<div>
+				<h2 class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+					{detalle.nombre}
+					{#if !detalle.activo}
+						<span
+							class="rounded-md border border-border px-1.5 py-0.5 text-xs font-normal text-muted-foreground"
+						>
+							Inactiva
+						</span>
+					{/if}
+				</h2>
+				{#if detalle.descripcion}
+					<p class="text-sm text-muted-foreground">{detalle.descripcion}</p>
+				{/if}
+			</div>
+
+			<div class="flex gap-2">
+				<button
+					type="button"
+					class="rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
+					onclick={alEditar}
+				>
+					Editar
+				</button>
+				<button
+					type="button"
+					disabled={enviando}
+					class="rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent disabled:opacity-50"
+					onclick={() => alCambiarActivo(!detalle.activo)}
+				>
+					{detalle.activo ? 'Desactivar' : 'Reactivar'}
+				</button>
+			</div>
 		</div>
 
 		{#if detalle.habitos.length === 0}

@@ -84,6 +84,73 @@ public class RutinasController(IRutinaRepositorio repositorio, IHabitoRepositori
     }
 
     /// <summary>
+    /// Renombra la rutina (HU-RUT-05) con las mismas reglas del alta. No toca su estado ni sus
+    /// hábitos, y una inactiva también se edita (L5).
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType<RutinaDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EditarAsync(
+        int id,
+        [FromBody] RutinaEntradaDto entrada,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        var rutina = await repositorio.BuscarAsync(id, usuarioId, cancellationToken);
+
+        if (rutina is null)
+        {
+            return NoEncontrada(id);
+        }
+
+        rutina.Nombre = entrada.Nombre.Trim();
+        rutina.Descripcion = NormalizarDescripcion(entrada.Descripcion);
+
+        return await repositorio.ActualizarAsync(rutina, cancellationToken)
+            ? Ok(MapeoDeRutinas.ADto(rutina))
+            : NoEncontrada(id);
+    }
+
+    /// <summary>
+    /// Desactiva o reactiva la rutina (HU-RUT-05). Es baja lógica e idempotente, con el molde de
+    /// categorías y hábitos: sus hábitos y su orden quedan intactos.
+    /// </summary>
+    [HttpPut("{id:int}/activo")]
+    [ProducesResponseType<RutinaDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CambiarActivoAsync(
+        int id,
+        [FromBody] CambioDeActivoDto entrada,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        var rutina = await repositorio.BuscarAsync(id, usuarioId, cancellationToken);
+
+        if (rutina is null)
+        {
+            return NoEncontrada(id);
+        }
+
+        rutina.Activo = entrada.Activo!.Value;
+
+        return await repositorio.CambiarActivoAsync(id, usuarioId, rutina.Activo, cancellationToken)
+            ? Ok(MapeoDeRutinas.ADto(rutina))
+            : NoEncontrada(id);
+    }
+
+    /// <summary>
     /// Cuelga un hábito propio y activo al final de la rutina. El hábito se valida contra el dueño del
     /// token: uno ajeno responde igual que uno inexistente, y uno archivado se rechaza porque la
     /// historia pide elegirlo entre los activos.

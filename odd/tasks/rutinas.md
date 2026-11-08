@@ -25,6 +25,15 @@ buscándolos para no recorrer la lista completa cada vez.»
 - **S7** — «Un hábito puede estar en varias rutinas a la vez»
 - **S8** — «Puedo quitar un hábito de la rutina sin archivarlo»
 
+**#78 · HU-RUT-05 — Editar y desactivar una rutina.** «Como Usuario quiero renombrar o dar de baja una
+rutina para que la pantalla del día no se me llene de bloques viejos.» Se suma después del cierre de
+la Puerta 3: este doc es el del módulo.
+
+- **S9** — «Puedo editar nombre y descripción»
+- **S10** — «Desactivarla la quita de los filtros sin borrarla ni borrar sus hábitos»
+- **S11** — «Puedo reactivarla con sus hábitos y su orden intactos»
+- **S12** — «Archivar un hábito lo quita de las rutinas sin romperlas»
+
 Fuera de alcance, por `docs/proyecto/plan-de-cierre.md:131`: `RUT-03` (ordenar), `RUT-04` (filtrar el
 día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S3` pide lo contrario.
 
@@ -38,6 +47,7 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 - **T6** · todas · inline · este commit · `docs(odd): cerrar la Puerta 3`
 
 - **T7** · S6-S7 · inline · este commit · `fix(api): serializar el alta de hábitos en una rutina`
+- **T8** · S9-S12 · inline · `feat/rutinas-editar-desactivar` · editar, desactivar y reactivar (#78)
 
 ## Cierre
 
@@ -123,3 +133,11 @@ Ninguna advertencia nueva. Las dos `CS8602` del build son preexistentes
   (`maxlength=60` más recorte en `rutinas.svelte.ts`). `ExisteHabitoAsync` y `QuitarHabitoAsync` no
   filtran por `usuario_id`: su único llamador ya validó el dueño antes, y agregarles el filtro es
   defensa en profundidad para un llamador futuro, no un defecto hoy.
+- **L4** — Pedido (#78), verbatim: «Ya mergeé 94, continúa». Orden acordado: #70 → #78.
+- **L5** — Decisiones de T8, con el mismo criterio que `habitos-edicion.md` L5 y L9:
+  `PUT /api/rutinas/{id}` (el cuerpo del alta) y `PUT /api/rutinas/{id}/activo` (el de categorías y
+  hábitos, idempotente). «Los filtros» de S10 son los de `RUT-04` (filtrar el día), que todavía no
+  existe: el listado sigue trayendo todas con su `activo` y la pantalla agrupa las inactivas aparte;
+  `RUT-04` debe ofrecer solo las activas. Una rutina inactiva también se edita. S12: el detalle
+  oculta los hábitos archivados sin borrar la fila de `rutina_habito`, así que al reactivar el hábito
+  vuelve a su lugar en el orden.

@@ -6,8 +6,10 @@ import { buscar as buscarHabitos, type Habito } from './api/habitos';
 import { mapearErroresDeFormulario, type ErroresDeFormulario } from './api/errores';
 import {
 	agregarHabito,
+	cambiarActivo as cambiarActivoDeRutina,
 	crear as crearRutina,
 	detalle as detalleDeRutina,
+	editar as editarRutina,
 	quitarHabito,
 	type Rutina,
 	type RutinaDetalle
@@ -28,6 +30,8 @@ export function estadoDeRutinas(inicial: EstadoInicial) {
 		enviando: false,
 		errores: { campos: {}, mensaje: '' } as ErroresDeFormulario,
 		formulario: { nombre: '', descripcion: '' },
+		// La rutina que el formulario está corrigiendo, o null cuando da de alta (HU-RUT-05).
+		idEnEdicion: null as number | null,
 		busqueda: {
 			texto: '',
 			resultados: [] as Habito[],
@@ -59,6 +63,23 @@ export function estadoDeRutinas(inicial: EstadoInicial) {
 	function limpiarFormulario(): void {
 		estado.formulario = { nombre: '', descripcion: '' };
 		estado.errores = { campos: {}, mensaje: '' };
+		estado.idEnEdicion = null;
+	}
+
+	function datosDelFormulario() {
+		const nombre = estado.formulario.nombre.trim();
+		const descripcion = estado.formulario.descripcion.trim();
+
+		return { nombre, descripcion: descripcion === '' ? null : descripcion };
+	}
+
+	/** Deja la rutina actualizada en la lista y en el panel, sin releer: el PUT ya la devuelve. */
+	function reemplazar(rutina: Rutina): void {
+		estado.rutinas = estado.rutinas.map((actual) => (actual.id === rutina.id ? rutina : actual));
+
+		if (estado.detalle?.id === rutina.id) {
+			estado.detalle = { ...estado.detalle, ...rutina };
+		}
 	}
 
 	async function cargarDetalle(rutinaId: number): Promise<void> {
@@ -67,17 +88,11 @@ export function estadoDeRutinas(inicial: EstadoInicial) {
 
 	/** Alta (HU-RUT-01): la rutina nace activa y vacía, y queda elegida para cargarle hábitos. */
 	async function crear(): Promise<void> {
-		const nombre = estado.formulario.nombre.trim();
-		const descripcion = estado.formulario.descripcion.trim();
-
 		estado.enviando = true;
 		estado.errores = { campos: {}, mensaje: '' };
 
 		try {
-			const creada = await crearRutina({
-				nombre,
-				descripcion: descripcion === '' ? null : descripcion
-			});
+			const creada = await crearRutina(datosDelFormulario());
 
 			estado.rutinas = [...estado.rutinas, creada];
 			limpiarFormulario();
@@ -89,7 +104,61 @@ export function estadoDeRutinas(inicial: EstadoInicial) {
 		}
 	}
 
+	/** Carga la rutina elegida en el formulario (HU-RUT-05). */
+	function prepararEdicion(): void {
+		if (estado.detalle === null) return;
+
+		estado.idEnEdicion = estado.detalle.id;
+		estado.formulario = {
+			nombre: estado.detalle.nombre,
+			descripcion: estado.detalle.descripcion ?? ''
+		};
+		estado.errores = { campos: {}, mensaje: '' };
+	}
+
+	function cancelar(): void {
+		limpiarFormulario();
+	}
+
+	async function guardarEdicion(): Promise<void> {
+		const id = estado.idEnEdicion;
+
+		if (id === null) return;
+
+		estado.enviando = true;
+		estado.errores = { campos: {}, mensaje: '' };
+
+		try {
+			reemplazar(await editarRutina(id, datosDelFormulario()));
+			limpiarFormulario();
+		} catch (error) {
+			estado.errores = mapearErroresDeFormulario(error);
+		} finally {
+			estado.enviando = false;
+		}
+	}
+
+	/** Desactivar o reactivar la rutina elegida: baja lógica, sus hábitos y su orden quedan. */
+	async function cambiarActivo(activo: boolean): Promise<void> {
+		const rutinaId = estado.detalle?.id;
+
+		if (rutinaId === undefined) return;
+
+		estado.enviando = true;
+
+		try {
+			reemplazar(await cambiarActivoDeRutina(rutinaId, activo));
+		} catch (error) {
+			estado.errores = { campos: {}, mensaje: mensajeDe(error) };
+		} finally {
+			estado.enviando = false;
+		}
+	}
+
 	async function elegir(rutinaId: number): Promise<void> {
+		// Cambiar de rutina abandona la edición de la anterior: el formulario no la arrastra.
+		if (estado.idEnEdicion !== null && estado.idEnEdicion !== rutinaId) limpiarFormulario();
+
 		reiniciarBusqueda();
 		await cargarDetalle(rutinaId);
 	}
@@ -140,7 +209,18 @@ export function estadoDeRutinas(inicial: EstadoInicial) {
 		}
 	}
 
-	return { estado, crear, elegir, buscar, agregar, quitar };
+	return {
+		estado,
+		crear,
+		elegir,
+		buscar,
+		agregar,
+		quitar,
+		prepararEdicion,
+		cancelar,
+		guardarEdicion,
+		cambiarActivo
+	};
 }
 
 function mensajeDe(error: unknown): string {

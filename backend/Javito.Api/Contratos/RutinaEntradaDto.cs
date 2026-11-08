@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Javito.Api.Contratos;
 
 /// <summary>
-/// Cuerpo del alta de una rutina. Las anotaciones van sobre el parámetro del record, sin el prefijo
+/// Cuerpo del alta y de la edición de una rutina. Las anotaciones van sobre el parámetro del record, sin el prefijo
 /// <c>[property: …]</c>: con el prefijo MVC las ignora y avisa al validar. Los límites son los de
 /// <c>rutina</c> en database.sql.
 /// </summary>
