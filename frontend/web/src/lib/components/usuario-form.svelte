@@ -87,12 +87,12 @@
 					bind:value={valores.password}
 					required
 					minlength={8}
-					maxlength={100}
+					maxlength={72}
 					autocomplete="new-password"
 					aria-invalid={errores.password !== undefined}
 				/>
 				<Field.Description>
-					Entre 8 y 100 caracteres. Se la comunicás vos: el sistema no manda emails.
+					Entre 8 y 72 caracteres. Se la comunicás vos: el sistema no manda emails.
 				</Field.Description>
 				<Field.Error errors={mensajes('password')} />
 			</Field.Field>
