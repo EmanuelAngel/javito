@@ -6,6 +6,8 @@ namespace Javito.Api.Tests.Infraestructura;
 /// <summary>
 /// Prepara el schema de pruebas una vez por corrida: recrea javito_test ejecutando database.sql
 /// con el nombre de base sustituido. Nunca toca la base de desarrollo.
+/// La fecha de hoy se toma una sola vez por corrida: el seed se siembra con ella y las pruebas
+/// consultan la misma, aunque la corrida cruce la medianoche.
 /// </summary>
 internal static class BaseDeDatosDePrueba
 {
@@ -13,13 +15,16 @@ internal static class BaseDeDatosDePrueba
 
     private const string CadenaPorDefecto = "Server=localhost;Port=3306;User ID=root;Database=javito";
 
-    private static readonly Lazy<Task> Preparacion =
+    private static readonly Lazy<Task<DateOnly>> Preparacion =
         new(PrepararAsync, LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static string CadenaDeConexion =>
         new MySqlConnectionStringBuilder(CadenaConfigurada()) { Database = Nombre }.ConnectionString;
 
     public static Task AsegurarAsync() => Preparacion.Value;
+
+    /// <summary>El día con el que se sembró la base: el único "hoy" que deben usar las pruebas.</summary>
+    public static Task<DateOnly> HoyAsync() => Preparacion.Value;
 
     private static string CadenaConfigurada()
     {
@@ -36,14 +41,12 @@ internal static class BaseDeDatosDePrueba
         return configuracion.GetConnectionString("Javito") ?? CadenaPorDefecto;
     }
 
-    private static async Task PrepararAsync()
+    private static async Task<DateOnly> PrepararAsync()
     {
         if (!Nombre.EndsWith("_test", StringComparison.Ordinal))
         {
             throw new InvalidOperationException("El fixture solo recrea bases cuyo nombre termina en _test.");
         }
-
-        var script = ScriptDePruebas.Adaptar(ScriptDePruebas.LeerDatabaseSql());
 
         // database.sql usa variables de sesión (SET @lunes = ...) para cargar fechas relativas.
         var sinBase = new MySqlConnectionStringBuilder(CadenaDeConexion)
@@ -67,6 +70,15 @@ internal static class BaseDeDatosDePrueba
                 excepcion);
         }
 
+        // La fecha del servidor MySQL, no la de .NET: es la misma zona horaria que usaba el seed.
+        DateOnly hoy;
+        await using (var fecha = new MySqlCommand("SELECT CURDATE()", conexion))
+        {
+            hoy = DateOnly.FromDateTime((DateTime)(await fecha.ExecuteScalarAsync())!);
+        }
+
+        var script = ScriptDePruebas.Adaptar(ScriptDePruebas.LeerDatabaseSql(), hoy);
+
         await using (var borrar = new MySqlCommand($"DROP DATABASE IF EXISTS {Nombre}", conexion))
         {
             await borrar.ExecuteNonQueryAsync();
@@ -76,5 +88,7 @@ internal static class BaseDeDatosDePrueba
         // AllowUserVariables habilita las variables de sesión que usa database.sql (@lunes).
         await using var comando = new MySqlCommand(script, conexion);
         await comando.ExecuteNonQueryAsync();
+
+        return hoy;
     }
 }

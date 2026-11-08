@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Javito.Api.Tests.Infraestructura;
-using MySqlConnector;
 
 namespace Javito.Api.Tests;
 
@@ -33,7 +32,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
 
         // El formato va explícito: interpolar un DateOnly usa la cultura de la máquina («1/11/2026»)
         // y la ruta no encontraría ninguna acción.
-        var respuesta = await anonimo.GetAsync($"/api/dias/{await HoyAsync():yyyy-MM-dd}");
+        var respuesta = await anonimo.GetAsync($"/api/dias/{await BaseDeDatosDePrueba.HoyAsync():yyyy-MM-dd}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
     }
@@ -41,7 +40,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task El_dia_trae_solo_mis_habitos_activos()
     {
-        var dia = await DiaAsync(await HoyAsync());
+        var dia = await DiaAsync(await BaseDeDatosDePrueba.HoyAsync());
 
         // El seed del usuario 2 tiene diecisiete hábitos: dieciséis activos y «Correr» (17) archivado.
         Assert.Equal(Enumerable.Range(1, 16), dia.Habitos.Select(habito => habito.Id).Order());
@@ -54,7 +53,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         var token = await SesionDePrueba.IniciarAsync(otraCuenta, "otra@javito.local");
         otraCuenta.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var dia = await otraCuenta.GetFromJsonAsync<DiaDePrueba>($"/api/dias/{await HoyAsync():yyyy-MM-dd}");
+        var dia = await otraCuenta.GetFromJsonAsync<DiaDePrueba>($"/api/dias/{await BaseDeDatosDePrueba.HoyAsync():yyyy-MM-dd}");
 
         Assert.NotNull(dia);
         Assert.Equal([18, 19], dia.Habitos.Select(habito => habito.Id).Order());
@@ -63,7 +62,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task El_objetivo_semanal_es_la_cuota_del_semanal_o_siete_en_el_diario()
     {
-        var dia = await DiaAsync(await HoyAsync());
+        var dia = await DiaAsync(await BaseDeDatosDePrueba.HoyAsync());
 
         var diario = Assert.Single(dia.Habitos, habito => habito.Id == 1);
         Assert.Equal(new FrecuenciaDePrueba("diaria", null), diario.Frecuencia);
@@ -77,7 +76,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task La_semana_cuenta_de_lunes_a_domingo_y_solo_los_dias_completados()
     {
-        var hoy = await HoyAsync();
+        var hoy = await BaseDeDatosDePrueba.HoyAsync();
         var dia = await DiaAsync(hoy);
 
         // El seed arma las semanas a mano para que cada una cuente una historia: «Ejercicio pesado»
@@ -97,7 +96,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task Sin_registro_el_dia_informa_null_y_con_registro_deriva_el_completado()
     {
-        var dia = await DiaAsync(await HoyAsync());
+        var dia = await DiaAsync(await BaseDeDatosDePrueba.HoyAsync());
 
         // El seed marca alrededor del 70% de los hábitos diarios: las dos ramas existen siempre.
         Assert.Contains(dia.Habitos, habito => habito.Registro is null);
@@ -127,7 +126,7 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     [Fact]
     public async Task La_semana_trae_los_siete_dias_de_lunes_a_domingo_con_su_marca()
     {
-        var hoy = await HoyAsync();
+        var hoy = await BaseDeDatosDePrueba.HoyAsync();
         var dia = await DiaAsync(hoy);
 
         // La semana es la del calendario, no «los últimos siete días»: arranca el lunes de la fecha
@@ -173,20 +172,6 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.Equal(fecha, dia.Fecha);
 
         return dia;
-    }
-
-    /// <summary>
-    /// El día se pide con la fecha que conoce MySQL y no con la de .NET: el seed se armó con
-    /// <c>CURDATE()</c>, así que sólo coinciden si se pregunta por la misma base.
-    /// </summary>
-    private static async Task<DateOnly> HoyAsync()
-    {
-        await using var conexion = new MySqlConnection(BaseDeDatosDePrueba.CadenaDeConexion);
-        await conexion.OpenAsync();
-
-        await using var comando = new MySqlCommand("SELECT CURDATE()", conexion);
-
-        return DateOnly.FromDateTime((DateTime)(await comando.ExecuteScalarAsync())!);
     }
 }
 
