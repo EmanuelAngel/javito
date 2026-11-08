@@ -100,6 +100,12 @@
 					>
 						Administrar artículos
 					</a>
+					<a
+						href={resolve('/(app)/admin/usuarios')}
+						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Usuarios
+					</a>
 				{/if}
 				<span class="hidden text-sm text-muted-foreground sm:inline">{usuario.nombre}</span>
 				<CambioDeTema />
