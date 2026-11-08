@@ -34,6 +34,13 @@ la Puerta 3: este doc es el del módulo.
 - **S11** — «Puedo reactivarla con sus hábitos y su orden intactos»
 - **S12** — «Archivar un hábito lo quita de las rutinas sin romperlas»
 
+**#77 · HU-RUT-04 — Filtrar mi día por rutina.** «Como Usuario quiero filtrar la pantalla principal
+por rutina para ver solo lo que me toca ahora y no los 14 hábitos juntos.»
+
+- **S13** — «Puedo elegir una rutina y la pantalla muestra solo sus hábitos, en su orden»
+- **S14** — «Puedo volver a ver todos»
+- **S15** — «El filtro no cambia lo que registro: marcar dentro del filtro marca el hábito real»
+
 Fuera de alcance, por `docs/proyecto/plan-de-cierre.md:131`: `RUT-03` (ordenar), `RUT-04` (filtrar el
 día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S3` pide lo contrario.
 
@@ -48,6 +55,7 @@ día) y `RUT-05` (editar y desactivar). Tampoco se agrega unicidad de nombre: `S
 
 - **T7** · S6-S7 · inline · este commit · `fix(api): serializar el alta de hábitos en una rutina`
 - **T8** · S9-S12 · inline · `feat/rutinas-editar-desactivar` · editar, desactivar y reactivar (#78)
+- **T9** · S10, S13-S15 · inline · este commit · filtrar `/hoy` por rutina (#77)
 
 ## Cierre
 
@@ -141,3 +149,9 @@ Ninguna advertencia nueva. Las dos `CS8602` del build son preexistentes
   `RUT-04` debe ofrecer solo las activas. Una rutina inactiva también se edita. S12: el detalle
   oculta los hábitos archivados sin borrar la fila de `rutina_habito`, así que al reactivar el hábito
   vuelve a su lugar en el orden.
+- **L6** — Pedido (#77), verbatim: «Con rutinas activas te referís a poder filtrar 'hoy' por las
+  rutinas activas, ¿no?» → «Sí». Decisiones del usuario: el filtro se resuelve **en el SPA** (el
+  endpoint del día no cambia; el selector sale de `GET /api/rutinas` filtrado por `activo` y el orden
+  de `GET /api/rutinas/{id}`), con el estado en `?rutinaId=` como el historial; un `rutinaId`
+  inactivo, ajeno o inexistente **muestra todos**, sin aviso. S15 se cumple porque el filtro es sólo
+  una vista sobre el mismo estado del día: marcar sigue yendo por el id real del hábito.
