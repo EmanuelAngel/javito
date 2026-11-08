@@ -77,3 +77,42 @@ Dos cosas que costaron pensarlas:
 - El `JOIN` con `habito` no es sólo para el título: `registro_habito` no guarda el dueño, así que el
   `WHERE h.usuario_id` es lo que hace cumplir la propiedad. Por eso un `habitoId` ajeno devuelve lista
   vacía y no un 404: el filtro no encuentra nada, que es exactamente lo que se quiere decir.
+
+**L4** (decisión, S7) — «Semanales: semanas con cuota cumplida». El porcentaje de un hábito **diario** es
+días cumplidos / días evaluables; el de un **semanal** es semanas que alcanzaron su cuota / semanas
+evaluables. `total de veces cumplido` sigue la misma unidad que el porcentaje: días en un diario, semanas
+en un semanal.
+
+**L5** (decisión, S6/S7) — Los días **anteriores al primer registro** del hábito se pintan **neutros** y
+quedan **fuera del porcentaje**: el período se evalúa desde `max(desde, primer registro)`. El esquema no
+guarda la fecha de alta, así que la primera marca es la única evidencia de que el hábito existía. Sin
+ningún registro no hay ventana evaluable: todo neutro, `evaluables = 0`, `porcentaje = 0`.
+
+**L6** (decisión, S8) — Un día es **cumplido** si su registro está `completado`; es **vacío** si es un día
+evaluable de un hábito **diario** sin registro completado; y es **neutro** si es un día futuro, si es
+anterior al primer registro, o si es un día sin marca de un hábito **semanal** (su cuota no es diaria, la
+misma razón por la que la tarjeta del día no lo pinta en rojo). Hoy es evaluable: neutro no es «el día no
+terminó».
+
+**L7** (decisión, S7) — Para un semanal, **todas las semanas tocadas** por el período entran al
+denominador, con la semana que empieza el lunes. Una semana cuenta como cumplida si sus días **dentro del
+período evaluado** alcanzan `frecuencia_veces`. Una semana parcial del borde no se descarta: se evalúa con
+los días que le tocan.
+
+**L8** (contrato de #83) — `GET /api/habitos/{id}/historial?dias=30|60|365&hasta=aaaa-mm-dd`, con la acción
+en `HistorialController` y ruta absoluta `~/api/habitos/{id:int}/historial` para no partir el módulo. La
+ventana es `[hasta - (dias - 1), hasta]`, con `hasta` = hoy en UTC si no viene (la manda el SPA con el día
+del navegador, como en `/api/dias`). Respuesta:
+
+```json
+{ "habitoId": 15, "habito": "Leer", "tipo": "contador",
+  "frecuencia": { "tipo": "diaria", "veces": null },
+  "dias": 30, "desde": "2001-06-01", "hasta": "2001-06-30",
+  "cumplidos": 12, "evaluables": 30, "porcentaje": 40.0,
+  "cuadricula": [ { "fecha": "2001-06-01", "estado": "cumplido" } ] }
+```
+
+`estado` es `cumplido` | `vacio` | `neutro` (L6); `porcentaje` va con un decimal. Errores: hábito ajeno o
+inexistente → el 404 `no_encontrado` que ya usa `HabitosController`; `dias` fuera de la lista → 400
+`dias_invalidos`; `hasta` mal escrita → 400 `fecha_invalida`. El 404 no distingue «no existe» de «no es
+tuyo», igual que el resto de la API.
