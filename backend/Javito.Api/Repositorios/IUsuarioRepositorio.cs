@@ -13,6 +13,13 @@ public interface IUsuarioRepositorio
     Task<Usuario?> BuscarPorIdAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Inserta la cuenta y devuelve el id que le dio el <c>AUTO_INCREMENT</c>. La fila se escribe
+    /// como viene: el hash de la contraseña y el estado activo los decide quien llama, y el índice
+    /// <c>UNIQUE</c> del email sigue siendo la última defensa contra un duplicado.
+    /// </summary>
+    Task<int> CrearAsync(Usuario usuario, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Una página de cuentas para el listado de administración, más el total que necesita el
     /// paginador. El orden es por id descendente: el id es <c>AUTO_INCREMENT</c>, así que ese orden es
     /// el de alta con el más nuevo primero, sin una columna de fecha que la tabla no tiene.
