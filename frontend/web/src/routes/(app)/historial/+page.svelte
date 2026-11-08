@@ -2,20 +2,19 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import FiltrosDelHistorial from '$lib/components/filtros-del-historial.svelte';
 	import HistorialVacio from '$lib/components/historial-vacio.svelte';
 	import Paginador from '$lib/components/paginador.svelte';
 	import TablaDeHistorial from '$lib/components/tabla-de-historial.svelte';
 	import { Alert, AlertAction, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { estadoDelHistorial } from '$lib/historial.svelte';
 	import { leerEnteroPositivo, leerPagina } from '$lib/paginado.svelte';
 
 	// El estado vive en la URL —`?habitoId=`, `?desde=`, `?hasta=` y `?pagina=`—: es la única fuente y
 	// todo cambio pasa por `navegar`, así un enlace copiado abre el mismo período (HU-HIS-01). Pedidos,
-	// hábitos del filtro y navegación están en `historial.svelte.ts`.
+	// hábitos del filtro y navegación están en `historial.svelte.ts`; los controles, en su componente.
 	const pagina = $derived(leerPagina(page.url.searchParams.get('pagina')));
 	const habitoId = $derived(leerEnteroPositivo(page.url.searchParams.get('habitoId')));
 	const desde = $derived(page.url.searchParams.get('desde'));
@@ -42,22 +41,11 @@
 		pantalla.navegar({ habitoId, desde, hasta, pagina: destino });
 
 	// Cambiar un filtro vuelve a la página 1: la 3 de todo el historial no es la 3 de un hábito.
-	function elegirHabito(evento: Event) {
-		const valor = (evento.currentTarget as HTMLSelectElement).value;
-
-		pantalla.navegar({ habitoId: valor === '' ? null : Number(valor), desde, hasta, pagina: 1 });
-	}
-
-	function elegirFecha(campo: 'desde' | 'hasta', evento: Event) {
-		const valor = (evento.currentTarget as HTMLInputElement).value || null;
-
-		pantalla.navegar({
-			habitoId,
-			desde: campo === 'desde' ? valor : desde,
-			hasta: campo === 'hasta' ? valor : hasta,
-			pagina: 1
-		});
-	}
+	const cambiarFiltros = (filtros: {
+		habitoId: number | null;
+		desde: string | null;
+		hasta: string | null;
+	}) => pantalla.navegar({ ...filtros, pagina: 1 });
 
 	const quitarFiltros = () =>
 		pantalla.navegar({ habitoId: null, desde: null, hasta: null, pagina: 1 });
@@ -80,48 +68,14 @@
 		{/if}
 	</header>
 
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-		<div class="flex flex-col gap-1.5 sm:max-w-xs sm:flex-1">
-			<label class="text-sm font-medium" for="historial-habito">Hábito</label>
-			<NativeSelect
-				id="historial-habito"
-				class="w-full"
-				value={habitoId === null ? '' : String(habitoId)}
-				onchange={elegirHabito}
-			>
-				<NativeSelectOption value="">Todos los hábitos</NativeSelectOption>
-				{#each habitos.lista as habito (habito.id)}
-					<NativeSelectOption value={habito.id}>
-						{habito.titulo}{habito.activo ? '' : ' (archivado)'}
-					</NativeSelectOption>
-				{/each}
-			</NativeSelect>
-		</div>
-
-		<div class="flex flex-col gap-1.5">
-			<label class="text-sm font-medium" for="historial-desde">Desde</label>
-			<Input
-				id="historial-desde"
-				type="date"
-				value={desde ?? ''}
-				onchange={(evento) => elegirFecha('desde', evento)}
-			/>
-		</div>
-
-		<div class="flex flex-col gap-1.5">
-			<label class="text-sm font-medium" for="historial-hasta">Hasta</label>
-			<Input
-				id="historial-hasta"
-				type="date"
-				value={hasta ?? ''}
-				onchange={(evento) => elegirFecha('hasta', evento)}
-			/>
-		</div>
-
-		{#if hayFiltros}
-			<Button type="button" variant="ghost" onclick={quitarFiltros}>Quitar filtros</Button>
-		{/if}
-	</div>
+	<FiltrosDelHistorial
+		{habitoId}
+		{desde}
+		{hasta}
+		habitos={habitos.lista}
+		alCambiar={cambiarFiltros}
+		alQuitar={quitarFiltros}
+	/>
 
 	{#if mensajeError}
 		<Alert variant="destructive" role="alert">
