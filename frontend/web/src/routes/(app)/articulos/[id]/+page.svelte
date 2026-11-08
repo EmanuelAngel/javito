@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { urlDeArchivo } from '$lib/config';
@@ -12,6 +13,7 @@
 		EmptyTitle
 	} from '$lib/components/ui/empty/index.js';
 	import { armarConsulta, leerEnteroPositivo, leerPagina } from '$lib/paginado.svelte';
+	import { ROL_ADMINISTRADOR } from '$lib/roles';
 	import type { PageProps } from './$types';
 
 	// HU-ART-05: el artículo completo, con su Markdown renderizado, la portada en la cabecera, la
@@ -24,6 +26,13 @@
 			{ categoriaId: leerEnteroPositivo(page.url.searchParams.get('categoriaId')) },
 			leerPagina(page.url.searchParams.get('pagina'))
 		)}`
+	);
+
+	// Corregir es de Administración (HU-ART-02); el botón escondido es comodidad, el 403 lo pone la API.
+	const editar = $derived(
+		data.articulo && data.usuario.rol === ROL_ADMINISTRADOR
+			? `${resolve('/(app)/articulos/[id]/editar', { id: String(data.articulo.id) })}${page.url.search}`
+			: null
 	);
 
 	const categoria = $derived(
@@ -40,12 +49,22 @@
 </svelte:head>
 
 <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-10">
-	<!-- La query se armó arriba con el estado del catálogo; resolve() sólo tipa la ruta base. -->
-	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-	<Button variant="ghost" size="sm" class="self-start" href={volver}>
-		<ArrowLeftIcon class="size-4" />
-		Volver al catálogo
-	</Button>
+	<!-- Las dos URLs se armaron arriba con resolve() y la query del catálogo, que resolve() no tipa. -->
+	<div class="flex items-center justify-between gap-2">
+		<!-- eslint-disable svelte/no-navigation-without-resolve -->
+		<Button variant="ghost" size="sm" href={volver}>
+			<ArrowLeftIcon class="size-4" />
+			Volver al catálogo
+		</Button>
+
+		{#if editar}
+			<Button variant="outline" size="sm" href={editar}>
+				<PencilIcon class="size-4" />
+				Editar
+			</Button>
+		{/if}
+		<!-- eslint-enable svelte/no-navigation-without-resolve -->
+	</div>
 
 	{#if data.articulo === null}
 		<Empty class="rounded-xl border border-border bg-card">

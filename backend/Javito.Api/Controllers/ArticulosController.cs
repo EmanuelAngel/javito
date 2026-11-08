@@ -11,7 +11,7 @@ namespace Javito.Api.Controllers;
 
 /// <summary>
 /// Artículos del blog. Leer requiere sesión —la propuesta aprobada no tiene catálogo público— y
-/// publicar es exclusivo de Administración.
+/// publicar y editar son exclusivos de Administración.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -101,6 +101,100 @@ public class ArticulosController(
         }
 
         return Created($"/api/articulos/{articulo.Id}", MapeoDeArticulos.ADto(releido));
+    }
+
+    /// <summary>
+    /// Corrige un artículo publicado (HU-ART-02) sin despublicarlo: la fecha de publicación y
+    /// <c>activo</c> no cambian. La portada se conserva si no llega archivo, o se reemplaza; no se
+    /// quita. El reemplazo es el del avatar: guardar la nueva, actualizar la fila y recién ahí borrar
+    /// la anterior. Si la fila no acepta la nueva, se borra la nueva y queda la anterior.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Administrador)]
+    [ProducesResponseType<ArticuloDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+    public async Task<IActionResult> EditarAsync(
+        int id,
+        [FromForm] ArticuloEntradaDto entrada,
+        [FromForm] IFormFile? imagenPortada,
+        CancellationToken cancellationToken)
+    {
+        // Un artículo retirado no se corrige: primero se reactiva (HU-ART-03). Para la edición, igual
+        // que para la lectura, no existe.
+        var existente = await articulos.BuscarAsync(id, cancellationToken);
+
+        if (existente is null || !existente.Activo)
+        {
+            return NoEncontrado(id);
+        }
+
+        // Conservar la categoría que ya tenía vale aunque se haya desactivado después; cambiar a otra
+        // exige una activa. Se valida antes de tocar el disco, igual que en el alta.
+        if (entrada.CategoriaId != existente.CategoriaId)
+        {
+            var categoria = await categorias.BuscarAsync(entrada.CategoriaId, cancellationToken);
+
+            if (categoria is null || !categoria.Activo)
+            {
+                return CategoriaInvalida(entrada.CategoriaId);
+            }
+        }
+
+        var anterior = existente.ImagenPortadaUrl;
+        string? nueva = null;
+
+        if (imagenPortada is not null)
+        {
+            var guardado = await almacen.GuardarImagenAsync(imagenPortada, SubcarpetaDePortadas, cancellationToken);
+
+            if (guardado.Error is not null)
+            {
+                return RespuestasDeError.De(guardado.Error);
+            }
+
+            nueva = guardado.Ruta;
+        }
+
+        existente.CategoriaId = entrada.CategoriaId;
+        existente.Titulo = entrada.Titulo!.Trim();
+        existente.Resumen = entrada.Resumen!.Trim();
+        existente.ContenidoMarkdown = entrada.ContenidoMarkdown!;
+        existente.ImagenPortadaUrl = nueva ?? anterior;
+
+        bool actualizado;
+
+        try
+        {
+            actualizado = await articulos.ActualizarAsync(existente, cancellationToken);
+        }
+        catch
+        {
+            // La fila no aceptó la portada nueva: sigue apuntando a la anterior, que queda en disco.
+            almacen.Borrar(nueva);
+            throw;
+        }
+
+        if (!actualizado)
+        {
+            // Lo dieron de baja entre la lectura y el UPDATE: nada apunta a la portada nueva.
+            almacen.Borrar(nueva);
+            return NoEncontrado(id);
+        }
+
+        // Recién con la fila apuntando a la nueva, la anterior no le sirve a nadie.
+        if (nueva is not null)
+        {
+            almacen.Borrar(anterior);
+        }
+
+        var releido = await articulos.BuscarAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"No se pudo releer el artículo {id} recién editado.");
+
+        return Ok(MapeoDeArticulos.ADto(releido));
     }
 
     /// <summary>

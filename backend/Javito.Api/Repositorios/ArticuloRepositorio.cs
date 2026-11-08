@@ -50,6 +50,30 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
         return await lector.ReadAsync(cancellationToken) ? ADominio(lector) : null;
     }
 
+    public async Task<bool> ActualizarAsync(Articulo articulo, CancellationToken cancellationToken = default)
+    {
+        // fecha_publicacion y activo quedan afuera del SET: corregir no es volver a publicar. El filtro
+        // por activo hace que una baja cruzada con la edición no reviva el artículo por la espalda.
+        const string sql = """
+            UPDATE articulo
+            SET categoria_id = @categoriaId, titulo = @titulo, resumen = @resumen,
+                contenido_markdown = @contenidoMarkdown, imagen_portada_url = @imagenPortadaUrl
+            WHERE id = @id AND activo = TRUE
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", articulo.Id);
+        comando.Parameters.AddWithValue("@categoriaId", articulo.CategoriaId);
+        comando.Parameters.AddWithValue("@titulo", articulo.Titulo);
+        comando.Parameters.AddWithValue("@resumen", articulo.Resumen);
+        comando.Parameters.AddWithValue("@contenidoMarkdown", articulo.ContenidoMarkdown);
+        comando.Parameters.AddWithValue("@imagenPortadaUrl", (object?)articulo.ImagenPortadaUrl ?? DBNull.Value);
+
+        // MySqlConnector cuenta filas encontradas, no cambiadas: guardar sin cambios también es 1.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) == 1;
+    }
+
     /// <summary>
     /// Las columnas que necesita una tarjeta del catálogo. El cuerpo (<c>MEDIUMTEXT</c>) queda afuera
     /// a propósito: traer seis artículos completos de la base para mostrar títulos y resúmenes es

@@ -76,6 +76,21 @@ formato para aprovechar el contenido y no un muro de texto plano.»
 - **S17** «Se ve la categoría y la fecha»
 - **S18** «Volver al catálogo conserva la página en la que estaba»
 
+**#79 · HU-ART-02 — Editar un artículo.** «Como Administrador quiero corregir un artículo publicado
+para arreglar un error sin despublicarlo.»
+
+- **S19** «Puedo editar título, resumen, contenido, categoría y portada». `PUT /api/articulos/{id}`
+  (multipart, los mismos campos y límites que el alta) y la pantalla `/articulos/[id]/editar`
+  (`ux-brief.md`), que reusa `articulo-form.svelte` precargado con `inicial`.
+- **S20** «Reemplazar la portada no acumula imágenes huérfanas». La portada se conserva (sin archivo
+  nuevo) o se reemplaza; no se puede quitar. Orquestación del avatar: guardar la nueva, actualizar la
+  fila, borrar la anterior; si la fila no se actualiza, se borra la nueva y queda la anterior.
+- **S21** «La fecha de publicación original no cambia al editar».
+- **S22** La categoría actual se conserva aunque esté inactiva; cambiar a otra exige una activa
+  (400 `categoria_invalida`), mismo criterio que `habitos-edicion.md` L4.
+- **S23** Sólo Administrador edita, igual que el alta: 401 sin sesión, 403 `sin_permiso` para un
+  Usuario, sin tocar la fila. Un artículo inexistente o inactivo es 404 `no_encontrado`.
+
 **Fuera de alcance de esta feature.** Edición del artículo y reemplazo de portada (`ART-02`), baja
 lógica y reactivación (`ART-03`), pantalla de detalle y "volver conservando la página" (`ART-05`),
 búsqueda de artículos.
@@ -91,6 +106,7 @@ búsqueda de artículos.
 | T5 | Recorrido e2e del alta y del catálogo contra la WebAPI real | S1, S5 | worker | `50e64c7` |
 | T6 | #63: `paginado.svelte.ts` (+ prueba), `catalogo-de-articulos.svelte.ts`, `articulo-form`, `catalogo-vacio`, `grilla-de-articulos` | S8-S14 | inline | `chore/articulos-modularizar` |
 | T7 | #81: `/articulos/[id]`, la tarjeta pasa a ser enlace, «Volver» con la query del catálogo | S15-S18 | inline | `feat/articulos-detalle` |
+| T8 | #79: `PUT /api/articulos/{id}` con reemplazo de portada, `/articulos/[id]/editar` con `articulo-form`, «Editar» en el detalle, e2e | S19-S23 | inline | `feat/articulos-editar` |
 
 ## Log
 
@@ -189,3 +205,40 @@ catálogo (`?categoriaId=&pagina=`), armada con `armarConsulta`; el detalle la l
 devuelve. Sin estado en memoria: el enlace se puede copiar y recargar. El detalle pide **todas** las
 categorías para nombrar una que se desactivó después de publicar. Un 404 (inexistente o dado de baja)
 muestra «Este artículo no existe». Sale apilado sobre #63 (usa `paginado.svelte.ts`).
+
+**L-A4** — Decisiones del usuario para #79 (verbatim del pedido):
+
+> - La portada solo se conserva (sin archivo nuevo) o se reemplaza. No se puede quitar.
+> - El reemplazo sigue el patrón del avatar: guardar el archivo nuevo, actualizar la fila y borrar el
+>   anterior. Si la fila no se actualiza, se borra el nuevo y queda el anterior. No pueden quedar
+>   imágenes huérfanas.
+> - La fecha de publicación no cambia.
+> - La categoría actual se conserva aunque esté inactiva; cambiar a otra exige una activa (mismo
+>   criterio que habitos-edicion.md L4).
+> - Solo Administrador puede editar, igual que el alta (403 para Usuario).
+> - Reusá components/articulo-form.svelte: ya acepta `inicial` y `alEnviar` por prop. No copies el
+>   formulario. La ruta acordada es /articulos/[id]/editar (ux-brief.md).
+
+Decisiones del usuario para #80, tomadas por adelantado: los inactivos se ven y se reactivan en una
+pantalla nueva **`/admin/articulos`**; se desactiva desde el **detalle**; desactivar pide
+**confirmación con diálogo**; un artículo **inactivo no se edita** (primero se reactiva). Por eso el
+`PUT` de #79 ya responde 404 sobre un inactivo.
+
+Decisiones de implementación de T8: el `UPDATE` filtra `activo = TRUE`, así una baja que se cruza con
+la edición termina en 404 y borra la portada nueva; no toca `fecha_publicacion` ni `activo`. Después
+de guardar, la pantalla vuelve al detalle con la misma query del catálogo.
+
+**L-A5** — Evidencia de T8. RED de `ArticulosEdicionEndpointTests`: 11/11 en rojo con `405 Method Not
+Allowed`; GREEN 11/11. El camino «la fila no acepta la portada nueva» se prueba con un repositorio que
+falla al actualizar (`ConfigureTestServices`): 500, la fila sigue con la anterior y el disco queda como
+estaba. `check:api` 172/172, `check:web` 0 errores, `test:web` 67/67, e2e 4/4 (el de artículos suma la
+edición conservando y reemplazando la portada, la anterior en 404 y el 403 del Usuario).
+`svelte_autofixer` marcó como sobrante el `eslint-disable` del `goto` de la edición: es un falso
+positivo, sin él eslint del repo falla con `svelte/no-navigation-without-resolve`.
+
+La verificación independiente (solo lectura) dio PASS en S19, S21, S22 y S23, y PASS parcial en S20:
+dos ediciones cruzadas del mismo artículo pueden dejar la fila apuntando a una portada borrada o una
+imagen sin referencia, y el camino «baja cruzada → 404 y se borra la nueva» no tiene prueba propia.
+Decisión del usuario (verbatim): «No te compliques con la concurrencia, no hagas eso, no pasa nada».
+Queda aceptado como riesgo conocido: un solo Administrador edita, y el camino secuencial no deja
+huérfanas.

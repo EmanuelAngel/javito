@@ -14,6 +14,13 @@ public interface IArticuloRepositorio
     Task<Articulo?> BuscarAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Reescribe lo que se corrige de un artículo activo: título, resumen, cuerpo, categoría y portada.
+    /// La fecha de publicación y <c>activo</c> no se tocan (HU-ART-02). Devuelve <c>false</c> si no hay
+    /// un artículo activo con ese id, por ejemplo porque lo dieron de baja mientras se editaba.
+    /// </summary>
+    Task<bool> ActualizarAsync(Articulo articulo, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Una página del catálogo con el total de filas que entran en el filtro. Van juntos y de una sola
     /// vez porque la pantalla necesita los dos para dibujar la paginación, y porque el conteo tiene que
     /// salir del mismo <c>WHERE</c> que la página: un total con otro criterio mentiría.

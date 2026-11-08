@@ -5,6 +5,7 @@
 		type DatosDeArticulo
 	} from '$lib/api/articulos';
 	import type { Categoria } from '$lib/api/categorias';
+	import { urlDeArchivo } from '$lib/config';
 	import Markdown from '$lib/components/markdown.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Field from '$lib/components/ui/field/index.js';
@@ -18,6 +19,8 @@
 	type Props = {
 		categorias: Categoria[];
 		inicial?: DatosDeArticulo;
+		/** La portada que ya tiene el artículo que se edita: sin archivo nuevo, se conserva. */
+		portadaActual?: string | null;
 		enviando: boolean;
 		/** Mensaje por campo que devolvió el servidor, con la clave del campo del formulario. */
 		errores: Record<string, string>;
@@ -25,7 +28,8 @@
 		alEnviar: (datos: DatosDeArticulo, portada: File | null) => void;
 	};
 
-	let { categorias, inicial, enviando, errores, textoDelBoton, alEnviar }: Props = $props();
+	let { categorias, inicial, portadaActual, enviando, errores, textoDelBoton, alEnviar }: Props =
+		$props();
 
 	/** Lo que el editor muestra mientras está vacío: el Markdown, no una descripción de él. */
 	const EJEMPLO_DE_MARKDOWN =
@@ -128,6 +132,13 @@
 
 			<Field.Field data-invalid={errorDe('portada') !== undefined}>
 				<Field.Label for="articulo-portada">Portada (opcional)</Field.Label>
+				{#if portadaActual}
+					<img
+						src={urlDeArchivo(portadaActual)}
+						alt="Portada actual"
+						class="aspect-video w-48 rounded-md border border-border object-cover"
+					/>
+				{/if}
 				<Input
 					id="articulo-portada"
 					type="file"
@@ -136,7 +147,10 @@
 					aria-invalid={errorDe('portada') !== undefined}
 				/>
 				<Field.Description>
-					JPEG, PNG o WebP de hasta 5 MB. Sin portada el artículo se publica igual.
+					JPEG, PNG o WebP de hasta 5 MB.
+					{inicial
+						? 'Sin archivo nuevo se conserva la portada actual.'
+						: 'Sin portada el artículo se publica igual.'}
 				</Field.Description>
 				<Field.Error errors={mensajes('portada')} />
 			</Field.Field>
