@@ -231,3 +231,14 @@ mergeado, el PR lo dice.
   responde 201 — no hay mass assignment porque el modelo se arma campo por campo; el contrato son
   cuatro campos. A3: se agregaron las pruebas que faltaban (rol en minúsculas, tope de 72 caracteres,
   tope de 72 bytes y email normalizado verificado por el listado, no por la columna).
+
+- **L20** — La re-verificación del fix de L18 también dio **APPROVED**, con tres avisos que quedan
+  **abiertos a propósito** y anotados para que no se pierdan:
+  1. No hay prueba del borde **aceptado** (una contraseña de exactamente 72 bytes entra) ni del texto
+     del rechazo por bytes; las dos pruebas nuevas afirman el campo, no el borde. Es la primera cosa
+     para agregar si alguien vuelve a tocar este límite.
+  2. El texto de ayuda del formulario dice «72 caracteres», pero la regla es de bytes: una contraseña
+     de 40 tildes pasa el `maxlength` del navegador y recién el 400 le enseña la regla real.
+  3. `Contratos/CredencialesDto.cs` (el **login**) sigue con tope de 100 caracteres y el texto viejo.
+     No es explotable —los hashes guardados ya derivan sólo de contraseñas de ≤72 bytes— y no se tocó
+     porque el login es de otro módulo; si se unifica, va con su propia prueba.
