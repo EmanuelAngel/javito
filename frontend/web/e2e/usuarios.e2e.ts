@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-// USU-01: el listado de usuarios del administrador. Corre contra la WebAPI real y la base de
-// desarrollo, sobre las cuentas del seed: no crea ni borra usuarios, así que es idempotente.
+// USU-01 y USU-02: el listado de usuarios del administrador y el alta de una cuenta. Corre contra
+// la WebAPI real y la base de desarrollo.
 //
-// Las cuentas que cree el e2e del alta (#85) quedan en la base de desarrollo —la baja es lógica y es
-// de la parte 2—, por eso acá no se afirma sobre totales: se afirma sobre filas concretas y sobre lo
-// que el filtro deja afuera.
+// El listado se prueba sobre las cuentas del seed y no crea ni borra nada. El alta sí crea una fila
+// fija: queda en la base de desarrollo —la baja es lógica y es de la parte 2— hasta el próximo
+// `pnpm db:reset` (L11). Por eso ninguna de las dos pruebas afirma sobre totales: se afirma sobre
+// filas concretas y sobre lo que el filtro deja afuera.
 
 const ADMINISTRADOR = {
 	email: 'admin@javito.local',
@@ -14,6 +15,15 @@ const ADMINISTRADOR = {
 
 const USUARIO = {
 	email: 'usuario@javito.local',
+	password: 'Javito2026'
+};
+
+// La cuenta del alta es fija para que la prueba sea idempotente: la baja es lógica y no hay DELETE,
+// así que si ya existe de una corrida anterior el alta devuelve 409 `email_repetido` y se acepta esa
+// rama. La fila queda en la base de DESARROLLO hasta el próximo `pnpm db:reset` (L11).
+const ALTA = {
+	nombre: 'Pruebas e2e usuario',
+	email: 'pruebas-e2e-usuario@javito.test',
 	password: 'Javito2026'
 };
 
@@ -86,4 +96,53 @@ test('el listado de usuarios: búsqueda, estado y guard de rol', async ({ page }
 	await page.goto('/admin/usuarios');
 
 	await expect(page).toHaveURL(/\/hoy$/);
+});
+
+test('el alta de un usuario desde administración', async ({ page }) => {
+	// 1. Con la cuenta de Administración, el listado ofrece el alta y la ruta existe.
+	await page.goto('/admin/usuarios');
+	await expect(page).toHaveURL(/\/login\?destino=/);
+
+	await page.getByLabel('Email').fill(ADMINISTRADOR.email);
+	await page.getByLabel('Contraseña').fill(ADMINISTRADOR.password);
+	await page.getByRole('button', { name: 'Entrar' }).click();
+
+	await expect(page).toHaveURL(/\/admin\/usuarios$/);
+
+	await page.getByRole('link', { name: 'Nuevo usuario' }).click();
+	await expect(page).toHaveURL(/\/admin\/usuarios\/nuevo$/);
+	await expect(page.getByRole('heading', { name: 'Nuevo usuario' })).toBeVisible();
+
+	// 2. El formulario pide nombre, email, contraseña y rol: la contraseña la elige el administrador y
+	//    la cuenta nace con el rol elegido (S6 y S7).
+	await page.getByLabel('Nombre', { exact: true }).fill(ALTA.nombre);
+	await page.getByLabel('Email', { exact: true }).fill(ALTA.email);
+	await page.getByLabel('Contraseña', { exact: true }).fill(ALTA.password);
+	await page.getByLabel('Rol', { exact: true }).selectOption('Usuario');
+
+	await page.getByRole('button', { name: 'Crear usuario' }).click();
+
+	// Dos finales posibles y los dos son un éxito de la prueba: el alta nueva vuelve al listado, y la
+	// repetida deja el 409 en el campo del email, que es lo que se quiere ver.
+	const repetido = page.getByText('Ya existe una cuenta con el email');
+	const listado = page.getByRole('heading', { name: 'Usuarios' });
+
+	await expect(repetido.or(listado)).toBeVisible();
+
+	if (await repetido.isVisible()) {
+		await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+
+		await page.getByRole('link', { name: 'Volver al listado' }).click();
+		await expect(page).toHaveURL(/\/admin\/usuarios$/);
+	}
+
+	// 3. La cuenta está en el listado, con el rol con el que se creó y activa.
+	await page.getByLabel('Buscar').fill(ALTA.email);
+	await page.getByRole('button', { name: 'Buscar' }).click();
+
+	const fila = page.getByRole('row', { name: new RegExp(ALTA.email) });
+
+	await expect(fila).toBeVisible();
+	await expect(fila.getByText(ALTA.nombre)).toBeVisible();
+	await expect(fila.getByText('Activo', { exact: true })).toBeVisible();
 });

@@ -39,11 +39,15 @@
 </svelte:head>
 
 <main class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-5 py-10">
-	<header class="flex flex-col gap-1">
-		<h1 class="text-3xl font-semibold tracking-tight">Usuarios</h1>
-		<p class="text-sm text-muted-foreground">
-			Todas las cuentas, activas y desactivadas, con la más nueva primero.
-		</p>
+	<header class="flex flex-wrap items-start justify-between gap-3">
+		<div class="flex flex-col gap-1">
+			<h1 class="text-3xl font-semibold tracking-tight">Usuarios</h1>
+			<p class="text-sm text-muted-foreground">
+				Todas las cuentas, activas y desactivadas, con la más nueva primero.
+			</p>
+		</div>
+		<!-- La excepción: el camino normal del alta sigue siendo el registro público (S5). -->
+		<Button href={resolve('/(app)/admin/usuarios/nuevo')}>Nuevo usuario</Button>
 	</header>
 
 	<FiltrosDeUsuarios
