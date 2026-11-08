@@ -10,8 +10,8 @@ public sealed class RutinaRepositorio(IDbConnectionFactory fabrica) : IRutinaRep
         int usuarioId,
         CancellationToken cancellationToken = default)
     {
-        // No filtra por activo: todavía no hay baja lógica (RUT-05 está fuera de alcance) y todas
-        // nacen activas, así que esconderlas acá sería una regla que nadie pidió.
+        // No filtra por activo: la pantalla de rutinas muestra las inactivas aparte para poder
+        // reactivarlas (L5). El filtro del día (RUT-04) es el que debe quedarse con las activas.
         const string sql = """
             SELECT id, usuario_id, nombre, descripcion, activo
             FROM rutina
@@ -74,19 +74,59 @@ public sealed class RutinaRepositorio(IDbConnectionFactory fabrica) : IRutinaRep
         return Convert.ToInt32(await ultimoId.ExecuteScalarAsync(cancellationToken));
     }
 
+    public async Task<bool> ActualizarAsync(Rutina rutina, CancellationToken cancellationToken = default)
+    {
+        // Ni `activo` ni `rutina_habito`: editar no da de baja ni toca los hábitos ni su orden.
+        const string sql = """
+            UPDATE rutina
+            SET nombre = @nombre, descripcion = @descripcion
+            WHERE id = @id AND usuario_id = @usuarioId
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", rutina.Id);
+        comando.Parameters.AddWithValue("@usuarioId", rutina.UsuarioId);
+        comando.Parameters.AddWithValue("@nombre", rutina.Nombre);
+        comando.Parameters.AddWithValue("@descripcion", (object?)rutina.Descripcion ?? DBNull.Value);
+
+        // Filas encontradas, no modificadas: guardar los mismos valores cuenta 1 y no es un 404.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
+    public async Task<bool> CambiarActivoAsync(
+        int id,
+        int usuarioId,
+        bool activo,
+        CancellationToken cancellationToken = default)
+    {
+        // Baja lógica: `rutina_habito` queda como estaba, así que reactivar devuelve los hábitos en
+        // su orden (S11).
+        const string sql = "UPDATE rutina SET activo = @activo WHERE id = @id AND usuario_id = @usuarioId";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", id);
+        comando.Parameters.AddWithValue("@usuarioId", usuarioId);
+        comando.Parameters.AddWithValue("@activo", activo);
+
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     public async Task<IReadOnlyList<HabitoEnRutina>> ListarHabitosAsync(
         int rutinaId,
         int usuarioId,
         CancellationToken cancellationToken = default)
     {
         // El dueño de la rutina viaja en el join: pedir los hábitos de una rutina ajena devuelve
-        // vacío sin necesitar una consulta previa.
+        // vacío sin necesitar una consulta previa. Un hábito archivado no se muestra, pero su fila de
+        // `rutina_habito` queda: al reactivarlo vuelve a su lugar (S12).
         const string sql = """
             SELECT h.id, h.titulo, rh.orden
             FROM rutina_habito rh
             JOIN rutina r ON r.id = rh.rutina_id
             JOIN habito h ON h.id = rh.habito_id
-            WHERE rh.rutina_id = @rutinaId AND r.usuario_id = @usuarioId
+            WHERE rh.rutina_id = @rutinaId AND r.usuario_id = @usuarioId AND h.activo = TRUE
             ORDER BY rh.orden, h.id
             """;
 

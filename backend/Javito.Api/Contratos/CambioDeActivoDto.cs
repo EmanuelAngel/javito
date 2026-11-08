@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Javito.Api.Contratos;
 
 /// <summary>
-/// Estado al que se quiere llevar una categoría o un hábito (archivar es <c>false</c>). Es nullable a propósito: con un <c>bool</c> no
+/// Estado al que se quiere llevar una categoría, un hábito o una rutina (archivar o desactivar es <c>false</c>). Es nullable a propósito: con un <c>bool</c> no
 /// nullable, un cuerpo vacío se leería como <c>false</c> y desactivaría justo lo que se quería
 /// activar.
 /// </summary>

@@ -17,6 +17,22 @@ public interface IRutinaRepositorio
     Task<int> CrearAsync(Rutina rutina, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Reescribe nombre y descripción sin tocar el estado ni los hábitos. Devuelve <c>false</c> cuando
+    /// no hay ninguna rutina de ese usuario.
+    /// </summary>
+    Task<bool> ActualizarAsync(Rutina rutina, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Desactiva (<c>false</c>) o reactiva (<c>true</c>) la rutina sin tocar sus hábitos. Devuelve
+    /// <c>false</c> cuando no hay ninguna rutina de ese usuario.
+    /// </summary>
+    Task<bool> CambiarActivoAsync(
+        int id,
+        int usuarioId,
+        bool activo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Los hábitos de la rutina, ordenados por el lugar que ocupan en ella. Si la rutina no es del
     /// usuario la lista sale vacía: el filtro por dueño viaja en el join.
     /// </summary>
