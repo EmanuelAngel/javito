@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { API_URL } from '../src/lib/config';
 
 // ART-01 y ART-04 de punta a punta: el catálogo que lee cualquier usuario con sesión y el alta que
 // sólo puede hacer Administración, recorridos como los haría una persona.
@@ -194,18 +195,22 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	await expect(page.getByRole('link', { name: 'Artículos' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Publicar' })).toHaveCount(0);
 
-	// 10. Y escribir la URL a mano no alcanza: el formulario se abre —la ruta no es un secreto— y el
-	//     servidor contesta 403 al publicar. Esconder el enlace no es la defensa.
+	// 10. Escribir la URL a mano tampoco lo deja en el alta: el guard de rol (#67) lo manda a /hoy.
 	await page.goto('/articulos/nuevo');
-	await expect(page.getByRole('heading', { name: 'Publicar artículo', level: 1 })).toBeVisible();
+	await expect(page).toHaveURL(/\/hoy$/);
+	await expect(page.getByRole('heading', { name: 'Publicar artículo', level: 1 })).toHaveCount(0);
 
-	await page.getByLabel('Título', { exact: true }).fill(TITULO_RECHAZADO);
-	await page.getByLabel('Resumen', { exact: true }).fill(RESUMEN);
-	await page.getByLabel('Contenido (Markdown)').fill(CONTENIDO);
-	await page.getByLabel('Categoría').selectOption({ label: CATEGORIA });
-	await page.getByRole('button', { name: 'Publicar artículo' }).click();
-
-	await expect(page.getByRole('alert')).toContainText('Tu rol no permite esta operación.');
+	// …pero el guard es comodidad, no la defensa: el mismo alta mandada directo a la API, con el
+	// token del Usuario, recibe 403. El pedido sale del e2e porque el formulario ya no se abre.
+	const token = await page.evaluate(
+		() => JSON.parse(localStorage.getItem('javito-sesion') ?? '{}').token as string
+	);
+	const respuesta = await page.request.post(`${API_URL}/api/articulos`, {
+		headers: { Authorization: `Bearer ${token}` },
+		multipart: { titulo: TITULO_RECHAZADO, resumen: RESUMEN, contenido: CONTENIDO }
+	});
+	expect(respuesta.status()).toBe(403);
+	expect((await respuesta.json()).codigo).toBe('sin_permiso');
 
 	// El rechazo no dejó fila: el título rechazado no aparece en el catálogo, ni siquiera en su
 	// categoría. (Si el servidor hubiera guardado antes de autorizar, acá estaría.)
