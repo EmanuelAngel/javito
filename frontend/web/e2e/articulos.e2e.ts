@@ -7,7 +7,9 @@ import { API_URL } from '../src/lib/config';
 // Cubre S1 (alta con portada opcional; acá la portada viene y se ve en el catálogo), S5 (catálogo
 // sólo con activos, del más nuevo al más viejo, con filtro por categoría) y la cara visible de la
 // autorización: la nav esconde «Publicar» a un Usuario y el servidor igual contesta 403. También
-// HU-ART-05 (el detalle) y HU-ART-02 (la edición: conservar y reemplazar la portada, y el 403).
+// HU-ART-05 (el detalle), HU-ART-02 (la edición: conservar y reemplazar la portada, y el 403) y
+// HU-ART-03 (desactivar con diálogo desde el detalle, ver lo retirado en /admin/articulos,
+// reactivarlo, y el 403 de un Usuario sin cambios).
 //
 // Corre contra la base de desarrollo y la WebAPI real. La API no tiene DELETE, así que cada corrida
 // deja un artículo publicado con el prefijo `Pruebas e2e` y su portada en
@@ -252,6 +254,58 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	await expect(page).toHaveURL(new RegExp(`/articulos\\?categoriaId=${filtroDelCatalogo}$`));
 	await expect(tarjeta(page, TITULO)).toBeVisible();
 
+	// 7d. HU-ART-03: Administración retira el artículo desde el detalle. El diálogo pide confirmación:
+	//     cancelar no cambia nada, confirmar lo saca del catálogo y vuelve a él con su filtro.
+	await tarjeta(page, TITULO).getByRole('link').click();
+	await expect(page).toHaveURL(urlDelDetalle);
+
+	await page.getByRole('button', { name: 'Desactivar' }).click();
+
+	const dialogo = page.getByRole('alertdialog');
+
+	await expect(dialogo.getByText('¿Desactivar este artículo?')).toBeVisible();
+	await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+	await expect(dialogo).toHaveCount(0);
+	await expect(page.getByRole('heading', { name: TITULO_EDITADO, level: 1 })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Desactivar' }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Desactivar' }).click();
+
+	await expect(page).toHaveURL(new RegExp(`/articulos\\?categoriaId=${filtroDelCatalogo}$`));
+	await expect(tarjeta(page, TITULO)).toHaveCount(0);
+
+	// Retirado, no se abre por URL: la pantalla dice que no existe.
+	await page.goto(urlDelDetalle);
+	await expect(page.getByText('Este artículo no existe')).toBeVisible();
+
+	// 7e. En /admin/articulos sigue estando, marcado como inactivo, y «Reactivar» lo devuelve al
+	//     catálogo sin confirmación y sin salir de la fila.
+	await page.getByRole('link', { name: 'Administrar artículos' }).click();
+	await expect(page).toHaveURL(/\/admin\/articulos$/);
+	await expect(
+		page.getByRole('heading', { name: 'Administrar artículos', level: 1 })
+	).toBeVisible();
+
+	const fila = page.getByRole('row').filter({ hasText: TITULO_EDITADO });
+
+	await expect(fila).toContainText('Inactivo');
+	await expect(fila).toContainText(CATEGORIA);
+	await expect(fila.locator('time')).toHaveText(enFormatoDeTarjeta(enFormatoDeLaApi(new Date())));
+	await expect(fila.getByRole('link')).toHaveCount(0);
+
+	await fila.getByRole('button', { name: 'Reactivar' }).click();
+
+	await expect(fila.getByText('Activo', { exact: true })).toBeVisible();
+	await expect(fila.getByRole('button', { name: 'Reactivar' })).toHaveCount(0);
+	await expect(fila.getByRole('link', { name: TITULO_EDITADO })).toBeVisible();
+
+	await page.goto(`/articulos?categoriaId=${filtroDelCatalogo}`);
+	await expect(tarjeta(page, TITULO)).toBeVisible();
+
+	// Y el detalle vuelve a abrirse, con la fecha de publicación original.
+	await page.goto(urlDelDetalle);
+	await expect(page.getByRole('heading', { name: TITULO_EDITADO, level: 1 })).toBeVisible();
+
 	// 8. `?pagina=` en la URL del build estático: una página pasada del final no se corrige en
 	//    silencio, la pantalla lo dice y ofrece volver a la última que existe.
 	await page.goto('/articulos?pagina=99');
@@ -301,6 +355,22 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	expect(edicion.status()).toBe(403);
 	expect((await edicion.json()).codigo).toBe('sin_permiso');
 
+	// HU-ART-03: desactivar y listar lo retirado tampoco son de un Usuario.
+	const baja = await page.request.put(`${API_URL}/api/articulos/${idEditado}/activo`, {
+		headers: { Authorization: `Bearer ${token}` },
+		data: { activo: false }
+	});
+	expect(baja.status()).toBe(403);
+	expect((await baja.json()).codigo).toBe('sin_permiso');
+
+	const listado = await page.request.get(`${API_URL}/api/articulos/administracion`, {
+		headers: { Authorization: `Bearer ${token}` }
+	});
+	expect(listado.status()).toBe(403);
+
+	await page.goto('/admin/articulos');
+	await expect(page).toHaveURL(/\/hoy$/);
+
 	const releido = await page.request.get(`${API_URL}/api/articulos/${idEditado}`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
@@ -310,6 +380,8 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	await page.goto(`/articulos/${idEditado}`);
 	await expect(page.getByRole('heading', { name: TITULO_EDITADO, level: 1 })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Editar' })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Desactivar' })).toHaveCount(0);
+	await expect(page.getByRole('link', { name: 'Administrar artículos' })).toHaveCount(0);
 
 	// El rechazo no dejó fila: el título rechazado no aparece en el catálogo, ni siquiera en su
 	// categoría. (Si el servidor hubiera guardado antes de autorizar, acá estaría.)

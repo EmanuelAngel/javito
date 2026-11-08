@@ -127,6 +127,56 @@ public sealed class ArticuloRepositorio(IDbConnectionFactory fabrica) : IArticul
         return (elementos, Convert.ToInt32(await conteo.ExecuteScalarAsync(cancellationToken)));
     }
 
+    public async Task<bool> CambiarActivoAsync(
+        int id,
+        bool activo,
+        CancellationToken cancellationToken = default)
+    {
+        // Sólo `activo`: la fecha de publicación es la original, también después de reactivar.
+        const string sql = "UPDATE articulo SET activo = @activo WHERE id = @id";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", id);
+        comando.Parameters.AddWithValue("@activo", activo);
+
+        // MySqlConnector cuenta filas encontradas y no cambiadas: repetir el estado también es 1.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
+    public async Task<(IReadOnlyList<Articulo> Elementos, int Total)> ListarTodosAsync(
+        int limite,
+        long desplazamiento,
+        CancellationToken cancellationToken = default)
+    {
+        // Mismo orden y mismo desempate que el catálogo; la diferencia es que no filtra por activo.
+        var sql = $"""
+            SELECT {ColumnasDelCatalogo} FROM articulo
+            ORDER BY fecha_publicacion DESC, id DESC
+            LIMIT @limite OFFSET @desplazamiento
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+
+        var elementos = new List<Articulo>();
+
+        await using (var comando = new MySqlCommand(sql, conexion))
+        {
+            comando.Parameters.AddWithValue("@limite", limite);
+            comando.Parameters.AddWithValue("@desplazamiento", desplazamiento);
+
+            await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+            while (await lector.ReadAsync(cancellationToken))
+            {
+                elementos.Add(ADominioDelCatalogo(lector));
+            }
+        }
+
+        await using var conteo = new MySqlCommand("SELECT COUNT(*) FROM articulo", conexion);
+
+        return (elementos, Convert.ToInt32(await conteo.ExecuteScalarAsync(cancellationToken)));
+    }
+
     /// <summary>
     /// El artículo sin su cuerpo: <c>ContenidoMarkdown</c> queda vacío porque la consulta del catálogo
     /// no lo pide. Nadie tiene que leer ese campo desde acá: el detalle se lee con <see cref="BuscarAsync"/>.

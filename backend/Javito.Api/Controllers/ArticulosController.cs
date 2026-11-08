@@ -11,7 +11,7 @@ namespace Javito.Api.Controllers;
 
 /// <summary>
 /// Artículos del blog. Leer requiere sesión —la propuesta aprobada no tiene catálogo público— y
-/// publicar y editar son exclusivos de Administración.
+/// publicar, editar y retirar son exclusivos de Administración.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -220,6 +220,62 @@ public class ArticulosController(
         var dtos = elementos.Select(MapeoDeArticulos.ADelCatalogo).ToList();
 
         return Ok(PaginaDto<ArticuloDelCatalogoDto>.De(dtos, parametros, total));
+    }
+
+    /// <summary>
+    /// El listado de administración (HU-ART-03): activos e inactivos, con el estado de cada uno, para
+    /// poder reactivar lo retirado. La ruta literal convive con <c>{id:int}</c> porque la restricción
+    /// de tipo no deja que "administracion" se lea como id.
+    /// </summary>
+    [HttpGet("administracion")]
+    [Authorize(Roles = Roles.Administrador)]
+    [ProducesResponseType<PaginaDto<ArticuloDelCatalogoDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ListarParaAdministracionAsync(
+        [FromQuery] ParametrosDePagina parametros,
+        CancellationToken cancellationToken)
+    {
+        var (elementos, total) = await articulos.ListarTodosAsync(
+            parametros.TamanioDePagina,
+            parametros.Desplazamiento,
+            cancellationToken);
+
+        var dtos = elementos.Select(MapeoDeArticulos.ADelCatalogo).ToList();
+
+        return Ok(PaginaDto<ArticuloDelCatalogoDto>.De(dtos, parametros, total));
+    }
+
+    /// <summary>
+    /// Retira (<c>false</c>) o reactiva (<c>true</c>) un artículo sin borrarlo (HU-ART-03). Idempotente
+    /// y válido sobre activos e inactivos; no toca la fecha de publicación. Responde el artículo con
+    /// su estado nuevo, igual que el resto de los endpoints de <c>activo</c>.
+    /// </summary>
+    [HttpPut("{id:int}/activo")]
+    [Authorize(Roles = Roles.Administrador)]
+    [ProducesResponseType<ArticuloDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CambiarActivoAsync(
+        int id,
+        [FromBody] CambioDeActivoDto entrada,
+        CancellationToken cancellationToken)
+    {
+        var articulo = await articulos.BuscarAsync(id, cancellationToken);
+
+        if (articulo is null)
+        {
+            return NoEncontrado(id);
+        }
+
+        articulo.Activo = entrada.Activo!.Value;
+
+        return await articulos.CambiarActivoAsync(id, articulo.Activo, cancellationToken)
+            ? Ok(MapeoDeArticulos.ADto(articulo))
+            : NoEncontrado(id);
     }
 
     /// <summary>

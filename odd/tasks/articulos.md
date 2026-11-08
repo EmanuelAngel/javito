@@ -91,6 +91,21 @@ para arreglar un error sin despublicarlo.»
 - **S23** Sólo Administrador edita, igual que el alta: 401 sin sesión, 403 `sin_permiso` para un
   Usuario, sin tocar la fila. Un artículo inexistente o inactivo es 404 `no_encontrado`.
 
+**#80 · HU-ART-03 — Desactivar y reactivar un artículo.** «Como Administrador quiero retirar un
+artículo para que deje de aparecer sin borrarlo.»
+
+- **S24** «Un artículo desactivado desaparece del catálogo y no se puede abrir por URL». Se desactiva
+  desde el **detalle** (`/articulos/[id]`), con un botón «Desactivar» sólo para Administración que
+  pide **confirmación en un diálogo**; al confirmar vuelve al catálogo. El `GET /{id}` ya responde 404
+  para inactivos (S3) y la edición también (S23).
+- **S25** «Se puede reactivar». Los inactivos se ven y se reactivan en una pantalla nueva
+  **`/admin/articulos`** (sólo Administración, enlace en la nav junto a «Categorías»), paginada en el
+  servidor con el mismo contrato de S4, con activos e inactivos y el estado visible en cada fila.
+  Reactivar devuelve el artículo al catálogo con su fecha de publicación original.
+- **S26** «Publicar, editar y desactivar son exclusivos del rol Administrador: un Usuario que intente
+  hacerlo recibe un rechazo del servidor, no solo un botón oculto». `PUT /api/articulos/{id}/activo`
+  y el listado de administración: 401 sin sesión, 403 `sin_permiso` para un Usuario, sin tocar nada.
+
 **Fuera de alcance de esta feature.** Edición del artículo y reemplazo de portada (`ART-02`), baja
 lógica y reactivación (`ART-03`), pantalla de detalle y "volver conservando la página" (`ART-05`),
 búsqueda de artículos.
@@ -106,6 +121,7 @@ búsqueda de artículos.
 | T5 | Recorrido e2e del alta y del catálogo contra la WebAPI real | S1, S5 | worker | `50e64c7` |
 | T6 | #63: `paginado.svelte.ts` (+ prueba), `catalogo-de-articulos.svelte.ts`, `articulo-form`, `catalogo-vacio`, `grilla-de-articulos` | S8-S14 | inline | `chore/articulos-modularizar` |
 | T7 | #81: `/articulos/[id]`, la tarjeta pasa a ser enlace, «Volver» con la query del catálogo | S15-S18 | inline | `feat/articulos-detalle` |
+| T9 | #80: `PUT /api/articulos/{id}/activo`, listado de administración paginado, `/admin/articulos` con «Reactivar», «Desactivar» con diálogo en el detalle, e2e | S24-S26 | worker | `feat/articulos-desactivar` |
 | T8 | #79: `PUT /api/articulos/{id}` con reemplazo de portada, `/articulos/[id]/editar` con `articulo-form`, «Editar» en el detalle, e2e | S19-S23 | inline | `feat/articulos-editar` |
 
 ## Log
@@ -228,6 +244,13 @@ Decisiones de implementación de T8: el `UPDATE` filtra `activo = TRUE`, así un
 la edición termina en 404 y borra la portada nueva; no toca `fecha_publicacion` ni `activo`. Después
 de guardar, la pantalla vuelve al detalle con la misma query del catálogo.
 
+**L-A6** — Respuestas del usuario para #80 (preguntas del orquestador, opción elegida):
+
+> 1. ¿dónde ve Administración los artículos inactivos para reactivarlos? — /admin/articulos
+> 2. ¿desde dónde se desactiva un artículo activo? — Detalle
+> 3. ¿desactivar pide confirmación? — Sí, diálogo
+> 4. ¿un artículo inactivo se puede editar? — No
+
 **L-A5** — Evidencia de T8. RED de `ArticulosEdicionEndpointTests`: 11/11 en rojo con `405 Method Not
 Allowed`; GREEN 11/11. El camino «la fila no acepta la portada nueva» se prueba con un repositorio que
 falla al actualizar (`ConfigureTestServices`): 500, la fila sigue con la anterior y el disco queda como
@@ -242,3 +265,21 @@ imagen sin referencia, y el camino «baja cruzada → 404 y se borra la nueva» 
 Decisión del usuario (verbatim): «No te compliques con la concurrencia, no hagas eso, no pasa nada».
 Queda aceptado como riesgo conocido: un solo Administrador edita, y el camino secuencial no deja
 huérfanas.
+
+**L-A7** — Evidencia de T9 (#80). Decisiones de implementación: `PUT /api/articulos/{id}/activo`
+responde el `ArticuloDto` con su estado nuevo (mismo contrato que `activo` de rutinas y categorías),
+es idempotente y sirve sobre activos e inactivos; el listado de administración es
+`GET /api/articulos/administracion` y reusa `ArticuloDelCatalogoDto` (ya trae `activo` y no trae el
+cuerpo) con el orden del catálogo. El diálogo de «Desactivar» usa un `Button` en vez de
+`AlertDialog.Action` para quedar abierto con el error si el pedido falla; «Reactivar» no pide
+confirmación y actualiza la fila en su lugar. La nav suma «Administrar artículos» (el rótulo «Artículos»
+sigue siendo sólo el catálogo). RED de `ArticulosBajaEndpointTests`: 13/13 en rojo, todas con `404 Not
+Found` porque ni `PUT …/activo` ni `GET …/administracion` existían; GREEN 13/13 (baja, reactivación con
+la fecha original, idempotencia, 404, 400 sin `activo`, 401/403 sin tocar la fila, listado con
+inactivos, paginado en español y rangos). `shadcn-svelte add alert-dialog` pidió sobrescribir `button`
+y quedó idéntico al vendorizado (`git status` sin cambios en él). `check:api` 185/185, `check:web` 0
+errores con sólo las tres advertencias esperadas, `test:web` 67/67, `lint` y `format` limpios, e2e 4/4
+(el de artículos suma cancelar y confirmar el diálogo, el 404 del detalle, el Inactivo en
+`/admin/articulos`, «Reactivar», y el 403 del Usuario en `PUT …/activo` y en el listado, sin «Desactivar»
+en su detalle). `svelte_autofixer` (por la CLI `@sveltejs/mcp`) marcó un `$effect` que asignaba estado
+en el diálogo: se pasó a `onOpenChange`; el resto de sus avisos son el `goto` del layout, ya conocido.

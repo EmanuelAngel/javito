@@ -394,6 +394,15 @@ public class ArticulosEdicionEndpointTests(FabricaDeApi fabrica) : IAsyncLifetim
             CancellationToken cancellationToken = default) =>
             real.ListarCatalogoAsync(categoriaId, limite, desplazamiento, cancellationToken);
 
+        public Task<bool> CambiarActivoAsync(int id, bool activo, CancellationToken cancellationToken = default) =>
+            real.CambiarActivoAsync(id, activo, cancellationToken);
+
+        public Task<(IReadOnlyList<Articulo> Elementos, int Total)> ListarTodosAsync(
+            int limite,
+            long desplazamiento,
+            CancellationToken cancellationToken = default) =>
+            real.ListarTodosAsync(limite, desplazamiento, cancellationToken);
+
         public Task<bool> ActualizarAsync(Articulo articulo, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("La base rechazó la actualización.");
     }
