@@ -19,7 +19,15 @@ categoría de un hábito para ajustarlo sin perder lo que ya registré.»
 
 **#70 · HU-HAB-04 — Archivar y reactivar un hábito.** (pendiente; se detalla al encararlo)
 
-**#71 · HU-HAB-05 — Elegir la categoría de un hábito.** (pendiente; se detalla al encararlo)
+**#71 · HU-HAB-05 — Elegir la categoría de un hábito.** «Como Usuario quiero elegir la categoría de
+un hábito de una lista para clasificarlo sin escribir nada.»
+
+- **S5** «Puedo elegir la categoría al crear el hábito y al editarlo»
+- **S6** «El desplegable trae todas las categorías activas: son pocas, así que no se busca ni se
+  pagina»
+- **S7** «Una categoría desactivada no aparece entre las opciones»
+- **S8** «Un hábito puede quedar sin categoría»
+- **S9** «El hábito conserva la categoría que eligió, aunque después se desactive»
 
 ## Tasks
 
@@ -27,7 +35,7 @@ categoría de un hábito para ajustarlo sin perder lo que ya registré.»
 | :--- | :--- | :--- | :--- |
 | T1 | S1-S4 | worker: `PUT /api/habitos/{id}` + día con la meta del registro + edición en `/habitos` | `feat/habitos-edicion` |
 | T2 | #70 | — | — |
-| T3 | #71 | — | — |
+| T3 | S5-S9 | inline: categoría opcional en alta y edición (API + `habito-form`) | `feat/habitos-categoria-opcional` |
 
 ## Log
 
@@ -50,3 +58,7 @@ categoría de un hábito para ajustarlo sin perder lo que ya registré.»
 - **L7** (evidencia T1): `pnpm test:e2e` 3/4. Pasa `habitos.e2e.ts`, con el paso nuevo de edición. Falla
   `articulos.e2e.ts:200` por una causa ajena a T1: desde #67 un Usuario que abre `/articulos/nuevo`
   vuelve a `/hoy`, y la prueba esperaba el formulario para mostrar el 403. Va en su propio issue.
+- **L8** (decisión, #71): «Sí, categoría opcional en el alta». S8 vale al crear y al editar: `null`
+  deja de ser `categoria_requerida` (el código se elimina de la API y del mapeo del SPA) y el
+  desplegable ofrece siempre «Sin categoría». S5-S7 y S9 ya estaban cubiertos por #21 y #69 (L4):
+  la lista trae solo activas y suma la inactiva que el hábito ya tenía.

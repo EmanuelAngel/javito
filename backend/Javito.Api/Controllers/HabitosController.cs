@@ -283,8 +283,9 @@ public class HabitosController(
     }
 
     /// <summary>
-    /// La categoría es obligatoria y tiene que existir y estar activa. Se devuelve 400 con un `codigo`
-    /// y no un 404 porque el recurso que falla es el alta, no una ruta inexistente.
+    /// La categoría es opcional (HU-HAB-05: «un hábito puede quedar sin categoría»), pero la que se
+    /// elige tiene que existir y estar activa. Se devuelve 400 con un `codigo` y no un 404 porque el
+    /// recurso que falla es el alta, no una ruta inexistente.
     /// </summary>
     private async Task<(Categoria? Categoria, ObjectResult? Error)> ValidarCategoriaAsync(
         int? categoriaId,
@@ -292,11 +293,7 @@ public class HabitosController(
     {
         if (categoriaId is null)
         {
-            return (null, RespuestasDeError.De(new ErrorDeNegocio(
-                "categoria_requerida",
-                "Falta la categoría",
-                "Elegí la categoría del hábito: el catálogo compartido es obligatorio en el alta.",
-                StatusCodes.Status400BadRequest)));
+            return (null, null);
         }
 
         var categoria = await categorias.BuscarAsync(categoriaId.Value, cancellationToken);

@@ -33,10 +33,6 @@
 		return categoriaActual && !categoriaActual.activo ? [...activas, categoriaActual] : activas;
 	});
 
-	// Un hábito que venía sin categoría la conserva: la opción vacía se habilita y deja de ser
-	// obligatoria en vez de forzar una elección que la API acepta como nula.
-	const sinCategoriaActual = $derived(editando && estado.formulario.categoriaId === '');
-
 	function mensajeDe(campo: string): string {
 		return estado.errores.campos[campo] ?? '';
 	}
@@ -80,12 +76,10 @@
 				id="habito-categoria"
 				class="w-full"
 				bind:value={estado.formulario.categoriaId}
-				required={!sinCategoriaActual}
 				aria-invalid={mensajeDe('categoriaId') !== ''}
 			>
-				<NativeSelectOption value="" disabled={!sinCategoriaActual}>
-					{sinCategoriaActual ? 'Sin categoría' : 'Elegí una categoría…'}
-				</NativeSelectOption>
+				<!-- HU-HAB-05: «Un hábito puede quedar sin categoría», al crearlo y al editarlo. -->
+				<NativeSelectOption value="">Sin categoría</NativeSelectOption>
 				{#each categoriasDelSelect as categoria (categoria.id)}
 					<NativeSelectOption value={String(categoria.id)}>
 						{categoria.nombre}

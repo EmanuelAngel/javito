@@ -128,11 +128,35 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task La_categoria_es_obligatoria_y_tiene_que_estar_activa()
+    public async Task Un_habito_puede_quedar_sin_categoria_al_crearlo_y_al_editarlo()
     {
-        var sinCategoria = await _cliente.PostAsJsonAsync(
+        // HU-HAB-05: «Un hábito puede quedar sin categoría». Vale en el alta y también para sacarle
+        // la categoría a uno que la tenía.
+        var alta = await _cliente.PostAsJsonAsync(
             "/api/habitos",
             UnSiNo("Prueba Sin categoría") with { CategoriaId = null });
+
+        Assert.Equal(HttpStatusCode.Created, alta.StatusCode);
+        var creado = await alta.Content.ReadFromJsonAsync<HabitoDePrueba>();
+        Assert.NotNull(creado);
+        Assert.Null(creado.CategoriaId);
+        Assert.Null((await BuscarAsync(creado.Id)).CategoriaId);
+
+        var conCategoria = await CrearAsync(UnSiNo("Prueba Le saco la categoría"));
+        Assert.Equal(1, conCategoria.CategoriaId);
+
+        var edicion = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{conCategoria.Id}",
+            UnSiNo("Prueba Le saco la categoría") with { CategoriaId = null });
+
+        Assert.Equal(HttpStatusCode.OK, edicion.StatusCode);
+        Assert.Null((await edicion.Content.ReadFromJsonAsync<HabitoDePrueba>())!.CategoriaId);
+        Assert.Null((await BuscarAsync(conCategoria.Id)).CategoriaId);
+    }
+
+    [Fact]
+    public async Task La_categoria_elegida_tiene_que_existir_y_estar_activa()
+    {
         var inexistente = await _cliente.PostAsJsonAsync(
             "/api/habitos",
             UnSiNo("Prueba Categoría rara") with { CategoriaId = 9999 });
@@ -141,7 +165,6 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
             "/api/habitos",
             UnSiNo("Prueba Categoría vieja") with { CategoriaId = 5 });
 
-        Assert.Equal("categoria_requerida", await CodigoAsync(sinCategoria));
         Assert.Equal("categoria_inexistente", await CodigoAsync(inexistente));
         Assert.Equal("categoria_inactiva", await CodigoAsync(inactiva));
     }

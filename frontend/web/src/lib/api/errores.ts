@@ -17,7 +17,6 @@ export type ErroresDeFormulario = {
  * y el ABM de categorías. Cualquier código que no esté acá cae al mensaje general.
  */
 export const CAMPOS_POR_CODIGO_DE_HABITO: Record<string, string> = {
-	categoria_requerida: 'categoriaId',
 	categoria_inexistente: 'categoriaId',
 	categoria_inactiva: 'categoriaId',
 	meta_requerida: 'meta',
