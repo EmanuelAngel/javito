@@ -168,6 +168,39 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Pasarse_de_la_cuota_semanal_informa_el_conteo_real_sin_recortarlo()
+    {
+        // HU #75: la cuota es un piso, no un tope. «Ejercicio pesado» (3 por semana) se marca cuatro
+        // días de la misma semana y el día informa 4 de 3. Va en la semana de 2001, donde el seed no
+        // sembró nada, y desmarca lo suyo al terminar (ver RegistrosEndpointTests).
+        var lunes = new DateOnly(2001, 1, 1);
+        var dias = Enumerable.Range(0, 4).Select(indice => lunes.AddDays(indice)).ToList();
+
+        try
+        {
+            foreach (var fecha in dias)
+            {
+                var marca = await _cliente.PutAsJsonAsync($"/api/habitos/12/registros/{fecha:yyyy-MM-dd}", new { valor = 1 });
+                Assert.Equal(HttpStatusCode.OK, marca.StatusCode);
+            }
+
+            var dia = await DiaAsync(dias[^1]);
+
+            var ejercicio = Assert.Single(dia.Habitos, habito => habito.Id == 12);
+            Assert.Equal(3, ejercicio.Semana.Objetivo);
+            Assert.Equal(4, ejercicio.Semana.Cumplidos);
+            Assert.Equal(4, ejercicio.Semana.Dias.Count(diaDeLaSemana => diaDeLaSemana.Completado));
+        }
+        finally
+        {
+            foreach (var fecha in dias)
+            {
+                await _cliente.DeleteAsync($"/api/habitos/12/registros/{fecha:yyyy-MM-dd}");
+            }
+        }
+    }
+
+    [Fact]
     public async Task Una_fecha_que_no_es_fecha_devuelve_problem_details_400()
     {
         var respuesta = await _cliente.GetAsync("/api/dias/2026-13-01");

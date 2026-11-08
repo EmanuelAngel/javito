@@ -29,9 +29,12 @@
 
 	const progreso = $derived(
 		habito.frecuencia.tipo === 'semanal'
-			? `${habito.semana.cumplidos} de ${habito.semana.objetivo} esta semana`
+			? `${habito.semana.cumplidos} / ${habito.semana.objetivo} esta semana`
 			: 'Todos los días'
 	);
+
+	// La cuota es un piso, no un tope: pasarse (4 / 3) sigue siendo cuota cumplida y no se recorta.
+	const cuotaCumplida = $derived(habito.semana.cumplidos >= habito.semana.objetivo);
 
 	const etiqueta = $derived(habito.tipo === 'abstinencia' ? 'Hoy me mantuve' : 'Hecho');
 </script>
@@ -44,7 +47,17 @@
 		<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
 			<span>{habito.categoria ?? 'Sin categoría'}</span>
 			{#if habito.frecuencia.tipo === 'semanal'}
-				<Badge variant="secondary">{progreso}</Badge>
+				<!-- Cumplida se distingue por el relleno y por la tilde, no sólo por el color (HU #75). -->
+				{#if cuotaCumplida}
+					<!-- Mismo patrón que la cuadrícula semanal: un `span` genérico no expone su etiqueta a
+						 todos los lectores de pantalla; con `role="img"` sí, y la tilde es la señal visual. -->
+					<Badge role="img" aria-label="{progreso}, cuota cumplida">
+						<CheckIcon aria-hidden="true" />
+						{progreso}
+					</Badge>
+				{:else}
+					<Badge variant="secondary">{progreso}</Badge>
+				{/if}
 			{:else}
 				<span>{progreso}</span>
 			{/if}
