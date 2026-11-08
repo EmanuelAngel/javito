@@ -119,6 +119,9 @@ public class UsuariosListadoEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
 
         var activos = await LeerPaginaAsync("/api/usuarios?activo=true&tamanioDePagina=50");
         Assert.Equal([3, 2, 1], Ids(activos));
+        // El total que declara el filtro es el del conjunto filtrado, no el de la tabla: si el conteo
+        // y la página se separaran, el paginador mentiría aunque las filas estén bien.
+        Assert.Equal(3, activos.GetProperty("totalDeRegistros").GetInt32());
         Assert.All(
             activos.GetProperty("elementos").EnumerateArray(),
             cuenta => Assert.True(cuenta.GetProperty("activo").GetBoolean()));
@@ -128,6 +131,29 @@ public class UsuariosListadoEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.All(
             desactivados.GetProperty("elementos").EnumerateArray(),
             cuenta => Assert.False(cuenta.GetProperty("activo").GetBoolean()));
+    }
+
+    [Fact]
+    public async Task Listar_con_un_tamanio_de_pagina_fuera_de_rango_devuelve_400()
+    {
+        // El tope de 50 es el de ParametrosDePagina: no hay recorte silencioso, la API rechaza.
+        var respuesta = await _administrador.GetAsync("/api/usuarios?tamanioDePagina=51");
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.True(
+            await ContieneElCampoInvalidoAsync(respuesta, "TamanioDePagina"),
+            "El 400 tiene que nombrar el campo inválido.");
+    }
+
+    [Fact]
+    public async Task Buscar_por_q_con_una_barra_literal_devuelve_vacio_y_no_500()
+    {
+        // La barra es el carácter de escape de LIKE: si viajara sin escapar, MySQL cortaría la
+        // consulta y esto sería un 500 en vez de una búsqueda sin resultados.
+        var pagina = await LeerPaginaAsync("/api/usuarios?q=%5C");
+
+        Assert.Empty(Ids(pagina));
+        Assert.Equal(0, pagina.GetProperty("totalDeRegistros").GetInt32());
     }
 
     // --- S12: sólo el Administrador, y un rechazo no toca ninguna fila ---------------------------
