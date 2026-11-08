@@ -32,8 +32,8 @@ histórico completo para juzgar mi consistencia real, no la de esta semana.»
 | :--- | :--- | :--- | :--- |
 | T1 | S1-S4 | API: `GET /api/historial` paginado y filtrable (`HistorialController`, `HistorialRepositorio`, pruebas en `HistorialEndpointTests`) | `8bcea4a` |
 | T2 | S1-S4 | SPA: `/historial` con tabla, filtros y paginador (`historial.svelte.ts`, `api/historial.ts`, `historial.test.ts`, `historial.e2e.ts`) | `67dee63` |
-| T3 | S6-S8 | API: `GET /api/habitos/{id}/historial?dias=30\|60\|365` con totales y la cuadrícula | `feat/historial-detalle` |
-| T4 | S6-S9 | SPA: `/historial/[id]` con la cuadrícula, los totales y el atajo a editar | `feat/historial-detalle` |
+| T3 | S6-S8 | API: `GET /api/habitos/{id}/historial?dias=30\|60\|365` con totales y la cuadrícula (`Historial/CuadriculaDelHistorial.cs`, `HistorialDeHabitoEndpointTests`) | `8ec761e` |
+| T4 | S6-S9 | SPA: `/historial/[id]` con la cuadrícula, los totales y el atajo a editar (`cuadricula.ts`, `historial-del-habito.svelte.ts`, `cuadricula-del-habito.svelte`) | `cacc727` |
 
 ## Log
 
@@ -116,3 +116,36 @@ del navegador, como en `/api/dias`). Respuesta:
 inexistente → el 404 `no_encontrado` que ya usa `HabitosController`; `dias` fuera de la lista → 400
 `dias_invalidos`; `hasta` mal escrita → 400 `fecha_invalida`. El 404 no distingue «no existe» de «no es
 tuyo», igual que el resto de la API.
+
+**L9** (evidencia #83) — **RED**: `HistorialDeHabitoEndpointTests` 10 de 11 en rojo (la ruta no existía y los
+tres 400 esperados devolvían 404). **GREEN**: 11/11. Las once pruebas, una por regla: la ventana de 30, 60 y
+365 días con la última fecha en `hasta` y el 400 de `dias_invalidos` (S6); el 404 `no_encontrado` de un
+hábito ajeno o inexistente (S6); `cumplido`/`vacio`/`neutro` en un diario y en un semanal (S8, L6); los días
+anteriores al primer registro neutros y fuera de `evaluables` (S7, L5); el porcentaje diario con un decimal
+y el semanal contando semanas con la cuota (S7, L4/L7); un hábito sin registros con 0/0/0 (S7, L5); y
+`fecha_invalida` (S6). Preservación: `HistorialEndpointTests` 9/9 y, en el mismo archivo, el listado
+paginado del historial sigue respondiendo con `elementos` y `totalDeRegistros`.
+
+En el SPA, `cuadricula.test.ts` cubre S8 (las tres marcas y las tres etiquetas distintas, con la palabra y la
+fecha) y S7 (días en un diario, semanas con la cuota en un semanal, el porcentaje con coma decimal, y el
+«todavía no hay días evaluables» en vez de un 0 %); `historial.e2e.ts` suma el recorrido de S6 y S9: clic en
+el hábito de la fila, 30 celdas, `?dias=365` con 365 celdas, y «Editar hábito» a `/habitos?editar=<id>` con
+el formulario cargado.
+
+Gate del cierre: `pnpm lint` limpio · `pnpm check:api` **181/181** · `pnpm check:web` 0 errores/0 warnings ·
+`pnpm test:web` **76/76** · `pnpm test:e2e` **6/6**, dos corridas seguidas. `svelte_autofixer` (5.57.2) sobre
+los seis `.svelte` nuevos o tocados: 0 hallazgos; queda una sugerencia esperada (la función del `$effect` que
+dispara el pedido, el mismo molde del catálogo) y el falso positivo conocido del `eslint-disable` antes de un
+`goto` con query.
+
+Tres cosas que costaron pensarlas:
+
+- La cuadrícula no puede mentir con el color: cada celda lleva su marca (tilde, guion, punto), su estado
+  escrito en el `aria-label` y una leyenda con las tres. Es la misma razón de S2 de la semana (REG-04).
+- El período vive en la URL (`?dias=`), como el resto del módulo, así el enlace se copia; `hasta` lo manda el
+  navegador porque el servidor corre en UTC.
+- El e2e de hábitos no fallaba por la feature: con seis pruebas y dos workers, el ida y vuelta del día podía
+  pasarse de los cinco segundos de muestreo y la aserción «3 / 3» leía «2 / 3». Se corrigió el margen
+  (`expect.timeout: 10_000` en `playwright.config.ts`, `15ddd26`), no la aserción: la regla se sigue
+  afirmando igual. En el mismo bloque se bajó la pantalla de #82 de 166 a 120 líneas (`76fc204`), porque la
+  regla de las 150 es del repo y la había pasado en T2.
