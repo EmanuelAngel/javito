@@ -23,7 +23,21 @@ public static class ReglasDeUsuarios
 
     public const int LongitudMinimaDeLaContrasena = 8;
 
-    public const int LongitudMaximaDeLaContrasena = 100;
+    /// <summary>
+    /// El tope de la contraseña son 72 caracteres, no los 100 de <c>VARCHAR(100)</c>: BCrypt hashea
+    /// como máximo 72 <em>bytes</em> del password y trunca el resto en silencio, así que aceptar más
+    /// sólo cambia lo que el usuario cree que escribió. Con 72 bytes compartidos por dos cuentas, las
+    /// dos contraseñas se autentican entre sí. Ver <see cref="ContrasenaDeBcryptAttribute"/>, que
+    /// además mira los bytes: un carácter acentuado o un emoji ocupa más de uno.
+    /// </summary>
+    public const int LongitudMaximaDeLaContrasena = 72;
+
+    /// <summary>
+    /// El tope real del algoritmo, en bytes de UTF-8, no en caracteres: un password de 40 caracteres
+    /// con tildes ya pasa los 72 bytes y BCrypt lo truncaría. Es el mismo número del largo en
+    /// caracteres porque con ASCII un byte es un carácter, y el caso multibyte lo cubre la anotación.
+    /// </summary>
+    public const int LongitudMaximaDeLaContrasenaEnBytes = LongitudMaximaDeLaContrasena;
 
     /// <summary>
     /// Los roles que acepta la aplicación, los mismos del <c>ENUM</c> de <c>usuario.rol</c>. La lista

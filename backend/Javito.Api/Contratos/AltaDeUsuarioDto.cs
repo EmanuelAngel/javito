@@ -6,7 +6,8 @@ namespace Javito.Api.Contratos;
 /// <summary>
 /// Cuerpo del alta de una cuenta desde administración (HU-USU-02). Las anotaciones van sobre el
 /// parámetro del record, sin el prefijo <c>[property: …]</c>: con el prefijo MVC las ignora y avisa al
-/// validar. Los límites son los de <see cref="ReglasDeUsuarios"/>, que son los de database.sql.
+/// validar. Los límites son los de <see cref="ReglasDeUsuarios"/>, que son los de database.sql salvo la
+/// contraseña: BCrypt hashea 72 bytes y truncaría el resto en silencio.
 /// </summary>
 /// <remarks>
 /// La contraseña llega en claro y no vuelve nunca: se hashea en el controlador y <c>password_hash</c>
@@ -32,7 +33,10 @@ public sealed record AltaDeUsuarioDto(
     [StringLength(
         ReglasDeUsuarios.LongitudMaximaDeLaContrasena,
         MinimumLength = ReglasDeUsuarios.LongitudMinimaDeLaContrasena,
-        ErrorMessage = "La contraseña debe tener entre 8 y 100 caracteres.")]
+        ErrorMessage = "La contraseña debe tener entre 8 y 72 caracteres.")]
+    // El tope en caracteres no alcanza: BCrypt hashea 72 bytes y los caracteres multibyte ocupan
+    // más de uno, así que una contraseña de 40 tildes ya se truncaría en silencio.
+    [ContrasenaDeBcrypt]
     string Password,
     [Required(ErrorMessage = "El rol es obligatorio.")]
     string Rol);

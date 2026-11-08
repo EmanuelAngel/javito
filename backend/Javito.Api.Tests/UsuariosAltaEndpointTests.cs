@@ -158,6 +158,52 @@ public class UsuariosAltaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Crear_con_una_contrasena_de_73_caracteres_devuelve_400_nombrando_el_campo_y_no_crea_fila()
+    {
+        var antes = await ContarCuentasAsync();
+
+        // El tope de la contraseña son 72 caracteres y no 100: BCrypt hashea como máximo 72 bytes y
+        // trunca en silencio, así que lo que pase de ahí no cambia el hash y sólo da la ilusión de
+        // seguridad. 73 es el primer largo que ya no verifica distinto.
+        var respuesta = await _administrador.PostAsJsonAsync("/api/usuarios", new
+        {
+            nombre = "Alta con contraseña larga",
+            email = $"{Prefijo}larga@javito.test",
+            password = new string('a', 73),
+            rol = "Usuario"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.True(
+            await ContieneElCampoInvalidoAsync(respuesta, "Password"),
+            "El 400 tiene que nombrar el campo Password en errors.");
+        Assert.Equal(antes, await ContarCuentasAsync());
+    }
+
+    [Fact]
+    public async Task Crear_con_una_contrasena_de_menos_de_72_caracteres_pero_mas_de_72_bytes_devuelve_400_y_no_crea_fila()
+    {
+        var antes = await ContarCuentasAsync();
+
+        // 40 caracteres y 80 bytes en UTF-8: por largo de cadena pasa, por bytes no. Esta es la
+        // regla que un StringLength no puede expresar, y sin ella BCrypt truncaría la contraseña
+        // sin avisar: dos cuentas con los primeros 72 bytes iguales se autenticarían entre sí.
+        var respuesta = await _administrador.PostAsJsonAsync("/api/usuarios", new
+        {
+            nombre = "Alta con contraseña de bytes",
+            email = $"{Prefijo}bytes@javito.test",
+            password = new string('é', 40),
+            rol = "Usuario"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.True(
+            await ContieneElCampoInvalidoAsync(respuesta, "Password"),
+            "El 400 tiene que nombrar el campo Password en errors.");
+        Assert.Equal(antes, await ContarCuentasAsync());
+    }
+
+    [Fact]
     public async Task Crear_con_un_email_invalido_devuelve_400_nombrando_el_campo_y_no_crea_fila()
     {
         var antes = await ContarCuentasAsync();
@@ -197,6 +243,27 @@ public class UsuariosAltaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
             documento.RootElement.GetProperty("email").GetString());
     }
 
+    [Fact]
+    public async Task Crear_y_buscar_devuelve_el_email_normalizado_y_no_el_que_se_escribio()
+    {
+        var respuesta = await _administrador.PostAsJsonAsync("/api/usuarios", new
+        {
+            nombre = "Alta normalizada en la fila",
+            email = $"  {Prefijo}MiXeD-Mayusculas@Javito.TEST  ",
+            password = Contrasena,
+            rol = "Usuario"
+        });
+
+        Assert.Equal(HttpStatusCode.Created, respuesta.StatusCode);
+
+        // Se verifica por la interfaz pública y no leyendo la columna: el listado tiene que
+        // encontrar la cuenta con el email ya normalizado, no con el texto que se escribió.
+        const string normalizado = "prueba-alta-mixed-mayusculas@javito.test";
+        var creada = Assert.Single(Elementos(await LeerPaginaAsync($"/api/usuarios?q={normalizado}")));
+
+        Assert.Equal(normalizado, creada.GetProperty("email").GetString());
+    }
+
     // --- S7: el rol sale de la lista, no del ENUM de la base ------------------------------------
 
     [Fact]
@@ -210,6 +277,26 @@ public class UsuariosAltaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
             email = $"{Prefijo}rol-invalido@javito.test",
             password = Contrasena,
             rol = "Superusuario"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Equal("rol_invalido", await CodigoAsync(respuesta));
+        Assert.Equal(antes, await ContarCuentasAsync());
+    }
+
+    [Fact]
+    public async Task Crear_con_el_rol_en_minusculas_devuelve_400_rol_invalido_y_no_crea_fila()
+    {
+        var antes = await ContarCuentasAsync();
+
+        // La lista se compara con Ordinal, no con la intercalación del ENUM de la base: "administrador"
+        // en minúsculas no es un rol elegible aunque MySQL lo aceptara, y el rechazo no deja fila.
+        var respuesta = await _administrador.PostAsJsonAsync("/api/usuarios", new
+        {
+            nombre = "Alta con rol en minúsculas",
+            email = $"{Prefijo}rol-minusculas@javito.test",
+            password = Contrasena,
+            rol = "administrador"
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
@@ -273,6 +360,20 @@ public class UsuariosAltaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
             ? codigo.GetString()
             : null;
     }
+
+    private async Task<JsonElement> LeerPaginaAsync(string ruta)
+    {
+        var respuesta = await _administrador.GetAsync(ruta);
+        respuesta.EnsureSuccessStatusCode();
+
+        using var documento = JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync());
+
+        // Clon: el JsonElement dejaría de valer al salir del using y la prueba lo lee afuera.
+        return documento.RootElement.Clone();
+    }
+
+    private static List<JsonElement> Elementos(JsonElement pagina) =>
+        pagina.GetProperty("elementos").EnumerateArray().ToList();
 
     private static async Task<bool> ContieneElCampoInvalidoAsync(
         HttpResponseMessage respuesta,
