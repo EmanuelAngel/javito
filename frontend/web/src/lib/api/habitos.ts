@@ -24,11 +24,12 @@ export type Habito = {
 	activo: boolean;
 };
 
-/** El alto de un hábito. El tipo decide: un `contador` lleva meta y unidad, el resto, null. */
+/** El alta de un hábito. El tipo decide: un `contador` lleva meta y unidad, el resto, null. */
 export type DatosDeHabito = {
 	titulo: string;
 	descripcion: string | null;
-	categoriaId: number;
+	/** `null` sólo al editar un hábito que ya venía sin categoría: el alta exige una. */
+	categoriaId: number | null;
 	tipo: TipoDeHabito;
 	meta: number | null;
 	unidad: string | null;
@@ -43,6 +44,17 @@ export function listar(activo?: boolean): Promise<Habito[]> {
 export function crear(datos: DatosDeHabito): Promise<Habito> {
 	return pedir<Habito>('/api/habitos', {
 		method: 'POST',
+		body: JSON.stringify(datos)
+	});
+}
+
+/**
+ * Corrige un hábito. Los registros no se tocan: la meta nueva rige desde la próxima marca y los días
+ * ya cerrados conservan la suya, así que la pantalla no tiene que reenviarlos.
+ */
+export function editar(id: number, datos: DatosDeHabito): Promise<Habito> {
+	return pedir<Habito>(`/api/habitos/${id}`, {
+		method: 'PUT',
 		body: JSON.stringify(datos)
 	});
 }

@@ -33,7 +33,8 @@ public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositor
                       AND cumplido.completado = TRUE
                       AND cumplido.fecha BETWEEN @lunes AND @domingo) AS cumplidos,
                    r.valor_alcanzado,
-                   r.completado
+                   r.completado,
+                   r.meta_objetivo
             FROM habito h
             LEFT JOIN categoria c ON c.id = h.categoria_id
             LEFT JOIN registro_habito r ON r.habito_id = h.id AND r.fecha = @fecha
@@ -81,14 +82,22 @@ public sealed class DiaRepositorio(IDbConnectionFactory fabrica) : IDiaRepositor
     private static HabitoDelDia ADominio(MySqlDataReader lector, DateOnly lunes)
     {
         var cumplidos = ADiasCumplidos(lector.IsDBNull(8) ? null : lector.GetString(8));
+        var tipo = lector.GetString(3);
+
+        // S2: un contador con marca muestra la meta con la que ese día se cerró, porque editarla
+        // después no reescribe el pasado; sin marca vale la meta vigente del hábito. En sí/no y
+        // abstinencia la meta sigue siendo la del hábito: ahí no hay nada que contar.
+        var meta = tipo == TiposDeHabito.Contador && !lector.IsDBNull(11)
+            ? lector.GetDecimal(11)
+            : lector.IsDBNull(4) ? null : (decimal?)lector.GetDecimal(4);
 
         return new()
         {
             Id = lector.GetInt32(0),
             Titulo = lector.GetString(1),
             Categoria = lector.IsDBNull(2) ? null : lector.GetString(2),
-            Tipo = lector.GetString(3),
-            Meta = lector.IsDBNull(4) ? null : lector.GetDecimal(4),
+            Tipo = tipo,
+            Meta = meta,
             Unidad = lector.IsDBNull(5) ? null : lector.GetString(5),
             FrecuenciaTipo = lector.GetString(6),
             FrecuenciaVeces = lector.IsDBNull(7) ? null : lector.GetInt32(7),

@@ -6,14 +6,36 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select/index.js';
 
-	let { estado, crear }: EstadoDeHabitos = $props();
+	// El formulario pide del estado sólo lo que usa: el mismo objeto sirve para el alta y la edición.
+	type Formulario = Pick<EstadoDeHabitos, 'estado' | 'crear' | 'cancelar' | 'guardarEdicion'>;
+
+	let { estado, crear, cancelar, guardarEdicion }: Formulario = $props();
+
+	// El mismo formulario sirve para el alta y para la edición (S1): cambia el título, el botón y
+	// que haya un Cancelar que vuelva al alta.
+	const editando = $derived(estado.idEnEdicion !== null);
 
 	// Meta y unidad aparecen nomás con un contador; veces, con una frecuencia semanal (S6/S9).
 	const esContador = $derived(estado.formulario.tipo === 'contador');
 	const esSemanal = $derived(estado.formulario.frecuencia === 'semanal');
 
-	// El desplegable muestra las activas: una categoría archivada no admite hábitos nuevos.
-	const categoriasActivas = $derived(estado.categorias.filter((categoria) => categoria.activo));
+	// El desplegable muestra las activas: una categoría archivada no admite hábitos nuevos. Si el
+	// hábito que se edita ya apuntaba a una inactiva se agrega igual, porque la edición conserva lo
+	// que eligió (L4: el catálogo no le quita lo que ya tenía).
+	const categoriaActual = $derived(
+		estado.categorias.find((categoria) => String(categoria.id) === estado.formulario.categoriaId) ??
+			null
+	);
+
+	const categoriasDelSelect = $derived.by(() => {
+		const activas = estado.categorias.filter((categoria) => categoria.activo);
+
+		return categoriaActual && !categoriaActual.activo ? [...activas, categoriaActual] : activas;
+	});
+
+	// Un hábito que venía sin categoría la conserva: la opción vacía se habilita y deja de ser
+	// obligatoria en vez de forzar una elección que la API acepta como nula.
+	const sinCategoriaActual = $derived(editando && estado.formulario.categoriaId === '');
 
 	function mensajeDe(campo: string): string {
 		return estado.errores.campos[campo] ?? '';
@@ -27,7 +49,7 @@
 
 	async function guardar(evento: SubmitEvent): Promise<void> {
 		evento.preventDefault();
-		await crear();
+		await (editando ? guardarEdicion() : crear());
 	}
 </script>
 
@@ -36,7 +58,7 @@
 	class="flex w-full flex-col gap-4 self-start rounded-xl border border-border bg-card p-6 lg:w-80"
 	onsubmit={guardar}
 >
-	<h2 class="text-lg font-semibold">Nuevo hábito</h2>
+	<h2 class="text-lg font-semibold">{editando ? 'Editar hábito' : 'Nuevo hábito'}</h2>
 
 	<Field.Group>
 		<Field.Field data-invalid={mensajeDe('titulo') !== ''}>
@@ -58,12 +80,16 @@
 				id="habito-categoria"
 				class="w-full"
 				bind:value={estado.formulario.categoriaId}
-				required
+				required={!sinCategoriaActual}
 				aria-invalid={mensajeDe('categoriaId') !== ''}
 			>
-				<NativeSelectOption value="" disabled>Elegí una categoría…</NativeSelectOption>
-				{#each categoriasActivas as categoria (categoria.id)}
-					<NativeSelectOption value={categoria.id}>{categoria.nombre}</NativeSelectOption>
+				<NativeSelectOption value="" disabled={!sinCategoriaActual}>
+					{sinCategoriaActual ? 'Sin categoría' : 'Elegí una categoría…'}
+				</NativeSelectOption>
+				{#each categoriasDelSelect as categoria (categoria.id)}
+					<NativeSelectOption value={String(categoria.id)}>
+						{categoria.nombre}
+					</NativeSelectOption>
 				{/each}
 			</NativeSelect>
 			<Field.Error errors={erroresDe('categoriaId')} />
@@ -155,5 +181,11 @@
 		</Alert>
 	{/if}
 
-	<Button type="submit" disabled={estado.enviando}>Crear hábito</Button>
+	<Button type="submit" disabled={estado.enviando}>
+		{editando ? 'Guardar cambios' : 'Crear hábito'}
+	</Button>
+
+	{#if editando}
+		<Button type="button" variant="outline" onclick={cancelar}>Cancelar</Button>
+	{/if}
 </form>

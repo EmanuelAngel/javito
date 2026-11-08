@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 
 // S10: el recorrido de mis hábitos y el día, el que cierra la Puerta 2 del plan.
 //
-// Cubre el alta por la UI (HAB-01), el listado (HAB-02) y marcar el día sin recargar (REG-01), con el
-// contador subiendo y bajando de la meta. El hábito es propio y descartable a propósito: el seed del
-// usuario de prueba guarda el histórico que cuenta la semana de la cátedra («Ejercicio pesado» va 2
-// de 3) y este recorrido no lo toca.
+// Cubre el alta por la UI (HAB-01), el listado (HAB-02), la edición (HAB-03) y marcar el día sin
+// recargar (REG-01), con el contador subiendo y bajando de la meta. El hábito es propio y descartable
+// a propósito: el seed del usuario de prueba guarda el histórico que cuenta la semana de la cátedra
+// («Ejercicio pesado» va 2 de 3) y este recorrido no lo toca.
 //
 // Corre contra la base de desarrollo. Si el hábito quedó de una corrida anterior se reusa, y la prueba
 // lo devuelve a cero, así puede repetirse sin resetear nada. `pnpm db:reset` lo borra.
@@ -49,6 +49,20 @@ test('mis hábitos: alta por la UI y marcar el día sin recargar', async ({ page
 	await expect(enElListado).toBeVisible();
 	await expect(enElListado).toContainText('Cuerpo');
 	await expect(enElListado).toContainText('Todos los días');
+
+	// 3b. Editar (S1): la fila carga el formulario, se corrige la meta y vuelve a quedar en 3, para
+	//     que el recorrido del día de abajo no dependa de esta corrida.
+	await enElListado.getByRole('button', { name: 'Editar' }).click();
+	await expect(page.getByRole('heading', { name: 'Editar hábito' })).toBeVisible();
+
+	await page.getByLabel('Meta').fill('4');
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+	await expect(enElListado).toContainText('meta 4 vasos');
+
+	await enElListado.getByRole('button', { name: 'Editar' }).click();
+	await page.getByLabel('Meta').fill('3');
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+	await expect(enElListado).toContainText('meta 3 vasos');
 
 	// 4. En el día el hábito es un contador: se maneja con + y −, sin escribir números.
 	await page.goto('/hoy');
