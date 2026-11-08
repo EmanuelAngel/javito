@@ -6,7 +6,8 @@ import { API_URL } from '../src/lib/config';
 //
 // Cubre S1 (alta con portada opcional; acá la portada viene y se ve en el catálogo), S5 (catálogo
 // sólo con activos, del más nuevo al más viejo, con filtro por categoría) y la cara visible de la
-// autorización: la nav esconde «Publicar» a un Usuario y el servidor igual contesta 403.
+// autorización: la nav esconde «Publicar» a un Usuario y el servidor igual contesta 403. También
+// HU-ART-05 (el detalle) y HU-ART-02 (la edición: conservar y reemplazar la portada, y el 403).
 //
 // Corre contra la base de desarrollo y la WebAPI real. La API no tiene DELETE, así que cada corrida
 // deja un artículo publicado con el prefijo `Pruebas e2e` y su portada en
@@ -26,6 +27,9 @@ const TITULO = `${PREFIJO} · artículo ${CORRIDA}`;
 const RESUMEN = 'Publicado por el e2e para probar la vista previa y la portada.';
 const CONTENIDO =
 	'# Cómo se ve el Markdown\n\nEste párrafo tiene **una negrita** y sigue.\n\n- primero\n- segundo';
+
+/** HU-ART-02: el título corregido. Contiene a `TITULO`, así los pasos del catálogo lo siguen encontrando. */
+const TITULO_EDITADO = `${TITULO} (corregido)`;
 
 /** El título del intento que un Usuario no puede publicar. No se tiene que guardar. */
 const TITULO_RECHAZADO = `${PREFIJO} · rechazado ${CORRIDA}`;
@@ -193,6 +197,56 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 		enFormatoDeTarjeta(enFormatoDeLaApi(new Date()))
 	);
 
+	// 7c. HU-ART-02: Administración corrige el artículo desde el detalle. El formulario viene
+	//     precargado, la portada actual se ve y, sin archivo nuevo, se conserva.
+	const portadaOriginal = await page
+		.getByRole('img', { name: `Portada de ${TITULO}` })
+		.getAttribute('src');
+	const urlDelDetalle = page.url();
+
+	await page.getByRole('link', { name: 'Editar' }).click();
+	await expect(page).toHaveURL(/\/articulos\/\d+\/editar\?categoriaId=\d+$/);
+	await expect(page.getByRole('heading', { name: 'Editar artículo', level: 1 })).toBeVisible();
+	await expect(page.getByLabel('Título', { exact: true })).toHaveValue(TITULO);
+	await expect(page.getByLabel('Contenido (Markdown)')).toHaveValue(CONTENIDO);
+	await expect(page.getByRole('img', { name: 'Portada actual' })).toHaveAttribute(
+		'src',
+		portadaOriginal ?? ''
+	);
+
+	await page.getByLabel('Título', { exact: true }).fill(TITULO_EDITADO);
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+
+	// Vuelve al mismo detalle (con la query del catálogo), con el título nuevo, la misma portada y la
+	// fecha de publicación original.
+	await expect(page).toHaveURL(urlDelDetalle);
+	await expect(page.getByRole('heading', { name: TITULO_EDITADO, level: 1 })).toBeVisible();
+	await expect(page.getByRole('img', { name: `Portada de ${TITULO_EDITADO}` })).toHaveAttribute(
+		'src',
+		portadaOriginal ?? ''
+	);
+	await expect(page.locator('main time')).toHaveText(
+		enFormatoDeTarjeta(enFormatoDeLaApi(new Date()))
+	);
+
+	// Reemplazar la portada: la nueva se sirve y la anterior deja de existir en el servidor.
+	await page.getByRole('link', { name: 'Editar' }).click();
+	await page.getByLabel('Portada (opcional)').setInputFiles({
+		name: 'otra.png',
+		mimeType: 'image/png',
+		buffer: PNG
+	});
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+	await expect(page).toHaveURL(urlDelDetalle);
+
+	const portadaNueva = page.getByRole('img', { name: `Portada de ${TITULO_EDITADO}` });
+
+	await expect(portadaNueva).not.toHaveAttribute('src', portadaOriginal ?? '');
+	expect(await portadaNueva.evaluate((imagen) => (imagen as HTMLImageElement).naturalWidth)).toBe(
+		1
+	);
+	expect((await page.request.get(portadaOriginal ?? '')).status()).toBe(404);
+
 	// …y «Volver al catálogo» lo deja en la misma categoría (y página) desde la que entró.
 	await page.getByRole('link', { name: 'Volver al catálogo' }).click();
 	await expect(page).toHaveURL(new RegExp(`/articulos\\?categoriaId=${filtroDelCatalogo}$`));
@@ -232,6 +286,30 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	});
 	expect(respuesta.status()).toBe(403);
 	expect((await respuesta.json()).codigo).toBe('sin_permiso');
+
+	// HU-ART-02: lo mismo con la edición. La pantalla rebota al Usuario y la API le contesta 403
+	// sin tocar el artículo.
+	const idEditado = Number(new URL(urlDelDetalle).pathname.split('/').pop());
+
+	await page.goto(`/articulos/${idEditado}/editar`);
+	await expect(page).toHaveURL(/\/hoy$/);
+
+	const edicion = await page.request.put(`${API_URL}/api/articulos/${idEditado}`, {
+		headers: { Authorization: `Bearer ${token}` },
+		multipart: { titulo: TITULO_RECHAZADO, resumen: RESUMEN, contenidoMarkdown: CONTENIDO }
+	});
+	expect(edicion.status()).toBe(403);
+	expect((await edicion.json()).codigo).toBe('sin_permiso');
+
+	const releido = await page.request.get(`${API_URL}/api/articulos/${idEditado}`, {
+		headers: { Authorization: `Bearer ${token}` }
+	});
+	expect((await releido.json()).titulo).toBe(TITULO_EDITADO);
+
+	// Un Usuario no ve «Editar» en el detalle.
+	await page.goto(`/articulos/${idEditado}`);
+	await expect(page.getByRole('heading', { name: TITULO_EDITADO, level: 1 })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Editar' })).toHaveCount(0);
 
 	// El rechazo no dejó fila: el título rechazado no aparece en el catálogo, ni siquiera en su
 	// categoría. (Si el servidor hubiera guardado antes de autorizar, acá estaría.)

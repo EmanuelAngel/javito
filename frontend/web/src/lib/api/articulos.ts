@@ -65,6 +65,26 @@ export const FORMATOS_DE_LA_PORTADA = 'image/jpeg,image/png,image/webp';
  * navegador.
  */
 export function publicar(datos: DatosDeArticulo, portada: File | null): Promise<Articulo> {
+	return pedir<Articulo>('/api/articulos', { method: 'POST', body: formularioDe(datos, portada) });
+}
+
+/**
+ * Corrige un artículo publicado (HU-ART-02). Sin `portada` el servidor conserva la que tenía; con
+ * una, la reemplaza y borra la anterior. La fecha de publicación no cambia.
+ */
+export function editar(
+	id: number,
+	datos: DatosDeArticulo,
+	portada: File | null
+): Promise<Articulo> {
+	return pedir<Articulo>(`/api/articulos/${id}`, {
+		method: 'PUT',
+		body: formularioDe(datos, portada)
+	});
+}
+
+/** El mismo multipart para el alta y la edición: un campo nuevo se agrega en un solo lugar. */
+function formularioDe(datos: DatosDeArticulo, portada: File | null): FormData {
 	const formulario = new FormData();
 	formulario.append('titulo', datos.titulo);
 	formulario.append('resumen', datos.resumen);
@@ -73,7 +93,7 @@ export function publicar(datos: DatosDeArticulo, portada: File | null): Promise<
 
 	if (portada) formulario.append('imagenPortada', portada);
 
-	return pedir<Articulo>('/api/articulos', { method: 'POST', body: formulario });
+	return formulario;
 }
 
 /**
