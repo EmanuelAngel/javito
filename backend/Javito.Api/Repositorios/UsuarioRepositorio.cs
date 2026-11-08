@@ -1,5 +1,6 @@
 using Javito.Api.Datos;
 using Javito.Api.Modelos;
+using Javito.Api.Paginacion;
 using MySqlConnector;
 
 namespace Javito.Api.Repositorios;
@@ -27,6 +28,60 @@ public sealed class UsuarioRepositorio(IDbConnectionFactory fabrica) : IUsuarioR
         comando.Parameters.AddWithValue("@id", id);
 
         return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
+    public async Task<(IReadOnlyList<Usuario> Elementos, int Total)> ListarAsync(
+        bool? activo,
+        string? q,
+        int limite,
+        long desplazamiento,
+        CancellationToken cancellationToken = default)
+    {
+        // El filtro vive en una sola constante porque lo usan las dos consultas: así el conteo y la
+        // página no pueden referirse a conjuntos distintos.
+        const string filtro = """
+            FROM usuario
+            WHERE (@activo IS NULL OR activo = @activo)
+              AND (@patron IS NULL
+                   OR nombre LIKE @patron ESCAPE '\\'
+                   OR email LIKE @patron ESCAPE '\\')
+            """;
+
+        // El id es AUTO_INCREMENT: ordenar por él descendente es el alta con el más nuevo primero, y
+        // como es único, la paginación no repite ni saltea filas entre dos requests.
+        var sql = $"""
+            SELECT {Columnas} {filtro}
+            ORDER BY id DESC
+            LIMIT @limite OFFSET @desplazamiento
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+
+        var elementos = new List<Usuario>();
+
+        await using (var comando = new MySqlCommand(sql, conexion))
+        {
+            comando.Parameters.AddWithValue("@activo", activo is null ? DBNull.Value : activo.Value);
+            comando.Parameters.AddWithValue(
+                "@patron",
+                (object?)PatronDeBusqueda.APatron(q) ?? DBNull.Value);
+            comando.Parameters.AddWithValue("@limite", limite);
+            comando.Parameters.AddWithValue("@desplazamiento", desplazamiento);
+
+            await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+            while (await lector.ReadAsync(cancellationToken))
+            {
+                elementos.Add(Leer(lector));
+            }
+        }
+
+        await using var conteo = new MySqlCommand($"SELECT COUNT(*) {filtro}", conexion);
+        conteo.Parameters.AddWithValue("@activo", activo is null ? DBNull.Value : activo.Value);
+        conteo.Parameters.AddWithValue(
+            "@patron",
+            (object?)PatronDeBusqueda.APatron(q) ?? DBNull.Value);
+
+        return (elementos, Convert.ToInt32(await conteo.ExecuteScalarAsync(cancellationToken)));
     }
 
     private async Task<Usuario?> BuscarAsync(

@@ -1,5 +1,6 @@
 using Javito.Api.Datos;
 using Javito.Api.Modelos;
+using Javito.Api.Paginacion;
 using MySqlConnector;
 
 namespace Javito.Api.Repositorios;
@@ -65,7 +66,7 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
         await using var comando = new MySqlCommand(sql, conexion);
         comando.Parameters.AddWithValue("@usuarioId", usuarioId);
         comando.Parameters.AddWithValue("@activo", activo is null ? DBNull.Value : activo.Value);
-        comando.Parameters.AddWithValue("@patron", (object?)APatron(q) ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@patron", (object?)PatronDeBusqueda.APatron(q) ?? DBNull.Value);
 
         var habitos = new List<Habito>();
         await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
@@ -230,26 +231,6 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
         comando.Parameters.AddWithValue("@fecha", fecha);
 
         return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
-    }
-
-    /// <summary>
-    /// Envuelve el texto del usuario en comodines, neutralizando los que ya son comodines: buscar
-    /// «50%» tiene que encontrar ese título literal y no traer todo. La barra va primero porque es el
-    /// carácter de escape de LIKE.
-    /// </summary>
-    private static string? APatron(string? texto)
-    {
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return null;
-        }
-
-        var escapado = texto.Trim()
-            .Replace("\\", "\\\\")
-            .Replace("%", "\\%")
-            .Replace("_", "\\_");
-
-        return $"%{escapado}%";
     }
 
     private static Habito ADominio(MySqlDataReader lector) => new()
