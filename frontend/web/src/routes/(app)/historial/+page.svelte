@@ -105,7 +105,7 @@
 					alLimpiarFiltros={quitarFiltros}
 				/>
 			{:else}
-				<TablaDeHistorial filas={actual.elementos} />
+				<TablaDeHistorial filas={actual.elementos} detalleDe={pantalla.detalleDe} />
 				{#if actual.totalDePaginas > 1}
 					<Paginador
 						pagina={actual.pagina}

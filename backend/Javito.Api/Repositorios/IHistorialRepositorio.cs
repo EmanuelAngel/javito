@@ -1,3 +1,4 @@
+using Javito.Api.Historial;
 using Javito.Api.Modelos;
 
 namespace Javito.Api.Repositorios;
@@ -26,5 +27,31 @@ public interface IHistorialRepositorio
         DateOnly? hasta,
         int limite,
         long desplazamiento,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// La fecha del primer registro del hábito, o <c>null</c> si nunca se marcó. Es la única evidencia
+    /// de cuándo empezó: el esquema no guarda la fecha de alta del hábito (L5).
+    /// </summary>
+    /// <remarks>Un hábito ajeno se comporta como uno sin marcas: el <c>WHERE</c> filtra por dueño.</remarks>
+    Task<DateOnly?> PrimerRegistroAsync(
+        int habitoId,
+        int usuarioId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Los registros del hábito en <c>[desde, hasta]</c>, con el día y si se cumplió: lo que necesita el
+    /// detalle histórico para armar su cuadrícula.
+    /// </summary>
+    /// <remarks>
+    /// Igual que el listado paginado, el <c>JOIN</c> con <c>habito</c> es lo que hace cumplir la
+    /// propiedad —<c>registro_habito</c> no guarda el dueño— y no filtra por <c>activo</c>: el
+    /// historial de un hábito archivado se consulta igual.
+    /// </remarks>
+    Task<IReadOnlyList<FilaDelHistorial>> ListarFilasAsync(
+        int habitoId,
+        int usuarioId,
+        DateOnly desde,
+        DateOnly hasta,
         CancellationToken cancellationToken = default);
 }

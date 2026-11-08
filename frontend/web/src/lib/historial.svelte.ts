@@ -3,6 +3,7 @@
 // catálogo de artículos, no sabe de la pantalla: le pasan su ruta y la pantalla compone.
 
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { listar, type FilaDelHistorial, type FiltrosDelHistorial } from './api/historial';
 import { listar as listarHabitos, type Habito } from './api/habitos';
 import { ErrorDeApi } from './api/pedir';
@@ -54,6 +55,14 @@ export function estadoDelHistorial(rutaDelHistorial: string) {
 	}
 
 	/**
+	 * El detalle de un hábito (HU-HIS-02): la tabla del historial lo usa como enlace y la pantalla lo
+	 * pasa. Es sólo la ruta; abrir el hábito no arrastra la página ni los filtros de la lista.
+	 */
+	function detalleDe(habitoId: number): string {
+		return resolve('/(app)/historial/[id]', { id: String(habitoId) });
+	}
+
+	/**
 	 * Reemplaza la entrada del historial (el «atrás» sale del historial, no recorre las páginas
 	 * vistas) y no resetea scroll ni foco: sólo cambia la lista. SvelteKit 3 unificó
 	 * `keepFocus`/`noScroll` en `reset`.
@@ -64,5 +73,5 @@ export function estadoDelHistorial(rutaDelHistorial: string) {
 		void goto(`${rutaDelHistorial}${consulta(destino)}`, { replace: true, reset: false });
 	}
 
-	return { historial, habitos, cargarHabitos, navegar };
+	return { historial, habitos, cargarHabitos, navegar, detalleDe };
 }

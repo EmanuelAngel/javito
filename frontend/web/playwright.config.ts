@@ -18,6 +18,11 @@ export default defineConfig({
 		// project `client` de vitest, y así `pnpm test:e2e` no necesita `test:e2e:install`.
 		channel: 'msedge'
 	},
+	// Diez segundos para que una aserción se cumpla, en vez de los cinco de fábrica. No afloja ninguna
+	// regla: cambia la ventana de muestreo. Con dos workers en paralelo, la API, el `vite build` y un
+	// navegador en la misma máquina, un ida y vuelta del día puede tardar más de cinco (issue propio:
+	// el paso del contador de hábitos quedaba en «2 / 3» por tiempo, no por un clic perdido).
+	expect: { timeout: 10_000 },
 	webServer: [
 		{
 			// La API se levanta desde la raíz del monorepo con `pnpm dev:api`, que usa el perfil `http`

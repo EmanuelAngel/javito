@@ -1,4 +1,5 @@
 using Javito.Api.Datos;
+using Javito.Api.Historial;
 using Javito.Api.Modelos;
 using MySqlConnector;
 
@@ -60,6 +61,70 @@ public sealed class HistorialRepositorio(IDbConnectionFactory fabrica) : IHistor
         AgregarFiltros(conteo, usuarioId, habitoId, desde, hasta);
 
         return (elementos, Convert.ToInt32(await conteo.ExecuteScalarAsync(cancellationToken)));
+    }
+
+    public async Task<DateOnly?> PrimerRegistroAsync(
+        int habitoId,
+        int usuarioId,
+        CancellationToken cancellationToken = default)
+    {
+        // MIN sobre el WHERE del dueño: un hábito ajeno no tiene marcas para quien pregunta.
+        var sql = """
+            SELECT MIN(r.fecha)
+            FROM registro_habito r
+            JOIN habito h ON h.id = r.habito_id
+            WHERE h.usuario_id = @usuarioId
+              AND r.habito_id = @habitoId
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@usuarioId", usuarioId);
+        comando.Parameters.AddWithValue("@habitoId", habitoId);
+
+        await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+
+        return await lector.ReadAsync(cancellationToken) && !lector.IsDBNull(0)
+            ? lector.GetFieldValue<DateOnly>(0)
+            : null;
+    }
+
+    public async Task<IReadOnlyList<FilaDelHistorial>> ListarFilasAsync(
+        int habitoId,
+        int usuarioId,
+        DateOnly desde,
+        DateOnly hasta,
+        CancellationToken cancellationToken = default)
+    {
+        var sql = """
+            SELECT r.fecha, r.completado
+            FROM registro_habito r
+            JOIN habito h ON h.id = r.habito_id
+            WHERE h.usuario_id = @usuarioId
+              AND r.habito_id = @habitoId
+              AND r.fecha >= @desde
+              AND r.fecha <= @hasta
+            ORDER BY r.fecha
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@usuarioId", usuarioId);
+        comando.Parameters.AddWithValue("@habitoId", habitoId);
+        comando.Parameters.AddWithValue("@desde", desde);
+        comando.Parameters.AddWithValue("@hasta", hasta);
+
+        var filas = new List<FilaDelHistorial>();
+
+        await using var lector = await comando.ExecuteReaderAsync(cancellationToken);
+        while (await lector.ReadAsync(cancellationToken))
+        {
+            filas.Add(new FilaDelHistorial(
+                lector.GetFieldValue<DateOnly>(0),
+                lector.GetBoolean(1)));
+        }
+
+        return filas;
     }
 
     private static void AgregarFiltros(

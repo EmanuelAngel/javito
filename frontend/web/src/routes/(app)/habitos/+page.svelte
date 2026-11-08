@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import HabitoForm from '$lib/components/habito-form.svelte';
 	import HabitosLista from '$lib/components/habitos-lista.svelte';
 	import { estadoDeHabitos } from '$lib/habitos.svelte';
+	import { leerEnteroPositivo } from '$lib/paginado.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -11,6 +14,15 @@
 	// al formulario.
 	// svelte-ignore state_referenced_locally
 	const habitos = estadoDeHabitos(data);
+
+	// `?editar=` es el atajo del detalle histórico (HU-HIS-02, S9): abre el formulario en modo
+	// edición, ya cargado. Un id que no está en la pantalla no hace nada, igual que uno ilegible.
+	onMount(() => {
+		const id = leerEnteroPositivo(page.url.searchParams.get('editar'));
+		const habito = [...data.activos, ...data.archivados].find((actual) => actual.id === id);
+
+		if (habito) habitos.prepararEdicion(habito);
+	});
 </script>
 
 <svelte:head>
