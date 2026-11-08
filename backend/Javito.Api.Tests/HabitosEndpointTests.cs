@@ -335,6 +335,60 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Archivar_lo_saca_de_la_vista_y_reactivar_lo_devuelve_con_su_historial()
+    {
+        // HU-HAB-04 (L9): archivar no toca `registro_habito`, así que reactivar devuelve el hábito con
+        // lo que ya tenía marcado y sin marcas inventadas para el resto de los días.
+        const string titulo = "Prueba Archivar";
+        var creado = await CrearAsync(UnSiNo(titulo));
+        var hoy = await BaseDeDatosDePrueba.HoyAsync();
+        var ayer = hoy.AddDays(-1);
+        await _cliente.PutAsJsonAsync($"/api/habitos/{creado.Id}/registros/{ayer:yyyy-MM-dd}", new { valor = 1 });
+
+        var archivo = await _cliente.PutAsJsonAsync($"/api/habitos/{creado.Id}/activo", new { activo = false });
+        // Repetir el estado que ya tiene no es un error: el botón puede llegar dos veces.
+        var otraVez = await _cliente.PutAsJsonAsync($"/api/habitos/{creado.Id}/activo", new { activo = false });
+
+        Assert.Equal(HttpStatusCode.OK, archivo.StatusCode);
+        Assert.False((await archivo.Content.ReadFromJsonAsync<HabitoDePrueba>())!.Activo);
+        Assert.Equal(HttpStatusCode.OK, otraVez.StatusCode);
+        Assert.False((await BuscarAsync(creado.Id)).Activo);
+        Assert.DoesNotContain((await DiaAsync(hoy)).Habitos, habito => habito.Id == creado.Id);
+        var buscador = await _cliente.GetFromJsonAsync<List<HabitoDePrueba>>(
+            $"/api/habitos?q={Uri.EscapeDataString(titulo)}");
+        Assert.DoesNotContain(buscador!, habito => habito.Id == creado.Id);
+
+        var reactivacion = await _cliente.PutAsJsonAsync($"/api/habitos/{creado.Id}/activo", new { activo = true });
+
+        Assert.Equal(HttpStatusCode.OK, reactivacion.StatusCode);
+        Assert.True((await reactivacion.Content.ReadFromJsonAsync<HabitoDePrueba>())!.Activo);
+        Assert.Null(Assert.Single((await DiaAsync(hoy)).Habitos, habito => habito.Id == creado.Id).Registro);
+        var delAyer = Assert.Single((await DiaAsync(ayer)).Habitos, habito => habito.Id == creado.Id);
+        Assert.Equal(1m, delAyer.Registro!.Valor);
+    }
+
+    [Fact]
+    public async Task Archivar_un_habito_ajeno_o_inexistente_da_404_y_sin_estado_da_400()
+    {
+        var ajeno = await CrearAsync(UnSiNo("Prueba Archivar ajeno"));
+
+        using var otraCuenta = fabrica.CreateClient();
+        var token = await SesionDePrueba.IniciarAsync(otraCuenta, "otra@javito.local");
+        otraCuenta.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var deOtraCuenta = await otraCuenta.PutAsJsonAsync($"/api/habitos/{ajeno.Id}/activo", new { activo = false });
+        var inexistente = await _cliente.PutAsJsonAsync("/api/habitos/9999/activo", new { activo = false });
+        var sinEstado = await _cliente.PutAsJsonAsync($"/api/habitos/{ajeno.Id}/activo", new { });
+
+        Assert.Equal(HttpStatusCode.NotFound, deOtraCuenta.StatusCode);
+        Assert.Equal("no_encontrado", await CodigoAsync(deOtraCuenta));
+        Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
+        Assert.Equal("no_encontrado", await CodigoAsync(inexistente));
+        Assert.Equal(HttpStatusCode.BadRequest, sinEstado.StatusCode);
+        Assert.True((await BuscarAsync(ajeno.Id)).Activo);
+    }
+
+    [Fact]
     public async Task La_edicion_conserva_la_categoria_inactiva_o_sin_categoria()
     {
         // L4: «el hábito conserva la categoría que eligió, aunque después se desactive». El seed

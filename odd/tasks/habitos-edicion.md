@@ -17,7 +17,13 @@ categoría de un hábito para ajustarlo sin perder lo que ya registré.»
 - **S3** «Cambiar el tipo (de `sí/no` a `contador`) no borra los registros anteriores»
 - **S4** «Editar un hábito ajeno no es posible, ni siquiera escribiendo la URL a mano»
 
-**#70 · HU-HAB-04 — Archivar y reactivar un hábito.** (pendiente; se detalla al encararlo)
+**#70 · HU-HAB-04 — Archivar y reactivar un hábito.** «Como Usuario quiero archivar un hábito que ya
+no sigo para sacarlo de mi vista sin borrar su historial.»
+
+- **S10** «Archivar lo saca de la pantalla del día y de los selectores de rutina»
+- **S11** «El historial del hábito archivado se conserva y sigue siendo consultable»
+- **S12** «Reactivarlo lo devuelve a la pantalla del día, sin huecos fantasma en los días que estuvo
+  archivado»
 
 **#71 · HU-HAB-05 — Elegir la categoría de un hábito.** «Como Usuario quiero elegir la categoría de
 un hábito de una lista para clasificarlo sin escribir nada.»
@@ -34,7 +40,7 @@ un hábito de una lista para clasificarlo sin escribir nada.»
 | ID | Specs | Ruta | Commit |
 | :--- | :--- | :--- | :--- |
 | T1 | S1-S4 | worker: `PUT /api/habitos/{id}` + día con la meta del registro + edición en `/habitos` | `feat/habitos-edicion` |
-| T2 | #70 | — | — |
+| T2 | S10-S12 | inline: `PUT /api/habitos/{id}/activo` + Archivar/Reactivar en `/habitos` | `feat/habitos-archivar` |
 | T3 | S5-S9 | inline: categoría opcional en alta y edición (API + `habito-form`) | `feat/habitos-categoria-opcional` |
 
 ## Log
@@ -62,3 +68,8 @@ un hábito de una lista para clasificarlo sin escribir nada.»
   deja de ser `categoria_requerida` (el código se elimina de la API y del mapeo del SPA) y el
   desplegable ofrece siempre «Sin categoría». S5-S7 y S9 ya estaban cubiertos por #21 y #69 (L4):
   la lista trae solo activas y suma la inactiva que el hábito ya tenía.
+- **L9** (decisión, #70): «sí» a la interpretación mínima. Archivar y reactivar con
+  `PUT /api/habitos/{id}/activo` (`{ "activo": bool }`, el molde de categorías, idempotente) sin
+  tocar `registro_habito`. «Consultable» (S11) lo muestran HIS-01/HIS-02, que deben incluir
+  archivados. «Sin huecos fantasma» (S12): reactivar no crea registros por los días archivados. El
+  esquema no guarda la fecha de archivo, así que no se distingue un día archivado de uno sin marcar.

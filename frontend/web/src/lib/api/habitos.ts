@@ -60,6 +60,17 @@ export function editar(id: number, datos: DatosDeHabito): Promise<Habito> {
 }
 
 /**
+ * Archiva (`false`) o reactiva (`true`) un hábito (HU-HAB-04). Es baja lógica: sus registros
+ * quedan, y repetir el estado que ya tiene no es un error.
+ */
+export function cambiarActivo(id: number, activo: boolean): Promise<Habito> {
+	return pedir<Habito>(`/api/habitos/${id}/activo`, {
+		method: 'PUT',
+		body: JSON.stringify({ activo })
+	});
+}
+
+/**
  * Busca entre los hábitos activos de quien pregunta, para agregarlos a una rutina (HU-RUT-02).
  * El servidor impone las dos reglas —sólo míos, sólo activos— así que la pantalla no las repite; el
  * `signal` lo usa el buscador para abortar el pedido anterior cuando se sigue escribiendo.
