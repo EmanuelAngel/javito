@@ -49,6 +49,25 @@ el enlace) escribe a la izquierda y renderiza la vista previa a la derecha en vi
 pantalla angosta. La categoría se elige en desplegable con las activas — "Las categorías se eligen
 siempre en desplegable y nunca se buscan ni se paganinan" (`ux-brief.md`).
 
+**Línea A del backlog (después de la entrega).** Este doc sigue siendo el del módulo: #63 → #81 →
+#79 → #80, un issue por PR. Cada issue es la fuente; acá van sus criterios.
+
+**#63 · Modularizar las pantallas de artículos.** Criterios del issue, literales:
+
+- **S8** «El estado del catálogo —lectura y escritura de `?pagina=` y `?categoriaId=`, el pedido a la
+  API y la guardia que descarta respuestas viejas— vive fuera de la pantalla, en un módulo propio y
+  **sin nada de artículos adentro**, para que `HIS-01` y `USU-01` lo usen con sus propios filtros»
+- **S9** «Ese módulo tiene prueba unitaria sin montar el componente»
+- **S10** «El formulario del alta es un componente con sus campos, su archivo y sus errores por campo,
+  con los valores iniciales y el `onsubmit` por prop, de modo que `ART-02` lo precargue en vez de
+  copiarlo»
+- **S11** «Los tres estados vacíos del catálogo (no hay artículos / no hay en la categoría / la página
+  no existe) no son ramas `{#if}` de treinta líneas dentro del markup de la pantalla»
+- **S12** «Ninguna de las dos pantallas supera las **150** líneas contando `<script>` y markup»
+- **S13** «Agregar un campo al formulario del alta toca **un solo archivo**»
+- **S14** «El comportamiento observable no cambia: las pruebas existentes … siguen pasando **sin
+  reescribir sus aserciones**»
+
 **Fuera de alcance de esta feature.** Edición del artículo y reemplazo de portada (`ART-02`), baja
 lógica y reactivación (`ART-03`), pantalla de detalle y "volver conservando la página" (`ART-05`),
 búsqueda de artículos.
@@ -62,6 +81,7 @@ búsqueda de artículos.
 | T3 | Backend del catálogo: helper de paginado reusable + `GET /api/articulos` paginado y filtrable | S4, S5 | worker | `0de7feb` |
 | T4 | Frontend del catálogo: `/articulos` con tarjetas, filtro por categoría y paginado | S5 | worker | `50e64c7` |
 | T5 | Recorrido e2e del alta y del catálogo contra la WebAPI real | S1, S5 | worker | `50e64c7` |
+| T6 | #63: `paginado.svelte.ts` (+ prueba), `catalogo-de-articulos.svelte.ts`, `articulo-form`, `catalogo-vacio`, `grilla-de-articulos` | S8-S14 | inline | `chore/articulos-modularizar` |
 
 ## Log
 
@@ -142,3 +162,15 @@ GitHub reapunta solo al mergear el primero). Las ramas se rearmaron por capa des
 contenido de `feat/web-articulos` quedó idéntico al árbol original (`git diff` vacío antes de borrar la
 rama de trabajo). Peso ponderado: 738 en la API, 1260 en el SPA; los dos por encima del techo de 600
 del presupuesto, con autorización explícita del usuario para revisar PRs de ese tamaño.
+
+**L-A1** — Pedido de la línea A, verbatim: «listá qué cosas puedo ir haciendo, implementaciones digo.
+… Cosas que se puedan ir realizando en paralelo»; elegida «A · Artículos». Ante una ambigüedad:
+«Preguntame, no estoy en casa pero si puedo responderte preguntas».
+
+**L-A2** — Decisiones de T6 (#63). El paginado genérico es `lib/paginado.svelte.ts`: funciones puras
+para leer y armar la URL (`leerPagina`, `leerEnteroPositivo`, `armarConsulta`) y `crearPaginado`
+con la guardia por turno. La pantalla sigue siendo dueña de la URL y del `$effect`. Lo que sabe de
+artículos (categorías, `navegar`) va en `catalogo-de-articulos.svelte.ts`. `Pagina<T>` pasa a
+`api/pagina.ts`, reexportado desde `api/articulos.ts`. El formulario se vacía después de publicar
+volviéndolo a montar con `{#key}`. Es un refactor: no hay RED; la red de seguridad son las pruebas que
+ya existían, sin cambios en sus aserciones.
