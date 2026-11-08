@@ -93,6 +93,13 @@
 					>
 						Categorías
 					</a>
+					<!-- «Artículos» a secas es el catálogo: el rótulo largo evita dos enlaces iguales. -->
+					<a
+						href={resolve('/(app)/admin/articulos')}
+						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Administrar artículos
+					</a>
 				{/if}
 				<span class="hidden text-sm text-muted-foreground sm:inline">{usuario.nombre}</span>
 				<CambioDeTema />

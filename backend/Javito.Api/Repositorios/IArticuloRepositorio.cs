@@ -35,4 +35,20 @@ public interface IArticuloRepositorio
         int limite,
         long desplazamiento,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retira o reactiva un artículo (HU-ART-03) tocando sólo <c>activo</c>: la fecha de publicación
+    /// original sobrevive a la baja. Funciona sobre activos e inactivos, y poner el estado en que ya
+    /// está cuenta como éxito. Devuelve <c>false</c> si no hay ningún artículo con ese id.
+    /// </summary>
+    Task<bool> CambiarActivoAsync(int id, bool activo, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Una página del listado de administración: <b>todos</b> los artículos, activos e inactivos, en el
+    /// mismo orden que el catálogo y sin el cuerpo. Es lo único que deja ver lo retirado.
+    /// </summary>
+    Task<(IReadOnlyList<Articulo> Elementos, int Total)> ListarTodosAsync(
+        int limite,
+        long desplazamiento,
+        CancellationToken cancellationToken = default);
 }

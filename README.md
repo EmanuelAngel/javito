@@ -116,7 +116,8 @@ javito/
 > `GET|POST /api/habitos`, `PUT /api/habitos/{id}`, `PUT|DELETE /api/habitos/{id}/registros/{fecha}`,
 > `GET /api/rutinas`, `GET|POST /api/rutinas/{id}`, `POST|DELETE /api/rutinas/{id}/habitos`,
 > `GET /api/dias/{fecha}`, `POST /api/perfil/avatar`, `GET|POST /api/articulos`,
-> `GET /api/articulos/{id}` y `GET /api/health`.
+> `GET /api/articulos/{id}`, `GET /api/articulos/administracion`, `PUT /api/articulos/{id}/activo` y
+> `GET /api/health`.
 > El listado de hábitos acepta `q` (pedazo de título en un `LIKE` con los comodines escapados) y, con
 > `q` dado, sólo devuelve hábitos activos: es el servidor adonde consulta el buscador de rutinas.
 > Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).

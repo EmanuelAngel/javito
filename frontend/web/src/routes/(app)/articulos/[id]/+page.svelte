@@ -1,9 +1,11 @@
 <script lang="ts">
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { urlDeArchivo } from '$lib/config';
+	import DesactivarArticulo from '$lib/components/desactivar-articulo.svelte';
 	import Markdown from '$lib/components/markdown.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -57,11 +59,15 @@
 			Volver al catálogo
 		</Button>
 
-		{#if editar}
-			<Button variant="outline" size="sm" href={editar}>
-				<PencilIcon class="size-4" />
-				Editar
-			</Button>
+		{#if editar && data.articulo}
+			<div class="flex items-center gap-2">
+				<Button variant="outline" size="sm" href={editar}>
+					<PencilIcon class="size-4" />
+					Editar
+				</Button>
+				<!-- Retirar es de Administración (HU-ART-03). Al confirmar, vuelve al catálogo con su query. -->
+				<DesactivarArticulo id={data.articulo.id} alDesactivar={() => goto(volver)} />
+			</div>
 		{/if}
 		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	</div>

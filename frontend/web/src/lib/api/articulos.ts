@@ -123,3 +123,35 @@ export function listar(filtros: FiltrosDelCatalogo = {}): Promise<Pagina<Articul
 export function obtener(id: number): Promise<Articulo> {
 	return pedir<Articulo>(`/api/articulos/${id}`);
 }
+
+/**
+ * Retira (`false`) o reactiva (`true`) un artículo sin borrarlo (HU-ART-03). Sólo Administración: un
+ * Usuario recibe 403. Responde el artículo con su estado nuevo, con el cuerpo incluido.
+ */
+export function cambiarActivo(id: number, activo: boolean): Promise<Articulo> {
+	return pedir<Articulo>(`/api/articulos/${id}/activo`, {
+		method: 'PUT',
+		body: JSON.stringify({ activo })
+	});
+}
+
+/**
+ * El listado de administración (S25): activos **e inactivos**, con el mismo paginado y el mismo orden
+ * que el catálogo. Es el único camino para ver lo retirado y poder reactivarlo.
+ */
+export function listarParaAdministracion(
+	filtros: Pick<FiltrosDelCatalogo, 'pagina' | 'tamanioDePagina'> = {}
+): Promise<Pagina<ArticuloDelCatalogo>> {
+	const parametros = new URLSearchParams();
+
+	if (filtros.pagina !== undefined) parametros.set('pagina', String(filtros.pagina));
+	if (filtros.tamanioDePagina !== undefined) {
+		parametros.set('tamanioDePagina', String(filtros.tamanioDePagina));
+	}
+
+	const consulta = parametros.toString();
+
+	return pedir<Pagina<ArticuloDelCatalogo>>(
+		`/api/articulos/administracion${consulta === '' ? '' : `?${consulta}`}`
+	);
+}

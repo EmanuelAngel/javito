@@ -71,6 +71,7 @@ La §3.5 de la propuesta lista 10 vistas. Este mapa las corrige.
 | `/articulos/[id]` | Leer un artículo | Read |
 | `/articulos/nuevo` · `/articulos/[id]/editar` | Publicar y corregir (Admin) | Operate |
 | `/admin/categorias` | ABM de categorías (Admin) | Operate |
+| `/admin/articulos` | Artículos activos e inactivos, paginados; reactivar (Admin) | Operate |
 | `/admin/usuarios` | Listado, alta, rol y activación (Admin) | Operate |
 | `/perfil` | Datos, avatar, tema, salir, y las entradas de Admin | Operate |
 
