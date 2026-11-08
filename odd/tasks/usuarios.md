@@ -62,7 +62,8 @@ módulo de SPA, `lib/api/usuarios.ts`.
   `no_encontrado`, que es el único código de 404 del repo.
 - Reglas de alta y edición, en un helper compartido (`ReglasDeUsuarios`) que **#68 va a reusar**: nombre
   1..100 no en blanco; email normalizado a minúsculas y sin espacios, formato válido, hasta 150;
-  contraseña de 8..100 caracteres. Los largos coinciden con `database.sql` (VARCHAR(100) y
+  contraseña de 8..72 caracteres. Los largos de nombre y email coinciden con `database.sql`
+  (VARCHAR(100) y
   VARCHAR(150)).
 - Orden del listado: `ORDER BY id DESC` (L6). Filtro de estado `activo` con la misma forma que
   `GET api/habitos` (`[FromQuery] bool? activo`). Búsqueda `q` con la misma semántica que hábitos:
@@ -200,7 +201,7 @@ mergeado, el PR lo dice.
 
 - **L15** — Las reglas compartidas con el registro (#68) viven en `Usuarios/ReglasDeUsuarios.cs`, como
   `Archivos/ReglasDeArchivos.cs`: constantes de largo (nombre 1..100, email hasta 150, contraseña
-  8..100), `NormalizarEmail` (trim + minúsculas) y la lista de roles válidos. Los DTO de entrada
+  8..72), `NormalizarEmail` (trim + minúsculas) y la lista de roles válidos. Los DTO de entrada
   llevan las DataAnnotations —sobre el parámetro del record, sin `[property: …]`— y el controlador
   sólo agrega lo que una anotación no puede decir: `rol_invalido` y `email_repetido`.
 
@@ -214,3 +215,19 @@ mergeado, el PR lo dice.
   `@`, sin exigir punto ni dominio). No se inventó una regla más estricta porque ningún issue la
   define; si #68 pide otra, se cambia en un solo lugar (el DTO del alta y el del registro comparten
   `ReglasDeUsuarios`) y las dos puertas heredan el mismo criterio.
+
+- **L18** — La contraseña va de **8 a 72 bytes**, no de 8 a 100 caracteres: BCrypt.Net hashea como
+  máximo 72 bytes y trunca lo que sobra **en silencio**, así que aceptar más dejaría dos cuentas cuyas
+  contraseñas se autentican entre sí con sólo compartir los primeros 72 bytes. Lo encontró el
+  verificador independiente de #85 (aviso A1) y se corrigió antes de abrir el PR. No se puede
+  pre-hashear para saltar el límite: `BCrypt.Verify` es lo que valida los hashes `$2b$11$` del seed y
+  cualquier cambio de esquema rompería las cuentas existentes. El tope se expresa dos veces porque 72
+  caracteres no son 72 bytes en UTF-8: `[StringLength(72, MinimumLength = 8)]` y
+  `Usuarios/ContrasenaDeBcryptAttribute`, que mide con `Encoding.UTF8.GetByteCount`. El `maxlength` y
+  el texto de ayuda del formulario dicen lo mismo que el servidor.
+
+- **L19** — Revisión de seguridad del alta (#85): **APPROVED** con tres avisos. A1 (tope de BCrypt) se
+  corrigió y quedó en L18. A2: un cuerpo con campos de más (`activo`, `id`) se ignora en silencio y
+  responde 201 — no hay mass assignment porque el modelo se arma campo por campo; el contrato son
+  cuatro campos. A3: se agregaron las pruebas que faltaban (rol en minúsculas, tope de 72 caracteres,
+  tope de 72 bytes y email normalizado verificado por el listado, no por la columna).
