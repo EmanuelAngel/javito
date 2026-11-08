@@ -106,6 +106,41 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
         return Convert.ToInt32(await ultimoId.ExecuteScalarAsync(cancellationToken));
     }
 
+    public async Task<bool> ActualizarAsync(Habito habito, CancellationToken cancellationToken = default)
+    {
+        // `activo` no entra: el archivo es de #70 y la edición no lo deshace. `registro_habito`
+        // tampoco: lo ya marcado conserva su meta y su completado (S2, S3).
+        const string sql = """
+            UPDATE habito
+            SET categoria_id = @categoriaId,
+                titulo = @titulo,
+                descripcion = @descripcion,
+                tipo_habito = @tipo,
+                meta_valor = @meta,
+                unidad_medida = @unidad,
+                frecuencia_tipo = @frecuenciaTipo,
+                frecuencia_veces = @frecuenciaVeces
+            WHERE id = @id AND usuario_id = @usuarioId
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", habito.Id);
+        comando.Parameters.AddWithValue("@usuarioId", habito.UsuarioId);
+        comando.Parameters.AddWithValue("@categoriaId", (object?)habito.CategoriaId ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@titulo", habito.Titulo);
+        comando.Parameters.AddWithValue("@descripcion", (object?)habito.Descripcion ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@tipo", habito.Tipo);
+        comando.Parameters.AddWithValue("@meta", (object?)habito.Meta ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@unidad", (object?)habito.Unidad ?? DBNull.Value);
+        comando.Parameters.AddWithValue("@frecuenciaTipo", habito.FrecuenciaTipo);
+        comando.Parameters.AddWithValue("@frecuenciaVeces", (object?)habito.FrecuenciaVeces ?? DBNull.Value);
+
+        // MySqlConnector informa filas encontradas y no modificadas (UseAffectedRows es false por
+        // defecto): guardar los mismos valores cuenta como 1 y no se confunde con un 404.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     public async Task<Registro> GuardarRegistroAsync(
         Registro registro,
         CancellationToken cancellationToken = default)

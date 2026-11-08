@@ -2,6 +2,7 @@
 	import type { Categoria } from '$lib/api/categorias';
 	import type { Habito } from '$lib/api/habitos';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import {
 		Empty,
 		EmptyDescription,
@@ -12,11 +13,14 @@
 	let {
 		activos,
 		archivados,
-		categorias
+		categorias,
+		alEditar
 	}: {
 		activos: Habito[];
 		archivados: Habito[];
 		categorias: Categoria[];
+		// La lista no edita: avisa qué fila se quiere corregir y el formulario hace el resto (S1).
+		alEditar: (habito: Habito) => void;
 	} = $props();
 
 	// El nombre viaja por id: un hábito archivado puede apuntar a una categoría inactiva,
@@ -52,7 +56,10 @@
 		{:else}
 			<ul class="flex flex-col gap-3">
 				{#each activos as habito (habito.id)}
-					<li data-test="fila-habito" class="rounded-xl border border-border bg-card px-5 py-4">
+					<li
+						data-test="fila-habito"
+						class="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4"
+					>
 						<div class="flex min-w-0 flex-col gap-1">
 							<span class="truncate font-medium">{habito.titulo}</span>
 							<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -63,6 +70,10 @@
 								{/if}
 							</div>
 						</div>
+
+						<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
+							Editar
+						</Button>
 					</li>
 				{/each}
 			</ul>
@@ -79,7 +90,7 @@
 				{#each archivados as habito (habito.id)}
 					<li
 						data-test="fila-archivado"
-						class="rounded-xl border border-border bg-card px-5 py-4 opacity-70"
+						class="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4 opacity-70"
 					>
 						<div class="flex min-w-0 flex-col gap-1">
 							<span class="truncate font-medium">{habito.titulo}</span>
@@ -89,6 +100,11 @@
 								<Badge variant="outline">Archivado</Badge>
 							</div>
 						</div>
+
+						<!-- Un archivado también se edita (L5): lo que no puede es marcarse. -->
+						<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
+							Editar
+						</Button>
 					</li>
 				{/each}
 			</ul>

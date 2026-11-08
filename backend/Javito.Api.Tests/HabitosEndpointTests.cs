@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Javito.Api.Tests.Infraestructura;
@@ -7,8 +8,9 @@ using MySqlConnector;
 namespace Javito.Api.Tests;
 
 /// <summary>
-/// S6 y S7: el alta de hábitos y el listado propio. Una prueba por regla: qué filas ven cada cuenta,
-/// qué exige cada tipo y cada frecuencia, y qué se guarda cuando el tipo no usa meta.
+/// S6, S7 y la edición (S1-S4): el alta de hábitos, el listado propio y la corrección del hábito sin
+/// perder lo registrado. Una prueba por regla: qué filas ven cada cuenta, qué exige cada tipo y cada
+/// frecuencia, qué se guarda cuando el tipo no usa meta y qué conserva una edición.
 /// Lo que crea lleva el prefijo «Prueba » y la clase limpia lo suyo: el listado afirma filas del seed.
 /// </summary>
 [Collection(ColeccionDeCategorias.Nombre)]
@@ -173,11 +175,233 @@ public class HabitosEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.Null(creado.Unidad);
     }
 
+    [Fact]
+    public async Task Editar_cambia_todos_los_campos_y_lo_devuelve_en_el_listado()
+    {
+        var creado = await CrearAsync(UnSiNo("Prueba Editar"));
+
+        var respuesta = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            new HabitoEntradaDePrueba(
+                "  Prueba Editar corregido ",
+                "Nueva descripción",
+                3,
+                "contador",
+                15,
+                "minutos",
+                new FrecuenciaDePrueba("semanal", 4)));
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+
+        var editado = await respuesta.Content.ReadFromJsonAsync<HabitoDePrueba>();
+        Assert.NotNull(editado);
+        Assert.Equal(creado.Id, editado.Id);
+        Assert.Equal("Prueba Editar corregido", editado.Titulo);
+        Assert.Equal("Nueva descripción", editado.Descripcion);
+        Assert.Equal(3, editado.CategoriaId);
+        Assert.Equal("contador", editado.Tipo);
+        Assert.Equal(15m, editado.Meta);
+        Assert.Equal("minutos", editado.Unidad);
+        Assert.Equal(new FrecuenciaDePrueba("semanal", 4), editado.Frecuencia);
+        Assert.True(editado.Activo);
+
+        // El listado lo confirma: no quedó sólo en la respuesta del PUT.
+        var listado = await _cliente.GetFromJsonAsync<List<HabitoDePrueba>>("/api/habitos");
+        Assert.Equal(editado, Assert.Single(listado!, habito => habito.Id == creado.Id));
+    }
+
+    [Fact]
+    public async Task Un_dia_ya_registrado_conserva_la_meta_con_la_que_se_cerro()
+    {
+        var creado = await CrearAsync(UnContador("Prueba Meta", meta: 3, unidad: "vasos"));
+        var hoy = await BaseDeDatosDePrueba.HoyAsync();
+        var ayer = hoy.AddDays(-1);
+
+        var marca = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}/registros/{ayer:yyyy-MM-dd}",
+            new { valor = 3 });
+        Assert.Equal(HttpStatusCode.OK, marca.StatusCode);
+
+        var edicion = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            UnContador("Prueba Meta", meta: 5, unidad: "vasos"));
+        Assert.Equal(HttpStatusCode.OK, edicion.StatusCode);
+
+        // El día cerrado con meta 3 la conserva: el pasado no se reescribe.
+        var delAyer = Assert.Single((await DiaAsync(ayer)).Habitos, habito => habito.Id == creado.Id);
+        Assert.Equal(3m, delAyer.Meta);
+        Assert.Equal(3m, delAyer.Registro!.Valor);
+        Assert.True(delAyer.Registro.Completado);
+
+        // La meta nueva rige desde el próximo registro: hoy, sin marca, se muestra la vigente.
+        var deHoy = Assert.Single((await DiaAsync(hoy)).Habitos, habito => habito.Id == creado.Id);
+        Assert.Equal(5m, deHoy.Meta);
+        Assert.Null(deHoy.Registro);
+    }
+
+    [Fact]
+    public async Task Cambiar_el_tipo_conserva_los_registros_anteriores()
+    {
+        var creado = await CrearAsync(UnContador("Prueba Cambio de tipo", meta: 3, unidad: "vasos"));
+        var ayer = (await BaseDeDatosDePrueba.HoyAsync()).AddDays(-1);
+
+        await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}/registros/{ayer:yyyy-MM-dd}",
+            new { valor = 2 });
+
+        var edicion = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            UnSiNo("Prueba Cambio de tipo"));
+
+        Assert.Equal(HttpStatusCode.OK, edicion.StatusCode);
+
+        // La marca del contador sigue ahí con su valor y su completado: cambiar el tipo no borra
+        // lo ya registrado (S3).
+        var delAyer = Assert.Single((await DiaAsync(ayer)).Habitos, habito => habito.Id == creado.Id);
+        Assert.Equal("si_no", delAyer.Tipo);
+        Assert.Null(delAyer.Meta);
+        Assert.Equal(2m, delAyer.Registro!.Valor);
+        Assert.False(delAyer.Registro.Completado);
+    }
+
+    [Fact]
+    public async Task Editar_el_habito_ajeno_o_inexistente_da_404()
+    {
+        var ajeno = await CrearAsync(UnSiNo("Prueba Ajeno"));
+
+        using var otraCuenta = fabrica.CreateClient();
+        var token = await SesionDePrueba.IniciarAsync(otraCuenta, "otra@javito.local");
+        otraCuenta.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var deOtraCuenta = await otraCuenta.PutAsJsonAsync(
+            $"/api/habitos/{ajeno.Id}",
+            UnSiNo("Prueba Robado"));
+        var inexistente = await _cliente.PutAsJsonAsync("/api/habitos/9999", UnSiNo("Prueba Fantasma"));
+
+        // Uno ajeno no existe para quien pregunta: mismo 404 y mismo código que un id inventado.
+        Assert.Equal(HttpStatusCode.NotFound, deOtraCuenta.StatusCode);
+        Assert.Equal("no_encontrado", await CodigoAsync(deOtraCuenta));
+        Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
+        Assert.Equal("no_encontrado", await CodigoAsync(inexistente));
+
+        Assert.Equal("Prueba Ajeno", (await BuscarAsync(ajeno.Id)).Titulo);
+    }
+
+    [Fact]
+    public async Task La_edicion_conserva_la_categoria_inactiva_o_sin_categoria()
+    {
+        // L4: «el hábito conserva la categoría que eligió, aunque después se desactive». El seed
+        // tiene «Meditar» (11) en la 5, inactiva, y «Té de hierbas consciente» (10) sin categoría.
+        // Se los edita con sus mismos valores, así que la fila queda igual.
+        var listado = await _cliente.GetFromJsonAsync<List<HabitoDePrueba>>("/api/habitos");
+        Assert.NotNull(listado);
+
+        var conInactiva = await _cliente.PutAsJsonAsync(
+            "/api/habitos/11",
+            DatosDe(listado.Single(habito => habito.Id == 11)));
+        var sinCategoria = await _cliente.PutAsJsonAsync(
+            "/api/habitos/10",
+            DatosDe(listado.Single(habito => habito.Id == 10)));
+
+        Assert.Equal(HttpStatusCode.OK, conInactiva.StatusCode);
+        Assert.Equal(5, (await conInactiva.Content.ReadFromJsonAsync<HabitoDePrueba>())!.CategoriaId);
+        Assert.Equal(HttpStatusCode.OK, sinCategoria.StatusCode);
+        Assert.Null((await sinCategoria.Content.ReadFromJsonAsync<HabitoDePrueba>())!.CategoriaId);
+
+        // Cambiar a otra categoría exige que exista y esté activa: pasar a la 5 se rechaza y el
+        // hábito se queda con la que tenía.
+        var creado = await CrearAsync(UnSiNo("Prueba Categoría activa"));
+        var aLaInactiva = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            UnSiNo("Prueba Categoría activa") with { CategoriaId = 5 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, aLaInactiva.StatusCode);
+        Assert.Equal("categoria_inactiva", await CodigoAsync(aLaInactiva));
+        Assert.Equal(1, (await BuscarAsync(creado.Id)).CategoriaId);
+    }
+
+    [Fact]
+    public async Task La_edicion_reutiliza_la_validacion_del_alta()
+    {
+        var creado = await CrearAsync(UnSiNo("Prueba Validación"));
+
+        var sinTitulo = await _cliente.PutAsJsonAsync($"/api/habitos/{creado.Id}", UnSiNo("   "));
+        // El tipo manda sobre meta y unidad también al editar: volverse contador exige meta.
+        var sinMeta = await _cliente.PutAsJsonAsync(
+            $"/api/habitos/{creado.Id}",
+            UnSiNo("Prueba Validación") with { Tipo = "contador" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, sinTitulo.StatusCode);
+        var problema = await sinTitulo.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(problema.GetProperty("errors").TryGetProperty("Titulo", out _));
+        Assert.Equal("meta_requerida", await CodigoAsync(sinMeta));
+
+        // Ninguno de los dos intentos se guardó.
+        var sinCambios = await BuscarAsync(creado.Id);
+        Assert.Equal("Prueba Validación", sinCambios.Titulo);
+        Assert.Equal("si_no", sinCambios.Tipo);
+    }
+
+    [Fact]
+    public async Task Un_habito_archivado_tambien_se_edita_y_sigue_archivado()
+    {
+        // L5: el archivo es de #70, así que la edición no lo deshace. «Correr» (17) viene archivado
+        // del seed y se lo edita con sus mismos valores, así la fila queda igual.
+        var listado = await _cliente.GetFromJsonAsync<List<HabitoDePrueba>>("/api/habitos");
+        Assert.NotNull(listado);
+        var archivado = listado.Single(habito => habito.Id == 17);
+        Assert.False(archivado.Activo);
+
+        var respuesta = await _cliente.PutAsJsonAsync("/api/habitos/17", DatosDe(archivado));
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+
+        var editado = await respuesta.Content.ReadFromJsonAsync<HabitoDePrueba>();
+        Assert.NotNull(editado);
+        Assert.False(editado.Activo);
+        Assert.Equal("Correr", editado.Titulo);
+    }
+
     private static HabitoEntradaDePrueba UnSiNo(string titulo) =>
         new(titulo, null, 1, "si_no", null, null, new FrecuenciaDePrueba("diaria", null));
 
     private static HabitoEntradaDePrueba UnContador(string titulo, decimal? meta, string? unidad) =>
         new(titulo, null, 1, "contador", meta, unidad, new FrecuenciaDePrueba("diaria", null));
+
+    /// <summary>Los datos de un hábito existente, para editarlo sin cambiarle nada.</summary>
+    private static HabitoEntradaDePrueba DatosDe(HabitoDePrueba habito) =>
+        new(
+            habito.Titulo,
+            habito.Descripcion,
+            habito.CategoriaId,
+            habito.Tipo,
+            habito.Meta,
+            habito.Unidad,
+            habito.Frecuencia);
+
+    private async Task<HabitoDePrueba> CrearAsync(HabitoEntradaDePrueba entrada)
+    {
+        var respuesta = await _cliente.PostAsJsonAsync("/api/habitos", entrada);
+        respuesta.EnsureSuccessStatusCode();
+
+        return (await respuesta.Content.ReadFromJsonAsync<HabitoDePrueba>())!;
+    }
+
+    private async Task<HabitoDePrueba> BuscarAsync(int id)
+    {
+        var habitos = await _cliente.GetFromJsonAsync<List<HabitoDePrueba>>("/api/habitos");
+
+        return Assert.Single(habitos!, habito => habito.Id == id);
+    }
+
+    private async Task<DiaDePrueba> DiaAsync(DateOnly fecha)
+    {
+        var dia = await _cliente.GetFromJsonAsync<DiaDePrueba>($"/api/dias/{fecha:yyyy-MM-dd}");
+
+        Assert.NotNull(dia);
+
+        return dia;
+    }
 
     private static async Task<string?> CodigoAsync(HttpResponseMessage respuesta)
     {

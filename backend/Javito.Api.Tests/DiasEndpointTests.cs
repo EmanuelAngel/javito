@@ -111,6 +111,21 @@ public class DiasEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task La_meta_del_dia_de_un_si_no_sigue_viniendo_nula()
+    {
+        var dia = await DiaAsync(await BaseDeDatosDePrueba.HoyAsync());
+
+        // El registro de un sí/no guarda meta 1 para poder cerrarse, pero la proyección informa la
+        // meta del hábito: null. Sólo el contador toma la del registro (S2).
+        var marcados = dia.Habitos
+            .Where(habito => (habito.Tipo is "si_no" or "abstinencia") && habito.Registro is not null)
+            .ToList();
+
+        Assert.NotEmpty(marcados);
+        Assert.All(marcados, habito => Assert.Null(habito.Meta));
+    }
+
+    [Fact]
     public async Task Un_dia_sin_registros_informa_todos_los_habitos_sin_marca()
     {
         var dia = await DiaAsync(new DateOnly(2000, 1, 1));

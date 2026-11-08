@@ -109,12 +109,14 @@ javito/
 
 > **Estado:** la fundación y el acceso están hechos: MySQL por ADO.NET, errores `ProblemDetails` con un
 > `codigo` estable, JWT con guard en la SPA y shell autenticado. Sobre eso viven el ABM de categorías
-> (sólo Administrador), el alta y el listado de hábitos, el día con sus marcas, el perfil con avatar,
-> el catálogo de artículos (sólo Administrador para publicar) y las rutinas con su búsqueda asíncrona.
+> (sólo Administrador), el alta, la edición y el listado de hábitos, el día con sus marcas, el perfil
+> con avatar, el catálogo de artículos (sólo Administrador para publicar) y las rutinas con su búsqueda
+> asíncrona.
 > La API expone `POST /api/sesion`, `GET /api/sesion/yo`, `GET|POST|PUT /api/categorias`,
-> `GET|POST /api/habitos`, `PUT|DELETE /api/habitos/{id}/registros/{fecha}`, `GET /api/rutinas`,
-> `GET|POST /api/rutinas/{id}`, `POST|DELETE /api/rutinas/{id}/habitos`, `GET /api/dias/{fecha}`,
-> `POST /api/perfil/avatar`, `GET|POST /api/articulos`, `GET /api/articulos/{id}` y `GET /api/health`.
+> `GET|POST /api/habitos`, `PUT /api/habitos/{id}`, `PUT|DELETE /api/habitos/{id}/registros/{fecha}`,
+> `GET /api/rutinas`, `GET|POST /api/rutinas/{id}`, `POST|DELETE /api/rutinas/{id}/habitos`,
+> `GET /api/dias/{fecha}`, `POST /api/perfil/avatar`, `GET|POST /api/articulos`,
+> `GET /api/articulos/{id}` y `GET /api/health`.
 > El listado de hábitos acepta `q` (pedazo de título en un `LIKE` con los comodines escapados) y, con
 > `q` dado, sólo devuelve hábitos activos: es el servidor adonde consulta el buscador de rutinas.
 > Las convenciones de trabajo están en [AGENTS.md](AGENTS.md).

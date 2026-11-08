@@ -30,6 +30,12 @@ public interface IHabitoRepositorio
     Task<int> CrearAsync(Habito habito, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Reescribe los campos del hábito —los mismos que pone el alta— sin tocar sus registros ni su
+    /// estado de archivo. Devuelve <c>false</c> cuando no hay ninguna fila de ese usuario.
+    /// </summary>
+    Task<bool> ActualizarAsync(Habito habito, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Crea o reemplaza la marca del par (hábito, fecha) y devuelve la fila que quedó guardada. La
     /// identidad la impone el UNIQUE de la tabla: reintentar el mismo toque es un no-op.
     /// </summary>

@@ -54,98 +54,63 @@ public class HabitosController(
             return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
         }
 
-        var titulo = (entrada.Titulo ?? string.Empty).Trim();
+        var (habito, error) = await ValidarAsync(entrada, existente: null, cancellationToken);
 
-        // [Required] acepta «   »: el recorte lo decide el servidor, no el navegador.
-        if (titulo.Length == 0)
+        if (error is not null)
         {
-            ModelState.AddModelError(nameof(entrada.Titulo), "El título no puede quedar vacío.");
+            return error;
         }
 
-        var tipo = entrada.Tipo ?? string.Empty;
-        if (tipo is not (TiposDeHabito.SiNo or TiposDeHabito.Contador or TiposDeHabito.Abstinencia))
-        {
-            ModelState.AddModelError(nameof(entrada.Tipo), TipoInvalido());
-        }
-
-        var frecuenciaTipo = entrada.Frecuencia?.Tipo ?? string.Empty;
-        if (frecuenciaTipo is not (TiposDeHabito.Diaria or TiposDeHabito.Semanal))
-        {
-            ModelState.AddModelError("Frecuencia.Tipo", FrecuenciaInvalida());
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
-        var categoria = await ValidarCategoriaAsync(entrada.CategoriaId, cancellationToken);
-        if (categoria.Error is not null)
-        {
-            return categoria.Error;
-        }
-
-        // Meta y unidad sólo tienen sentido en un contador: en sí/no y abstinencia se guardan nulas
-        // aunque el cliente las mande, porque tildar vale 1.
-        decimal? meta = null;
-        string? unidad = null;
-
-        if (tipo == TiposDeHabito.Contador)
-        {
-            if (entrada.Meta is null || entrada.Meta <= 0)
-            {
-                return RespuestasDeError.De(new ErrorDeNegocio(
-                    "meta_requerida",
-                    "Falta la meta",
-                    "Un hábito de contador necesita una meta diaria mayor que cero.",
-                    StatusCodes.Status400BadRequest));
-            }
-
-            if (string.IsNullOrWhiteSpace(entrada.Unidad))
-            {
-                return RespuestasDeError.De(new ErrorDeNegocio(
-                    "unidad_requerida",
-                    "Falta la unidad",
-                    "Un hábito de contador necesita la unidad que se cuenta (vasos, páginas, minutos…).",
-                    StatusCodes.Status400BadRequest));
-            }
-
-            meta = entrada.Meta;
-            unidad = entrada.Unidad.Trim();
-        }
-
-        int? veces = null;
-
-        if (frecuenciaTipo == TiposDeHabito.Semanal)
-        {
-            if (entrada.Frecuencia!.Veces is not { } cuota || cuota < 1 || cuota > CuotaMaxima)
-            {
-                return RespuestasDeError.De(new ErrorDeNegocio(
-                    "frecuencia_fuera_de_rango",
-                    "Frecuencia fuera de rango",
-                    $"Un hábito semanal se repite entre 1 y {CuotaMaxima} veces por semana.",
-                    StatusCodes.Status400BadRequest));
-            }
-
-            veces = cuota;
-        }
-
-        var habito = new Habito
-        {
-            UsuarioId = usuarioId,
-            CategoriaId = entrada.CategoriaId,
-            Titulo = titulo,
-            Descripcion = string.IsNullOrWhiteSpace(entrada.Descripcion) ? null : entrada.Descripcion.Trim(),
-            Tipo = tipo,
-            Meta = meta,
-            Unidad = unidad,
-            FrecuenciaTipo = frecuenciaTipo,
-            FrecuenciaVeces = veces
-        };
-
+        habito!.UsuarioId = usuarioId;
         habito.Id = await repositorio.CrearAsync(habito, cancellationToken);
 
         return Created($"/api/habitos/{habito.Id}", MapeoDeHabitos.ADto(habito));
+    }
+
+    /// <summary>
+    /// Corrige un hábito sin tocar lo registrado: la meta nueva rige desde la próxima marca y los días
+    /// ya cerrados conservan la suya, porque viven en <c>registro_habito.meta_objetivo</c> (S2, L3). El
+    /// tipo se puede cambiar y las marcas anteriores quedan (S3). Un hábito ajeno no existe (S4) y un
+    /// archivado también se edita (L5).
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType<HabitoDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EditarAsync(
+        int id,
+        [FromBody] HabitoEntradaDto entrada,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        // La pertenencia se pregunta primero: un hábito ajeno no existe para quien pregunta, y el
+        // 404 no depende de que el cuerpo sea válido.
+        var existente = await repositorio.BuscarAsync(id, usuarioId, cancellationToken);
+
+        if (existente is null)
+        {
+            return NoEncontrado(id);
+        }
+
+        var (habito, error) = await ValidarAsync(entrada, existente, cancellationToken);
+
+        if (error is not null)
+        {
+            return error;
+        }
+
+        // La edición no cambia de dueño ni desarchiva: eso último es de #70.
+        habito!.Id = existente.Id;
+        habito.UsuarioId = existente.UsuarioId;
+        habito.Activo = existente.Activo;
+
+        return await repositorio.ActualizarAsync(habito, cancellationToken)
+            ? Ok(MapeoDeHabitos.ADto(habito))
+            : NoEncontrado(id);
     }
 
     [HttpPut("{id:int}/registros/{fecha}")]
@@ -208,6 +173,113 @@ public class HabitosController(
         await repositorio.BorrarRegistroAsync(id, dia!.Value, cancellationToken);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Las reglas del hábito, compartidas por el alta y la edición: título no vacío, tipo y frecuencia
+    /// conocidos, categoría existente y vigente, y meta y unidad derivadas del tipo. Devuelve el hábito
+    /// listo para guardar o el error que corresponde.
+    /// </summary>
+    /// <param name="existente">
+    /// El hábito que se edita, o <c>null</c> en el alta. La edición conserva la categoría que el hábito
+    /// ya tenía —incluida <c>null</c>— aunque después se haya desactivado (L4: el catálogo no le quita
+    /// lo que ya eligió); cambiar a otra exige que exista y esté activa.
+    /// </param>
+    private async Task<(Habito? Habito, IActionResult? Error)> ValidarAsync(
+        HabitoEntradaDto entrada,
+        Habito? existente,
+        CancellationToken cancellationToken)
+    {
+        var titulo = (entrada.Titulo ?? string.Empty).Trim();
+
+        // [Required] acepta «   »: el recorte lo decide el servidor, no el navegador.
+        if (titulo.Length == 0)
+        {
+            ModelState.AddModelError(nameof(entrada.Titulo), "El título no puede quedar vacío.");
+        }
+
+        var tipo = entrada.Tipo ?? string.Empty;
+        if (tipo is not (TiposDeHabito.SiNo or TiposDeHabito.Contador or TiposDeHabito.Abstinencia))
+        {
+            ModelState.AddModelError(nameof(entrada.Tipo), TipoInvalido());
+        }
+
+        var frecuenciaTipo = entrada.Frecuencia?.Tipo ?? string.Empty;
+        if (frecuenciaTipo is not (TiposDeHabito.Diaria or TiposDeHabito.Semanal))
+        {
+            ModelState.AddModelError("Frecuencia.Tipo", FrecuenciaInvalida());
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return (null, ValidationProblem(ModelState));
+        }
+
+        if (existente is null || entrada.CategoriaId != existente.CategoriaId)
+        {
+            var categoria = await ValidarCategoriaAsync(entrada.CategoriaId, cancellationToken);
+            if (categoria.Error is not null)
+            {
+                return (null, categoria.Error);
+            }
+        }
+
+        // Meta y unidad sólo tienen sentido en un contador: en sí/no y abstinencia se guardan nulas
+        // aunque el cliente las mande, porque tildar vale 1.
+        decimal? meta = null;
+        string? unidad = null;
+
+        if (tipo == TiposDeHabito.Contador)
+        {
+            if (entrada.Meta is null || entrada.Meta <= 0)
+            {
+                return (null, RespuestasDeError.De(new ErrorDeNegocio(
+                    "meta_requerida",
+                    "Falta la meta",
+                    "Un hábito de contador necesita una meta diaria mayor que cero.",
+                    StatusCodes.Status400BadRequest)));
+            }
+
+            if (string.IsNullOrWhiteSpace(entrada.Unidad))
+            {
+                return (null, RespuestasDeError.De(new ErrorDeNegocio(
+                    "unidad_requerida",
+                    "Falta la unidad",
+                    "Un hábito de contador necesita la unidad que se cuenta (vasos, páginas, minutos…).",
+                    StatusCodes.Status400BadRequest)));
+            }
+
+            meta = entrada.Meta;
+            unidad = entrada.Unidad.Trim();
+        }
+
+        int? veces = null;
+
+        if (frecuenciaTipo == TiposDeHabito.Semanal)
+        {
+            if (entrada.Frecuencia!.Veces is not { } cuota || cuota < 1 || cuota > CuotaMaxima)
+            {
+                return (null, RespuestasDeError.De(new ErrorDeNegocio(
+                    "frecuencia_fuera_de_rango",
+                    "Frecuencia fuera de rango",
+                    $"Un hábito semanal se repite entre 1 y {CuotaMaxima} veces por semana.",
+                    StatusCodes.Status400BadRequest)));
+            }
+
+            veces = cuota;
+        }
+
+        return (new Habito
+        {
+            CategoriaId = entrada.CategoriaId,
+            Titulo = titulo,
+            Descripcion = string.IsNullOrWhiteSpace(entrada.Descripcion) ? null : entrada.Descripcion.Trim(),
+            Tipo = tipo,
+            Meta = meta,
+            Unidad = unidad,
+            FrecuenciaTipo = frecuenciaTipo,
+            FrecuenciaVeces = veces
+        }, null);
     }
 
     /// <summary>

@@ -7,7 +7,8 @@
 	let { data }: PageProps = $props();
 
 	// La pantalla arranca con lo que trajo el load y desde acá el estado lo maneja el módulo de
-	// hábitos: el alta suma a la lista y los errores por campo vuelven al formulario.
+	// hábitos: el alta suma a la lista, la edición reemplaza la fila y los errores por campo vuelven
+	// al formulario.
 	// svelte-ignore state_referenced_locally
 	const habitos = estadoDeHabitos(data);
 </script>
@@ -20,12 +21,18 @@
 	<h1 class="text-3xl font-semibold tracking-tight">Hábitos</h1>
 
 	<div class="flex flex-col gap-6 lg:flex-row">
-		<HabitoForm estado={habitos.estado} crear={habitos.crear} />
+		<HabitoForm
+			estado={habitos.estado}
+			crear={habitos.crear}
+			cancelar={habitos.cancelar}
+			guardarEdicion={habitos.guardarEdicion}
+		/>
 
 		<HabitosLista
 			activos={habitos.estado.activos}
 			archivados={habitos.estado.archivados}
 			categorias={habitos.estado.categorias}
+			alEditar={habitos.prepararEdicion}
 		/>
 	</div>
 </main>
