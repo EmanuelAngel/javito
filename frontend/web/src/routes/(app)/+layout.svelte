@@ -64,6 +64,12 @@
 				>
 					Rutinas
 				</a>
+				<a
+					href={resolve('/(app)/historial')}
+					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+				>
+					Historial
+				</a>
 				<!-- El catálogo lo lee cualquier usuario con sesión: no hay catálogo público, pero
 					 tampoco hace falta un rol. -->
 				<a
