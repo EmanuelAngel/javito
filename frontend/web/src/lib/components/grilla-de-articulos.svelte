@@ -9,10 +9,11 @@
 		actual: Pagina<ArticuloDelCatalogo>;
 		cargando: boolean;
 		categoriaDe: (categoriaId: number) => string;
+		detalleDe: (articuloId: number) => string;
 		alCambiarDePagina: (pagina: number) => void;
 	};
 
-	let { actual, cargando, categoriaDe, alCambiarDePagina }: Props = $props();
+	let { actual, cargando, categoriaDe, detalleDe, alCambiarDePagina }: Props = $props();
 </script>
 
 {#if cargando}
@@ -26,7 +27,11 @@
 <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 	{#each actual.elementos as articulo (articulo.id)}
 		<li>
-			<TarjetaDeArticulo {articulo} categoria={categoriaDe(articulo.categoriaId)} />
+			<TarjetaDeArticulo
+				{articulo}
+				categoria={categoriaDe(articulo.categoriaId)}
+				href={detalleDe(articulo.id)}
+			/>
 		</li>
 	{/each}
 </ul>

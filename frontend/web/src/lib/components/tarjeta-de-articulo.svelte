@@ -8,10 +8,13 @@
 	// catálogo completo para el filtro.
 	let {
 		articulo,
-		categoria
+		categoria,
+		href
 	}: {
 		articulo: ArticuloDelCatalogo;
 		categoria: string;
+		/** El detalle (HU-ART-05). Lo arma el catálogo, que sabe en qué página y filtro está. */
+		href: string;
 	} = $props();
 
 	// aaaa-mm-dd → dd/mm/aaaa. Se corta la cadena en vez de pasar por `Date`: esto es un día, no un
@@ -20,12 +23,14 @@
 	const dia = $derived(articulo.fechaPublicacion.split('-').reverse().join('/'));
 </script>
 
-<!--
-	La tarjeta todavía no es un enlace: el detalle del artículo es HU-ART-05 y su ruta no existe. Un
-	enlace a una pantalla que da 404 es peor que una tarjeta quieta. Cuando llegue ART-05, el `article`
-	vuelve a ser un `a` a `/articulos/{id}` y el destino ya está acordado (`ux-brief.md`).
--->
-<article class="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+<!-- Toda la tarjeta lleva al detalle (HU-ART-05): es el destino acordado en `ux-brief.md`. El
+	 `href` ya viene resuelto por el catálogo, con su query; acá sólo se usa. -->
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
+<a
+	{href}
+	class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	{#if articulo.imagenPortadaUrl}
 		<img
 			src={urlDeArchivo(articulo.imagenPortadaUrl)}
@@ -54,4 +59,4 @@
 			<time datetime={articulo.fechaPublicacion}>{dia}</time>
 		</div>
 	</div>
-</article>
+</a>

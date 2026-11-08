@@ -106,6 +106,7 @@
 					{actual}
 					{cargando}
 					categoriaDe={pantalla.nombreDe}
+					detalleDe={(id) => pantalla.detalleDe(id, { categoriaId, pagina })}
 					alCambiarDePagina={irAPagina}
 				/>
 			{/if}

@@ -68,6 +68,14 @@ siempre en desplegable y nunca se buscan ni se paganinan" (`ux-brief.md`).
 - **S14** «El comportamiento observable no cambia: las pruebas existentes … siguen pasando **sin
   reescribir sus aserciones**»
 
+**#81 · HU-ART-05 — Leer un artículo completo.** «Como Usuario quiero leer el artículo completo con su
+formato para aprovechar el contenido y no un muro de texto plano.»
+
+- **S15** «El Markdown se renderiza con títulos, listas y negritas»
+- **S16** «La portada se ve en la cabecera del artículo»
+- **S17** «Se ve la categoría y la fecha»
+- **S18** «Volver al catálogo conserva la página en la que estaba»
+
 **Fuera de alcance de esta feature.** Edición del artículo y reemplazo de portada (`ART-02`), baja
 lógica y reactivación (`ART-03`), pantalla de detalle y "volver conservando la página" (`ART-05`),
 búsqueda de artículos.
@@ -82,6 +90,7 @@ búsqueda de artículos.
 | T4 | Frontend del catálogo: `/articulos` con tarjetas, filtro por categoría y paginado | S5 | worker | `50e64c7` |
 | T5 | Recorrido e2e del alta y del catálogo contra la WebAPI real | S1, S5 | worker | `50e64c7` |
 | T6 | #63: `paginado.svelte.ts` (+ prueba), `catalogo-de-articulos.svelte.ts`, `articulo-form`, `catalogo-vacio`, `grilla-de-articulos` | S8-S14 | inline | `chore/articulos-modularizar` |
+| T7 | #81: `/articulos/[id]`, la tarjeta pasa a ser enlace, «Volver» con la query del catálogo | S15-S18 | inline | `feat/articulos-detalle` |
 
 ## Log
 
@@ -174,3 +183,9 @@ artículos (categorías, `navegar`) va en `catalogo-de-articulos.svelte.ts`. `Pa
 `api/pagina.ts`, reexportado desde `api/articulos.ts`. El formulario se vacía después de publicar
 volviéndolo a montar con `{#key}`. Es un refactor: no hay RED; la red de seguridad son las pruebas que
 ya existían, sin cambios en sus aserciones.
+
+**L-A3** — Decisiones de T7 (#81). La tarjeta es un enlace a `/articulos/{id}` con la query del
+catálogo (`?categoriaId=&pagina=`), armada con `armarConsulta`; el detalle la lee y su «Volver» la
+devuelve. Sin estado en memoria: el enlace se puede copiar y recargar. El detalle pide **todas** las
+categorías para nombrar una que se desactivó después de publicar. Un 404 (inexistente o dado de baja)
+muestra «Este artículo no existe». Sale apilado sobre #63 (usa `paginado.svelte.ts`).
