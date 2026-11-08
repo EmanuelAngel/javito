@@ -19,8 +19,8 @@ día fallado se pintan igual, porque el día por sí solo no dice «fallaste».
 con un día cumplido ni con un día futuro.
 
 **S5 — El conteo sigue teniendo una sola fuente.** `SemanaDto` gana `dias[]` (`{ fecha, completado }`,
-siempre 7, de lunes a domingo) y conserva `cumplidos` y `objetivo`: el badge «2 de 3 esta semana» de
-`fila-del-dia.svelte` no cambia de texto. `cumplidos` se deriva de `dias`, no de una consulta aparte.
+siempre 7, de lunes a domingo) y conserva `cumplidos` y `objetivo`: el badge de
+`fila-del-dia.svelte` sigue leyéndolos (su texto pasó a `2 / 3 esta semana` en S9). `cumplidos` se deriva de `dias`, no de una consulta aparte.
 
 **S6 — La semana se cuenta de lunes a domingo.** Es la misma regla del seed y de `DiaRepositorio`; el
 `lunes` se calcula en un solo lugar y el armado de los siete días no lo repite.
@@ -67,3 +67,30 @@ Gate: `pnpm lint` 0 · `pnpm check` 0 (74/74 de API y svelte-check 0/0) · `pnpm
 **L4** — Mergeado en `main` con squash (**#48**, `7f22776`). La rama remota se borró y la local también.
 Con esto la Puerta 2 queda a un renglón: el avatar (`PER-02`), que trae la infra de archivos que después
 usa la portada de Artículos (`RT-03`).
+
+## Cuota semanal cumplida (#75)
+
+Cierra la HU «cumplir un hábito que no es diario». Una auditoría encontró casi todo cubierto; quedaban
+dos renglones en el badge de `fila-del-dia.svelte`.
+
+**S9** — «La tarjeta muestra el progreso en la forma `2 / 3 esta semana`».
+
+**S10** — «Los días marcados de la semana se pintan; los que faltan quedan neutros». Ya cubierto por S1–S3.
+
+**S11** — «La semana cierra el domingo y el lunes arranca un cupo nuevo». Ya cubierto por S6.
+
+**S12** — «Un día de descanso no cuenta como incumplimiento». Ya cubierto por S3.
+
+**S13** — «Al llegar a la cuota, el hábito de esa semana queda cumplido».
+
+**S14** — «Pasarse de la cuota no rompe nada». Sin recorte: 4 de 3 se informa y se muestra como `4 / 3`
+(`habitos-registros.md` L6/S8).
+
+- **T3 — El badge semanal con cuota cumplida** (`S9`, `S13`, `S14`) · inline · rama `feat/semana-cuota-cumplida` ·
+  `fila-del-dia.svelte` pasa a `2 / 3 esta semana`; con `cumplidos >= objetivo` el badge va en `default`
+  (primario) con tilde `aria-hidden` y `aria-label` «… , cuota cumplida»; pasarse (4 / 3) es el mismo
+  estado, sin recortar. Pruebas: `fila-del-dia.svelte.test.ts` y, en la API,
+  `Pasarse_de_la_cuota_semanal_informa_el_conteo_real_sin_recortarlo` (caracterización).
+
+**L5** — «Badge resaltado con tilde» (decisión del usuario): al llegar a la cuota el badge pasa a primario
+con una tilde y la etiqueta «cuota cumplida»; pasarse muestra `4 / 3` y queda en el mismo estado.
