@@ -177,6 +177,27 @@ test('artículos: catálogo, alta con portada y vista previa, y el 403 de un Usu
 	await expect(tarjeta(page, TITULO)).toBeVisible();
 	await expect(page.locator('main ul > li').first()).toContainText(TITULO);
 
+	// 7b. HU-ART-05: la tarjeta abre el artículo completo, con el Markdown renderizado, la portada en
+	//     la cabecera, la categoría y la fecha…
+	const filtroDelCatalogo = new URL(page.url()).searchParams.get('categoriaId');
+	await tarjeta(page, TITULO).getByRole('link').click();
+
+	await expect(page).toHaveURL(/\/articulos\/\d+\?categoriaId=\d+$/);
+	await expect(page.getByRole('heading', { name: TITULO, level: 1 })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Cómo se ve el Markdown' })).toBeVisible();
+	await expect(page.locator('main strong', { hasText: 'una negrita' })).toBeVisible();
+	await expect(page.locator('main li', { hasText: 'segundo' })).toBeVisible();
+	await expect(page.getByRole('img', { name: `Portada de ${TITULO}` })).toBeVisible();
+	await expect(page.locator('main')).toContainText(CATEGORIA);
+	await expect(page.locator('main')).toContainText(
+		enFormatoDeTarjeta(enFormatoDeLaApi(new Date()))
+	);
+
+	// …y «Volver al catálogo» lo deja en la misma categoría (y página) desde la que entró.
+	await page.getByRole('link', { name: 'Volver al catálogo' }).click();
+	await expect(page).toHaveURL(new RegExp(`/articulos\\?categoriaId=${filtroDelCatalogo}$`));
+	await expect(tarjeta(page, TITULO)).toBeVisible();
+
 	// 8. `?pagina=` en la URL del build estático: una página pasada del final no se corrige en
 	//    silencio, la pantalla lo dice y ofrece volver a la última que existe.
 	await page.goto('/articulos?pagina=99');

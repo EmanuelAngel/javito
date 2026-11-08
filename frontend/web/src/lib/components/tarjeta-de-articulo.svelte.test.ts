@@ -24,11 +24,11 @@ describe('tarjeta de artículo', () => {
 		activo: true
 	};
 
-	function montar(props: { articulo: ArticuloDelCatalogo; categoria: string }) {
+	function montar(props: { articulo: ArticuloDelCatalogo; categoria: string; href?: string }) {
 		contenedor = document.createElement('div');
 		document.body.append(contenedor);
 
-		mount(TarjetaDeArticulo, { target: contenedor, props });
+		mount(TarjetaDeArticulo, { target: contenedor, props: { href: '/articulos/3', ...props } });
 		flushSync();
 
 		return contenedor;
@@ -45,13 +45,14 @@ describe('tarjeta de artículo', () => {
 		expect(texto).not.toContain('2026-10-30');
 	});
 
-	it('no es un enlace todavóa: el detalle del artículo es HU-ART-05', () => {
-		// La tarjeta deja de apuntar a ninguna parte hasta que exista `/articulos/[id]`: un enlace a
-		// una pantalla que da 404 es peor que una tarjeta quieta.
-		const raiz = montar({ articulo, categoria: 'Cocina' });
+	it('es un enlace al detalle con la dirección que recibe (HU-ART-05)', () => {
+		// La dirección la arma el catálogo, que es quien sabe en qué página y filtro está: así el
+		// detalle puede ofrecer «Volver al catálogo» a ese mismo lugar.
+		const raiz = montar({ articulo, categoria: 'Cocina', href: '/articulos/3?pagina=2' });
+		const enlace = raiz.querySelector('a');
 
-		expect(raiz.querySelector('a')).toBeNull();
-		expect(raiz.querySelector('article')).not.toBeNull();
+		expect(enlace?.getAttribute('href')).toBe('/articulos/3?pagina=2');
+		expect(enlace?.querySelector('h3')?.textContent?.trim()).toBe('Tortilla de papa');
 	});
 
 	it('con portada muestra la imagen contra el origen de la WebAPI', () => {

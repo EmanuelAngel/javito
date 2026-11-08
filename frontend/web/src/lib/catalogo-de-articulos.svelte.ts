@@ -3,6 +3,7 @@
 // La pantalla lee la URL y compone; esto es lo que sabe de artículos (#63).
 
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { listar, type ArticuloDelCatalogo } from './api/articulos';
 import { listar as listarCategorias, type Categoria } from './api/categorias';
 import { ErrorDeApi } from './api/pedir';
@@ -50,8 +51,19 @@ export function estadoDelCatalogo(rutaDelCatalogo: string) {
 		void goto(`${rutaDelCatalogo}${consulta}`, { replace: true, reset: false });
 	}
 
+	/**
+	 * El detalle de un artículo con la página y el filtro de ahora en la query: así su «Volver al
+	 * catálogo» vuelve acá mismo (HU-ART-05) sin estado escondido, y el enlace se puede copiar.
+	 */
+	function detalleDe(articuloId: number, desde: DestinoDelCatalogo): string {
+		const detalle = resolve('/(app)/articulos/[id]', { id: String(articuloId) });
+
+		return `${detalle}${armarConsulta({ categoriaId: desde.categoriaId }, desde.pagina)}`;
+	}
+
 	return {
 		catalogo,
+		detalleDe,
 		categorias,
 		cargarCategorias,
 		navegar,
