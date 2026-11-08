@@ -67,6 +67,9 @@ módulo de SPA, `lib/api/usuarios.ts`.
 - Orden del listado: `ORDER BY id DESC` (L6). Filtro de estado `activo` con la misma forma que
   `GET api/habitos` (`[FromQuery] bool? activo`). Búsqueda `q` con la misma semántica que hábitos:
   `LIKE %q%` sobre `nombre` **o** `email`, escapando `\`, `%` y `_`.
+- El alta responde **201 con el cuerpo y sin `Location`** (L13): no existe `GET api/usuarios/{id}`
+  todavía, y un `Location` que devuelve 404 sería peor que no mandarlo. La cuenta nace activa, con
+  `avatar_url` en `NULL` y la contraseña ya hasheada (L14).
 
 ## Tasks
 
@@ -74,8 +77,8 @@ módulo de SPA, `lib/api/usuarios.ts`.
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | T1 | #84 | Backend del listado: repositorio (listar + contar + buscador), `UsuariosController.ListarAsync`, extracto de `APatron` a helper compartido con hábitos | S1-S4, S12-S14, S16 | inline (padre) | `588abba` |
 | T2 | #84 | SPA del listado: `lib/api/usuarios.ts`, `lib/administracion-de-usuarios.svelte.ts`, `/admin/usuarios`, enlace en el shell, e2e | S1-S4, S12 | inline (padre) | `1f535f0` |
-| T3 | #85 | Backend del alta: `ReglasDeUsuarios` + hash BCrypt + `POST api/usuarios` con 409 `email_repetido` y 400 `rol_invalido` | S5-S8, S12-S14, S16 | inline (padre) | pendiente |
-| T4 | #85 | SPA del alta: `/admin/usuarios/nuevo` con formulario (nombre, email, contraseña, rol) | S5-S8, S12 | inline (padre) | pendiente |
+| T3 | #85 | Backend del alta: `ReglasDeUsuarios` + hash BCrypt + `POST api/usuarios` con 409 `email_repetido` y 400 `rol_invalido` | S5-S8, S12-S14, S16 | delegado (worker) | `f7d69f6` |
+| T4 | #85 | SPA del alta: `/admin/usuarios/nuevo` con formulario (nombre, email, contraseña, rol) | S5-S8, S12 | delegado (worker) | `1086020` |
 | T5 | #86 | Backend de la edición: `PUT api/usuarios/{id}`, 404 y 409 de email, sin rol/estado/contraseña | S9-S11, S13, S15, S16 | inline (padre) | pendiente |
 | T6 | #86 | SPA de la edición: `/admin/usuarios/[id]/editar` reusando el formulario del alta | S9-S11, S15 | inline (padre) | pendiente |
 
@@ -184,3 +187,30 @@ mergeado, el PR lo dice.
 
 - **L12** — Riesgo declarado de todo el módulo: **item 2 (seguridad)**. Se asignan roles y se escriben
   contraseñas. Cada PR lleva verificación independiente (`gentle-ai-verify`) y su veredicto en el PR.
+
+- **L13** — El alta responde `201` con el cuerpo de `UsuarioAdministradoDto` y **sin cabecera
+  `Location`**. `CreatedAtAction` necesita una acción que lea una cuenta por id, y `GET
+  api/usuarios/{id}` no existe en la parte 1: mandar un `Location` que responde 404 enseña al cliente
+  a seguir un enlace roto. Si la parte 2 agrega el detalle, se agrega el `Location` con él.
+
+- **L14** — La cuenta creada por administración nace **activa** (`activo = TRUE`), con `avatar_url` en
+  `NULL` y `password_hash` ya hasheado con `BCrypt.Net.BCrypt.HashPassword` (el mismo algoritmo que
+  verifica el login; hoy el repo sólo llamaba a `Verify`). El estado y el rol de una cuenta existente
+  se cambian en la parte 2 (#88), no acá.
+
+- **L15** — Las reglas compartidas con el registro (#68) viven en `Usuarios/ReglasDeUsuarios.cs`, como
+  `Archivos/ReglasDeArchivos.cs`: constantes de largo (nombre 1..100, email hasta 150, contraseña
+  8..100), `NormalizarEmail` (trim + minúsculas) y la lista de roles válidos. Los DTO de entrada
+  llevan las DataAnnotations —sobre el parámetro del record, sin `[property: …]`— y el controlador
+  sólo agrega lo que una anotación no puede decir: `rol_invalido` y `email_repetido`.
+
+- **L16** — El rol se compara **ordinal**, no por la intercalación del `ENUM`: `administrador` en
+  minúsculas es 400 `rol_invalido`. El `ENUM` de MySQL lo aceptaría resolviéndolo solo, y ése es
+  justamente el accidente que no queremos: un alta con un rol «parecido» cambia privilegios. El SPA
+  manda los valores exactos de `ROLES` en `lib/api/usuarios.ts`, así que el error sólo aparece si
+  alguien arma el cuerpo a mano.
+
+- **L17** — El formato del email es el de `[EmailAddress]` de .NET, que es laxo: acepta `a@b` (un solo
+  `@`, sin exigir punto ni dominio). No se inventó una regla más estricta porque ningún issue la
+  define; si #68 pide otra, se cambia en un solo lugar (el DTO del alta y el del registro comparten
+  `ReglasDeUsuarios`) y las dos puertas heredan el mismo criterio.
