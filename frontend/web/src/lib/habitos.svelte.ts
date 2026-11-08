@@ -4,6 +4,7 @@
 
 import type { Categoria } from './api/categorias';
 import {
+	cambiarActivo,
 	crear as crearHabito,
 	editar as editarHabito,
 	type DatosDeHabito,
@@ -32,6 +33,11 @@ export function estadoDeHabitos(inicial: EstadoInicial) {
 		categorias: inicial.categorias,
 		enviando: false,
 		errores: { campos: {}, mensaje: '' } as ErroresDeFormulario,
+
+		// El fallo de archivar o reactivar es de la lista, no del formulario: se pinta junto a ella.
+		errorDeLista: '',
+		// El hábito que se está archivando o reactivando, para deshabilitar sólo su botón.
+		idCambiandoActivo: null as number | null,
 
 		// El id del hábito que se está corrigiendo, o null cuando el formulario da de alta (S1).
 		idEnEdicion: null as number | null,
@@ -97,7 +103,7 @@ export function estadoDeHabitos(inicial: EstadoInicial) {
 
 	/**
 	 * Cambia el hábito editado en la lista donde esté —activo o archivado (L5)— sin moverlo de
-	 * bloque: la edición no archiva ni reactiva (#70).
+	 * bloque: la edición no archiva ni reactiva; eso es `archivar` y `reactivar`.
 	 */
 	function reemplazar(habito: Habito, lista: Habito[]): Habito[] {
 		return porTitulo(lista.map((actual) => (actual.id === habito.id ? habito : actual)));
@@ -169,5 +175,33 @@ export function estadoDeHabitos(inicial: EstadoInicial) {
 		}
 	}
 
-	return { estado, crear, prepararEdicion, cancelar, guardarEdicion };
+	/**
+	 * Archiva o reactiva (HU-HAB-04) y pasa el hábito al bloque que corresponde sin recargar. Si
+	 * estaba en edición, el formulario sigue: un archivado también se edita (L5).
+	 */
+	async function cambiarArchivo(habito: Habito, activo: boolean): Promise<void> {
+		estado.idCambiandoActivo = habito.id;
+		estado.errorDeLista = '';
+
+		try {
+			const actualizado = await cambiarActivo(habito.id, activo);
+			const sinEl = (lista: Habito[]) => lista.filter((actual) => actual.id !== habito.id);
+
+			estado.activos = activo
+				? porTitulo([...sinEl(estado.activos), actualizado])
+				: sinEl(estado.activos);
+			estado.archivados = activo
+				? sinEl(estado.archivados)
+				: porTitulo([...sinEl(estado.archivados), actualizado]);
+		} catch (error) {
+			estado.errorDeLista = mapearErroresDeFormulario(error, {}).mensaje;
+		} finally {
+			estado.idCambiandoActivo = null;
+		}
+	}
+
+	const archivar = (habito: Habito) => cambiarArchivo(habito, false);
+	const reactivar = (habito: Habito) => cambiarArchivo(habito, true);
+
+	return { estado, crear, prepararEdicion, cancelar, guardarEdicion, archivar, reactivar };
 }

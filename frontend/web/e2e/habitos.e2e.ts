@@ -115,4 +115,33 @@ test('mis hábitos: alta por la UI y marcar el día sin recargar', async ({ page
 	}
 
 	await expect(page.getByRole('listitem').filter({ hasText: NOMBRE })).toContainText('0 / 3');
+
+	// 9. Archivar (HU-HAB-04) lo pasa al bloque de archivados sin recargar y lo saca del día…
+	await page.goto('/habitos');
+	await page
+		.locator('[data-test="fila-habito"]')
+		.filter({ hasText: NOMBRE })
+		.getByRole('button', { name: 'Archivar' })
+		.click();
+
+	const archivado = page.locator('[data-test="fila-archivado"]').filter({ hasText: NOMBRE });
+	await expect(archivado).toBeVisible();
+	await expect(page.locator('[data-test="fila-habito"]').filter({ hasText: NOMBRE })).toHaveCount(
+		0
+	);
+
+	await page.goto('/hoy');
+	await expect(page.getByRole('listitem').filter({ hasText: NOMBRE })).toHaveCount(0);
+
+	// 10. …y reactivarlo lo devuelve al día como estaba. Termina activo: la próxima corrida lo reusa.
+	await page.goto('/habitos');
+	await page
+		.locator('[data-test="fila-archivado"]')
+		.filter({ hasText: NOMBRE })
+		.getByRole('button', { name: 'Reactivar' })
+		.click();
+	await expect(page.locator('[data-test="fila-habito"]').filter({ hasText: NOMBRE })).toBeVisible();
+
+	await page.goto('/hoy');
+	await expect(page.getByRole('listitem').filter({ hasText: NOMBRE })).toContainText('0 / 3');
 });

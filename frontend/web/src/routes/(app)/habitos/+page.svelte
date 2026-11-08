@@ -33,6 +33,10 @@
 			archivados={habitos.estado.archivados}
 			categorias={habitos.estado.categorias}
 			alEditar={habitos.prepararEdicion}
+			alArchivar={habitos.archivar}
+			alReactivar={habitos.reactivar}
+			idCambiandoActivo={habitos.estado.idCambiandoActivo}
+			error={habitos.estado.errorDeLista}
 		/>
 	</div>
 </main>

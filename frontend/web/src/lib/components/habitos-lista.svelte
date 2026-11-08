@@ -14,13 +14,22 @@
 		activos,
 		archivados,
 		categorias,
-		alEditar
+		alEditar,
+		alArchivar,
+		alReactivar,
+		idCambiandoActivo,
+		error
 	}: {
 		activos: Habito[];
 		archivados: Habito[];
 		categorias: Categoria[];
 		// La lista no edita: avisa qué fila se quiere corregir y el formulario hace el resto (S1).
 		alEditar: (habito: Habito) => void;
+		// Archivar y reactivar también los resuelve el estado de la pantalla (HU-HAB-04).
+		alArchivar: (habito: Habito) => void;
+		alReactivar: (habito: Habito) => void;
+		idCambiandoActivo: number | null;
+		error: string;
 	} = $props();
 
 	// El nombre viaja por id: un hábito archivado puede apuntar a una categoría inactiva,
@@ -71,12 +80,28 @@
 							</div>
 						</div>
 
-						<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
-							Editar
-						</Button>
+						<div class="flex shrink-0 gap-2">
+							<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
+								Editar
+							</Button>
+							<!-- Archivar no borra nada (L9): por eso no pide confirmación y se deshace con Reactivar. -->
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								disabled={idCambiandoActivo === habito.id}
+								onclick={() => alArchivar(habito)}
+							>
+								Archivar
+							</Button>
+						</div>
 					</li>
 				{/each}
 			</ul>
+		{/if}
+
+		{#if error !== ''}
+			<p role="alert" class="text-sm text-destructive">{error}</p>
 		{/if}
 	</section>
 
@@ -102,9 +127,20 @@
 						</div>
 
 						<!-- Un archivado también se edita (L5): lo que no puede es marcarse. -->
-						<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
-							Editar
-						</Button>
+						<div class="flex shrink-0 gap-2">
+							<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
+								Editar
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={idCambiandoActivo === habito.id}
+								onclick={() => alReactivar(habito)}
+							>
+								Reactivar
+							</Button>
+						</div>
 					</li>
 				{/each}
 			</ul>

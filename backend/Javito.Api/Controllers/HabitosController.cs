@@ -113,6 +113,39 @@ public class HabitosController(
             : NoEncontrado(id);
     }
 
+    /// <summary>
+    /// Archiva o reactiva un hábito (HU-HAB-04). Es baja lógica: los registros quedan y reactivar no
+    /// inventa marcas para los días archivados (L9). Idempotente, como el de categorías; un hábito
+    /// ajeno no existe para quien pregunta.
+    /// </summary>
+    [HttpPut("{id:int}/activo")]
+    [ProducesResponseType<HabitoDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CambiarActivoAsync(
+        int id,
+        [FromBody] CambioDeActivoDto entrada,
+        CancellationToken cancellationToken)
+    {
+        if (!ReclamosDeSesion.TryUsuarioId(User, out var usuarioId))
+        {
+            return RespuestasDeError.De(ErroresDeSesion.SesionIlegible());
+        }
+
+        var habito = await repositorio.BuscarAsync(id, usuarioId, cancellationToken);
+
+        if (habito is null)
+        {
+            return NoEncontrado(id);
+        }
+
+        habito.Activo = entrada.Activo!.Value;
+
+        return await repositorio.CambiarActivoAsync(id, usuarioId, habito.Activo, cancellationToken)
+            ? Ok(MapeoDeHabitos.ADto(habito))
+            : NoEncontrado(id);
+    }
+
     [HttpPut("{id:int}/registros/{fecha}")]
     [ProducesResponseType<RegistroDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

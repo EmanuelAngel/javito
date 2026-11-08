@@ -141,6 +141,25 @@ public sealed class HabitoRepositorio(IDbConnectionFactory fabrica) : IHabitoRep
         return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
     }
 
+    public async Task<bool> CambiarActivoAsync(
+        int id,
+        int usuarioId,
+        bool activo,
+        CancellationToken cancellationToken = default)
+    {
+        // Sólo la columna `activo`: los registros del hábito se quedan como estaban (S11, L9).
+        const string sql = "UPDATE habito SET activo = @activo WHERE id = @id AND usuario_id = @usuarioId";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@id", id);
+        comando.Parameters.AddWithValue("@usuarioId", usuarioId);
+        comando.Parameters.AddWithValue("@activo", activo);
+
+        // Filas encontradas, no modificadas: repetir el estado que ya tiene cuenta 1, no es un 404.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     public async Task<Registro> GuardarRegistroAsync(
         Registro registro,
         CancellationToken cancellationToken = default)
