@@ -235,3 +235,10 @@ estaba. `check:api` 172/172, `check:web` 0 errores, `test:web` 67/67, e2e 4/4 (e
 edición conservando y reemplazando la portada, la anterior en 404 y el 403 del Usuario).
 `svelte_autofixer` marcó como sobrante el `eslint-disable` del `goto` de la edición: es un falso
 positivo, sin él eslint del repo falla con `svelte/no-navigation-without-resolve`.
+
+La verificación independiente (solo lectura) dio PASS en S19, S21, S22 y S23, y PASS parcial en S20:
+dos ediciones cruzadas del mismo artículo pueden dejar la fila apuntando a una portada borrada o una
+imagen sin referencia, y el camino «baja cruzada → 404 y se borra la nueva» no tiene prueba propia.
+Decisión del usuario (verbatim): «No te compliques con la concurrencia, no hagas eso, no pasa nada».
+Queda aceptado como riesgo conocido: un solo Administrador edita, y el camino secuencial no deja
+huérfanas.
