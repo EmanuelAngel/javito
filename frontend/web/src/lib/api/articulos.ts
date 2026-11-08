@@ -1,7 +1,10 @@
 // Módulo de artículos: sólo declara el contrato y envuelve `pedir`. Sin `fetch` propio ni validación
 // de runtime: el contrato lo define la WebAPI, que es nuestra.
 
+import type { Pagina } from './pagina';
 import { pedir } from './pedir';
+
+export type { Pagina } from './pagina';
 
 export type Articulo = {
 	id: number;
@@ -30,19 +33,6 @@ export type ArticuloDelCatalogo = {
 	/** aaaa-mm-dd, igual que el resto de la API. */
 	fechaPublicacion: string;
 	activo: boolean;
-};
-
-/**
- * Una página de cualquier catálogo paginado del servidor. Los nombres son los del JSON —español—
- * porque son los que viajan: `elementos`, `pagina`, `tamanioDePagina`, `totalDeRegistros` y
- * `totalDePaginas`. Los reusan el catálogo de hábitos y el de usuarios.
- */
-export type Pagina<T> = {
-	elementos: T[];
-	pagina: number;
-	tamanioDePagina: number;
-	totalDeRegistros: number;
-	totalDePaginas: number;
 };
 
 /**
