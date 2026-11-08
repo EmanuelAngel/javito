@@ -283,3 +283,10 @@ errores con sólo las tres advertencias esperadas, `test:web` 67/67, `lint` y `f
 `/admin/articulos`, «Reactivar», y el 403 del Usuario en `PUT …/activo` y en el listado, sin «Desactivar»
 en su detalle). `svelte_autofixer` (por la CLI `@sveltejs/mcp`) marcó un `$effect` que asignaba estado
 en el diálogo: se pasó a `onOpenChange`; el resto de sus avisos son el `goto` del layout, ya conocido.
+
+**L-A8** — Verificación independiente de T9: PASS en S24, S25 y S26, sin bloqueos (`ArticulosBaja` 13/13
+corrido por el verificador). Se sumó el caso que señaló —un Usuario o un anónimo no reactivan un
+artículo retirado: 403/401, la fila sigue inactiva, fuera del catálogo y 404 por URL— y se sacó la
+aserción del listado que dependía del inactivo del seed (el inactivo creado por la prueba ya lo cubre).
+Es una prueba de regresión sobre comportamiento existente: pasó al escribirla, sin RED. `check:api`
+186/186 y `lint:api` limpio; el SPA no cambió desde los checks de L-A7.

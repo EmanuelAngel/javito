@@ -169,6 +169,30 @@ public class ArticulosBajaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.Contains(id, await IdsDelCatalogoAsync());
     }
 
+    [Fact]
+    public async Task Reactivar_sin_sesion_devuelve_401_y_como_usuario_devuelve_403_y_el_articulo_sigue_retirado()
+    {
+        var id = await CrearAsync("Reactivar ajeno", dia: 15);
+        await CambiarActivoAsync(_admin, id, "{\"activo\":false}");
+        var antes = await FilaSinActivoAsync(id);
+
+        var anonimo = await CambiarActivoAsync(_anonimo, id, "{\"activo\":true}");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonimo.StatusCode);
+        Assert.Equal("no_autenticado", (await anonimo.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("codigo").GetString());
+
+        var usuario = await CambiarActivoAsync(_usuario, id, "{\"activo\":true}");
+        Assert.Equal(HttpStatusCode.Forbidden, usuario.StatusCode);
+        Assert.Equal("sin_permiso", (await usuario.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("codigo").GetString());
+
+        // Sigue retirado: ni en la fila, ni en el catálogo, ni por URL.
+        Assert.Equal(0, await ActivoAsync(id));
+        Assert.Equal(antes, await FilaSinActivoAsync(id));
+        Assert.DoesNotContain(id, await IdsDelCatalogoAsync());
+        Assert.Equal(HttpStatusCode.NotFound, (await _usuario.GetAsync($"/api/articulos/{id}")).StatusCode);
+    }
+
     // --- S25 + S4: el listado de administración ------------------------------------------------
 
     [Fact]
@@ -201,9 +225,6 @@ public class ArticulosBajaEndpointTests(FabricaDeApi fabrica) : IAsyncLifetime
         Assert.True(
             elementos.FindIndex(e => e.GetProperty("id").GetInt32() == retirado)
             < elementos.FindIndex(e => e.GetProperty("id").GetInt32() == activo));
-
-        // Incluye también el inactivo del seed, que ningún otro endpoint muestra.
-        Assert.Contains(elementos, e => !e.GetProperty("activo").GetBoolean() && e.GetProperty("id").GetInt32() != retirado);
     }
 
     [Fact]
