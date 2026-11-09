@@ -48,13 +48,13 @@ un día calendario, sin hora. Un hábito solo se puede registrar una vez por dí
 
 **Como Visitante quiero crear una cuenta con nombre, email y contraseña para que mis hábitos queden guardados y no se pierdan.**
 
-- [ ] El email se guarda en minúsculas y sin espacios
-- [ ] Un email ya registrado devuelve un error que se muestra en el formulario
-- [ ] La contraseña nunca se guarda en texto plano
-- [ ] Una contraseña demasiado corta la rechaza el formulario **y** el servidor
-- [ ] La cuenta nace con rol `Usuario` y activa
-- [ ] Al registrarme quedo con sesión iniciada, sin pasar por el login
-- [ ] No se pide avatar en el registro
+- [x] El email se guarda en minúsculas y sin espacios
+- [x] Un email ya registrado devuelve un error que se muestra en el formulario
+- [x] La contraseña nunca se guarda en texto plano
+- [x] Una contraseña demasiado corta la rechaza el formulario **y** el servidor
+- [x] La cuenta nace con rol `Usuario` y activa
+- [x] Al registrarme quedo con sesión iniciada, sin pasar por el login
+- [x] No se pide avatar en el registro
 
 **Fuera de alcance**: verificación por email, recuperación de contraseña, login con Google.
 

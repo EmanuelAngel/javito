@@ -124,4 +124,12 @@
 			{enviando ? 'Ingresando…' : 'Entrar'}
 		</Button>
 	</form>
+
+	<p class="text-center text-sm text-muted-foreground">
+		¿No tenés cuenta?
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a class="text-foreground underline" href={`/registro?destino=${encodeURIComponent(destino)}`}
+			>Creá una</a
+		>
+	</p>
 </main>
