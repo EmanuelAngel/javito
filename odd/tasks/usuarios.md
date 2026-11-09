@@ -266,3 +266,14 @@ mergeado, el PR lo dice.
   `GET api/usuarios/{id}`. Cambiarlo a `CreatedAtAction` obligaría a tocar una prueba que ya afirma
   `Location == null` y no agrega nada que el cliente no pueda componer; si la parte 2 quiere el
   `Location`, se cambia ahí junto con su prueba.
+
+- **L25** — La verificación independiente de #86 dio **APPROVED** con tres avisos que quedan abiertos
+  y anotados:
+  1. Un cuerpo de edición con `avatar_url` o `id` de más se ignora en silencio y responde 200; el
+     contrato son dos campos y no hay prueba de esos dos, sólo de `rol` y `activo`.
+  2. Un id no numérico (`PUT api/usuarios/abc`) da el 404 de ruta de ASP.NET, con el cuerpo por
+     defecto y **sin** `codigo`, en vez de `no_encontrado`. Es el comportamiento preexistente de toda
+     ruta `{id:int}` del repo; el SPA nunca lo pide porque redirige antes.
+  3. «La fila no cambió» se afirma leyendo los cinco campos del `GET`, no comparando el hash de la
+     fila entera: la invariancia de `password_hash` y `avatar_url` en los rechazos queda probada por
+     el orden del código (se responde antes del `UPDATE`), no por una aserción.
