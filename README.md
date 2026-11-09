@@ -212,6 +212,10 @@ El backend habilita exactamente ese origen desde `Cors:AllowedOrigins`
 configurados no habilita ninguno. La URL de la API vive en un único lugar:
 `frontend/web/src/lib/config.ts`.
 
+La **primera visita a cada pantalla** en `pnpm dev:web` tarda más que las siguientes: Vite compila cada
+módulo recién cuando se lo pide. Es un costo del servidor de desarrollo, no de la app; el build ya viene
+compilado y no lo tiene. De la segunda visita en adelante, cada pantalla responde al instante.
+
 ### 6. Pruebas y formato
 
 ```sh
