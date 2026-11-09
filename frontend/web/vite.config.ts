@@ -25,6 +25,32 @@ export default defineConfig({
 			adapter: adapter({ fallback: 'index.html' })
 		})
 	],
+
+	// Vite pre-empaqueta las dependencias la primera vez que las ve, y cada hallazgo tardío recarga
+	// la página ("optimized dependencies changed. reloading"). Sin esto, el primer recorrido de un
+	// clon nuevo paga esa pausa en cada pantalla que estrena un ícono o un componente. Declararlas
+	// hace que se empaqueten todas al arrancar. Si se suma un ícono de Lucide, agregarlo acá.
+	optimizeDeps: {
+		include: [
+			'bits-ui',
+			'mode-watcher',
+			'tailwind-variants',
+			'@lucide/svelte/icons/check',
+			'@lucide/svelte/icons/chevron-down',
+			'@lucide/svelte/icons/chevron-left',
+			'@lucide/svelte/icons/chevron-right',
+			'@lucide/svelte/icons/image',
+			'@lucide/svelte/icons/loader-2',
+			'@lucide/svelte/icons/log-out',
+			'@lucide/svelte/icons/minus',
+			'@lucide/svelte/icons/moon',
+			'@lucide/svelte/icons/plus',
+			'@lucide/svelte/icons/search',
+			'@lucide/svelte/icons/sun',
+			'@lucide/svelte/icons/trash-2'
+		]
+	},
+
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
