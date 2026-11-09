@@ -40,6 +40,28 @@ public sealed class UsuarioRepositorio(IDbConnectionFactory fabrica) : IUsuarioR
         return Convert.ToInt32(await ultimoId.ExecuteScalarAsync(cancellationToken));
     }
 
+    public async Task<bool> ActualizarAsync(
+        int id,
+        string nombre,
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        // El WHERE por id y sólo dos columnas en el SET: la contraseña, el rol y el estado no se
+        // escriben desde la edición, y el UNIQUE del email sigue siendo la última defensa contra un
+        // duplicado que se escape al chequeo previo.
+        const string sql = "UPDATE usuario SET nombre = @nombre, email = @email WHERE id = @id";
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@nombre", nombre);
+        comando.Parameters.AddWithValue("@email", email);
+        comando.Parameters.AddWithValue("@id", id);
+
+        // MySqlConnector informa filas encontradas y no modificadas (UseAffectedRows es false por
+        // defecto): guardar los mismos valores cuenta como 1 y no se confunde con un 404.
+        return await comando.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
     public async Task<bool> ActualizarAvatarAsync(
         int id,
         string? avatarUrl,

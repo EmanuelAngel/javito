@@ -5,10 +5,10 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select/index.js';
 
-	// Formulario de una cuenta (HU-USU-02). El alta lo usa completo; la edición (#86) lo monta con
-	// `esAlta` en falso y esconde contraseña y rol: esos datos no se editan en la parte 1 (S15) y la
-	// contraseña de otro usuario no se muestra ni se puede leer (S11). Los pedidos y el mapeo de
-	// errores quedan en la pantalla, así el formulario no sabe de HTTP.
+	// Formulario de una cuenta (HU-USU-02 y HU-USU-03). El alta lo usa completo; la edición (#86) lo
+	// monta con `esAlta` en falso y esconde contraseña y rol: esos datos no se editan en la parte 1
+	// (S15) y la contraseña de otro usuario no se muestra ni se puede leer (S11). Los pedidos y el
+	// mapeo de errores quedan en la pantalla, así el formulario no sabe de HTTP.
 	type Props = {
 		/** El alta pide contraseña y rol; la edición sólo nombre y email. */
 		esAlta: boolean;
@@ -16,15 +16,23 @@
 		/** Mensaje por campo que devolvió el servidor, con la clave del campo del formulario. */
 		errores: Record<string, string>;
 		textoDelBoton: string;
+		/**
+		 * Valores con los que arranca el formulario. La edición los precarga con la cuenta que acaba de
+		 * leer; el alta arranca vacía y no manda nada.
+		 */
+		inicial?: { nombre: string; email: string };
 		alEnviar: (datos: AltaDeUsuario) => void;
 	};
 
-	let { esAlta, enviando, errores, textoDelBoton, alEnviar }: Props = $props();
+	let { esAlta, enviando, errores, textoDelBoton, inicial, alEnviar }: Props = $props();
 
-	// Los valores son del formulario desde que se monta: no siguen al padre mientras se escribe.
+	// Los valores son del formulario desde que se monta: no siguen al padre mientras se escribe. Por
+	// eso `inicial` se lee una sola vez, como instantánea, y no se vuelve a mirar en cada render: si
+	// el padre recargara la cuenta a mitad de la edición, pisaría lo que la persona escribió.
+	// svelte-ignore state_referenced_locally
 	const valores = $state({
-		nombre: '',
-		email: '',
+		nombre: inicial?.nombre ?? '',
+		email: inicial?.email ?? '',
 		password: '',
 		rol: 'Usuario' as RolDeUsuario
 	});

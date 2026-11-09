@@ -49,6 +49,7 @@ módulo de SPA, `lib/api/usuarios.ts`.
 | Verbo | Ruta | Cuerpo / query | Respuesta | Issue |
 | :--- | :--- | :--- | :--- | :--- |
 | GET | `api/usuarios` | `ParametrosDePagina` + `q`? + `activo`? | `PaginaDto<UsuarioAdministradoDto>` | #84 |
+| GET | `api/usuarios/{id}` | — | `UsuarioAdministradoDto` o 404 `no_encontrado` | #86 (L21) |
 | POST | `api/usuarios` | `AltaDeUsuarioDto` | `201` + `UsuarioAdministradoDto` | #85 |
 | PUT | `api/usuarios/{id}` | `EdicionDeUsuarioDto` | `200` + `UsuarioAdministradoDto` | #86 |
 
@@ -80,8 +81,8 @@ módulo de SPA, `lib/api/usuarios.ts`.
 | T2 | #84 | SPA del listado: `lib/api/usuarios.ts`, `lib/administracion-de-usuarios.svelte.ts`, `/admin/usuarios`, enlace en el shell, e2e | S1-S4, S12 | inline (padre) | `1f535f0` |
 | T3 | #85 | Backend del alta: `ReglasDeUsuarios` + hash BCrypt + `POST api/usuarios` con 409 `email_repetido` y 400 `rol_invalido` | S5-S8, S12-S14, S16 | delegado (worker) | `f7d69f6` |
 | T4 | #85 | SPA del alta: `/admin/usuarios/nuevo` con formulario (nombre, email, contraseña, rol) | S5-S8, S12 | delegado (worker) | `1086020` |
-| T5 | #86 | Backend de la edición: `PUT api/usuarios/{id}`, 404 y 409 de email, sin rol/estado/contraseña | S9-S11, S13, S15, S16 | inline (padre) | pendiente |
-| T6 | #86 | SPA de la edición: `/admin/usuarios/[id]/editar` reusando el formulario del alta | S9-S11, S15 | inline (padre) | pendiente |
+| T5 | #86 | Backend de la edición: `GET api/usuarios/{id}` (L21) y `PUT api/usuarios/{id}`, 404 y 409 de email, sin rol/estado/contraseña | S9-S11, S13, S15, S16 | delegado (worker) | `d8b1582` |
+| T6 | #86 | SPA de la edición: `/admin/usuarios/[id]/editar` reusando el formulario del alta | S9-S11, S15 | delegado (worker) | `16d2d1c` |
 
 Un PR por issue: PR 1 = T1+T2 (#84), PR 2 = T3+T4 (#85), PR 3 = T5+T6 (#86). T3 depende de T1 (mismo
 controlador y repositorio) y T5 de T3, así que van apilados en ese orden: si el anterior no está
@@ -242,3 +243,37 @@ mergeado, el PR lo dice.
   3. `Contratos/CredencialesDto.cs` (el **login**) sigue con tope de 100 caracteres y el texto viejo.
      No es explotable —los hashes guardados ya derivan sólo de contraseñas de ≤72 bytes— y no se tocó
      porque el login es de otro módulo; si se unifica, va con su propia prueba.
+
+- **L21** — La edición (#86) agregó **`GET api/usuarios/{id}`**, que el contrato original no tenía. No
+  es un capricho: la pantalla de edición necesita precargar el nombre y el email actuales, y la única
+  fuente honesta es la API. Las alternativas se descartaron: pasar la fila por el estado de navegación
+  se rompe al recargar o al entrar por URL, y buscar la cuenta en la página del listado obliga a
+  traerse cuentas de más. Devuelve los mismos cinco campos que una fila del listado, es sólo
+  Administrador y responde 404 `no_encontrado`.
+
+- **L22** — El 404 de este módulo usa una factory `NoEncontrado(id)` privada del controlador
+  (`no_encontrado`, «Usuario inexistente»). Es el mismo código que el resto del repo, en un solo lugar
+  por controlador. `PUT` responde 404 en dos momentos: la cuenta no existe al empezar, o
+  `ActualizarAsync` devuelve `false` porque la fila desapareció en el medio; en los dos casos se
+  responde 404 antes que un 200 sobre una fila que no se escribió.
+
+- **L23** — `usuario-form.svelte` ganó un prop opcional `inicial` para precargar nombre y email en la
+  edición; el alta no lo pasa y arranca vacío. Se lee **una sola vez** como instantánea (con
+  `svelte-ignore state_referenced_locally` y su motivo escrito): si se leyera en cada render, un
+  re-render del padre pisaría lo que la persona está escribiendo.
+
+- **L24** — L13 **sigue vigente**: `POST api/usuarios` responde 201 sin `Location` aunque ahora exista
+  `GET api/usuarios/{id}`. Cambiarlo a `CreatedAtAction` obligaría a tocar una prueba que ya afirma
+  `Location == null` y no agrega nada que el cliente no pueda componer; si la parte 2 quiere el
+  `Location`, se cambia ahí junto con su prueba.
+
+- **L25** — La verificación independiente de #86 dio **APPROVED** con tres avisos que quedan abiertos
+  y anotados:
+  1. Un cuerpo de edición con `avatar_url` o `id` de más se ignora en silencio y responde 200; el
+     contrato son dos campos y no hay prueba de esos dos, sólo de `rol` y `activo`.
+  2. Un id no numérico (`PUT api/usuarios/abc`) da el 404 de ruta de ASP.NET, con el cuerpo por
+     defecto y **sin** `codigo`, en vez de `no_encontrado`. Es el comportamiento preexistente de toda
+     ruta `{id:int}` del repo; el SPA nunca lo pide porque redirige antes.
+  3. «La fila no cambió» se afirma leyendo los cinco campos del `GET`, no comparando el hash de la
+     fila entera: la invariancia de `password_hash` y `avatar_url` en los rechazos queda probada por
+     el orden del código (se responde antes del `UPDATE`), no por una aserción.

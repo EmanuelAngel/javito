@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
+import { API_URL } from '../src/lib/config';
 
-// USU-01 y USU-02: el listado de usuarios del administrador y el alta de una cuenta. Corre contra
-// la WebAPI real y la base de desarrollo.
+// USU-01, USU-02 y USU-03: el listado de usuarios del administrador, el alta de una cuenta y la
+// edición de sus datos. Corre contra la WebAPI real y la base de desarrollo.
 //
 // El listado se prueba sobre las cuentas del seed y no crea ni borra nada. El alta sí crea una fila
 // fija: queda en la base de desarrollo —la baja es lógica y es de la parte 2— hasta el próximo
-// `pnpm db:reset` (L11). Por eso ninguna de las dos pruebas afirma sobre totales: se afirma sobre
-// filas concretas y sobre lo que el filtro deja afuera.
+// `pnpm db:reset` (L11). Por eso ninguna de las pruebas afirma sobre totales: se afirma sobre filas
+// concretas y sobre lo que el filtro deja afuera.
 
 const ADMINISTRADOR = {
 	email: 'admin@javito.local',
@@ -26,6 +27,19 @@ const ALTA = {
 	email: 'pruebas-e2e-usuario@javito.test',
 	password: 'Javito2026'
 };
+
+// HU-USU-03: el nombre corregido de esa misma cuenta. Contiene al del alta, así la fila se sigue
+// encontrando por el email y la prueba no depende del orden en que se corran los tests del archivo.
+const NOMBRE_EDITADO = 'Pruebas e2e usuario editado';
+
+/** El nombre con el que la edición deja la cuenta, para que la próxima corrida la encuentre igual. */
+const NOMBRE_RESTAURADO = ALTA.nombre;
+
+/** El nombre que no se tiene que guardar cuando el email ya es de otra cuenta. */
+const NOMBRE_RECHAZADO = 'Pruebas e2e usuario rechazado';
+
+/** Email de una cuenta del seed: es el «email de otro» que la edición tiene que rechazar. */
+const EMAIL_DE_OTRA_CUENTA = 'usuario@javito.local';
 
 test('el listado de usuarios: búsqueda, estado y guard de rol', async ({ page }) => {
 	// 1. Sin sesión, la ruta privada manda al login y recuerda a dónde ibas.
@@ -145,4 +159,97 @@ test('el alta de un usuario desde administración', async ({ page }) => {
 	await expect(fila).toBeVisible();
 	await expect(fila.getByText(ALTA.nombre)).toBeVisible();
 	await expect(fila.getByText('Activo', { exact: true })).toBeVisible();
+});
+
+test('la edición de los datos de un usuario', async ({ page }) => {
+	// 1. Sesión de Administración: la edición es de administración, igual que el resto del módulo.
+	await page.goto('/admin/usuarios');
+	await expect(page).toHaveURL(/\/login\?destino=/);
+
+	await page.getByLabel('Email').fill(ADMINISTRADOR.email);
+	await page.getByLabel('Contraseña').fill(ADMINISTRADOR.password);
+	await page.getByRole('button', { name: 'Entrar' }).click();
+
+	await expect(page).toHaveURL(/\/admin\/usuarios$/);
+
+	// 2. La cuenta que se edita es la del alta. Se busca por email y no por posición, y si el alta de
+	//    este archivo todavía no corrió se crea por la API con el token de esta sesión: así la prueba
+	//    no depende del orden de los tests. La baja es lógica y no hay DELETE, así que una cuenta que
+	//    ya existe contesta 409 `email_repetido` y esa rama también es un éxito de este paso.
+	const token = await page.evaluate(
+		() => JSON.parse(localStorage.getItem('javito-sesion') ?? '{}').token as string
+	);
+	const asegurada = await page.request.post(`${API_URL}/api/usuarios`, {
+		headers: { Authorization: `Bearer ${token}` },
+		data: {
+			nombre: NOMBRE_RESTAURADO,
+			email: ALTA.email,
+			password: ALTA.password,
+			rol: 'Usuario'
+		}
+	});
+	expect([201, 409]).toContain(asegurada.status());
+
+	await page.goto('/admin/usuarios');
+	await page.getByLabel('Buscar').fill(ALTA.email);
+	await page.getByRole('button', { name: 'Buscar' }).click();
+	await expect(page.getByRole('row', { name: new RegExp(ALTA.email) })).toBeVisible();
+
+	// 3. La fila ofrece la edición y el formulario llega precargado, sin contraseña ni rol: esos datos
+	//    no se editan en la parte 1 (S15) y la contraseña de otro usuario no se muestra (S11).
+	await page
+		.getByRole('row', { name: new RegExp(ALTA.email) })
+		.getByRole('link', { name: 'Editar' })
+		.click();
+
+	await expect(page).toHaveURL(/\/admin\/usuarios\/\d+\/editar$/);
+	await expect(page.getByRole('heading', { name: 'Editar usuario' })).toBeVisible();
+	await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue(NOMBRE_RESTAURADO);
+	await expect(page.getByLabel('Email', { exact: true })).toHaveValue(ALTA.email);
+	await expect(page.getByLabel('Contraseña', { exact: true })).toHaveCount(0);
+	await expect(page.getByLabel('Rol', { exact: true })).toHaveCount(0);
+
+	// 4. Corrige el nombre y guarda: vuelve al listado y la fila muestra el nombre nuevo.
+	await page.getByLabel('Nombre', { exact: true }).fill(NOMBRE_EDITADO);
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+
+	await expect(page).toHaveURL(/\/admin\/usuarios$/);
+	await expect(
+		page.getByRole('row', { name: new RegExp(ALTA.email) }).getByText(NOMBRE_EDITADO)
+	).toBeVisible();
+
+	// 5. Un email que ya es de otra cuenta no se guarda (S10): el 409 queda en el campo del email, con
+	//    el nombre que se escribió intacto en el formulario y la fila con el nombre de antes.
+	await page
+		.getByRole('row', { name: new RegExp(ALTA.email) })
+		.getByRole('link', { name: 'Editar' })
+		.click();
+	await page.getByLabel('Nombre', { exact: true }).fill(NOMBRE_RECHAZADO);
+	await page.getByLabel('Email', { exact: true }).fill(EMAIL_DE_OTRA_CUENTA);
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+
+	await expect(page.getByText('Ya existe una cuenta con el email')).toBeVisible();
+	await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+	await expect(page).toHaveURL(/\/editar$/);
+
+	// 6. La fila no cambió: al recargar la pantalla, el formulario trae lo guardado en el paso 4 y no
+	//    lo que se intentó escribir. El rechazo no dejó rastro del nombre ni del email rechazados.
+	await page.reload();
+
+	await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue(NOMBRE_EDITADO);
+	await expect(page.getByLabel('Email', { exact: true })).toHaveValue(ALTA.email);
+
+	// 7. La deja como estaba, con el nombre del alta, para que la próxima corrida encuentre el estado
+	//    que espera. Es el mismo camino del paso 4.
+	await page.getByLabel('Nombre', { exact: true }).fill(NOMBRE_RESTAURADO);
+	await page.getByRole('button', { name: 'Guardar cambios' }).click();
+	await expect(page).toHaveURL(/\/admin\/usuarios$/);
+
+	await page.getByLabel('Buscar').fill(ALTA.email);
+	await page.getByRole('button', { name: 'Buscar' }).click();
+
+	const fila = page.getByRole('row', { name: new RegExp(ALTA.email) });
+
+	await expect(fila.getByText(NOMBRE_RESTAURADO)).toBeVisible();
+	await expect(fila.getByText(NOMBRE_RECHAZADO)).toHaveCount(0);
 });
