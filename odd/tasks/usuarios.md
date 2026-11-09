@@ -62,11 +62,15 @@ módulo de SPA, `lib/api/usuarios.ts`.
   `no_encontrado`, que es el único código de 404 del repo.
 - Reglas de alta y edición, en un helper compartido (`ReglasDeUsuarios`) que **#68 va a reusar**: nombre
   1..100 no en blanco; email normalizado a minúsculas y sin espacios, formato válido, hasta 150;
-  contraseña de 8..100 caracteres. Los largos coinciden con `database.sql` (VARCHAR(100) y
+  contraseña de 8..72 caracteres. Los largos de nombre y email coinciden con `database.sql`
+  (VARCHAR(100) y
   VARCHAR(150)).
 - Orden del listado: `ORDER BY id DESC` (L6). Filtro de estado `activo` con la misma forma que
   `GET api/habitos` (`[FromQuery] bool? activo`). Búsqueda `q` con la misma semántica que hábitos:
   `LIKE %q%` sobre `nombre` **o** `email`, escapando `\`, `%` y `_`.
+- El alta responde **201 con el cuerpo y sin `Location`** (L13): no existe `GET api/usuarios/{id}`
+  todavía, y un `Location` que devuelve 404 sería peor que no mandarlo. La cuenta nace activa, con
+  `avatar_url` en `NULL` y la contraseña ya hasheada (L14).
 
 ## Tasks
 
@@ -74,8 +78,8 @@ módulo de SPA, `lib/api/usuarios.ts`.
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | T1 | #84 | Backend del listado: repositorio (listar + contar + buscador), `UsuariosController.ListarAsync`, extracto de `APatron` a helper compartido con hábitos | S1-S4, S12-S14, S16 | inline (padre) | `588abba` |
 | T2 | #84 | SPA del listado: `lib/api/usuarios.ts`, `lib/administracion-de-usuarios.svelte.ts`, `/admin/usuarios`, enlace en el shell, e2e | S1-S4, S12 | inline (padre) | `1f535f0` |
-| T3 | #85 | Backend del alta: `ReglasDeUsuarios` + hash BCrypt + `POST api/usuarios` con 409 `email_repetido` y 400 `rol_invalido` | S5-S8, S12-S14, S16 | inline (padre) | pendiente |
-| T4 | #85 | SPA del alta: `/admin/usuarios/nuevo` con formulario (nombre, email, contraseña, rol) | S5-S8, S12 | inline (padre) | pendiente |
+| T3 | #85 | Backend del alta: `ReglasDeUsuarios` + hash BCrypt + `POST api/usuarios` con 409 `email_repetido` y 400 `rol_invalido` | S5-S8, S12-S14, S16 | delegado (worker) | `f7d69f6` |
+| T4 | #85 | SPA del alta: `/admin/usuarios/nuevo` con formulario (nombre, email, contraseña, rol) | S5-S8, S12 | delegado (worker) | `1086020` |
 | T5 | #86 | Backend de la edición: `PUT api/usuarios/{id}`, 404 y 409 de email, sin rol/estado/contraseña | S9-S11, S13, S15, S16 | inline (padre) | pendiente |
 | T6 | #86 | SPA de la edición: `/admin/usuarios/[id]/editar` reusando el formulario del alta | S9-S11, S15 | inline (padre) | pendiente |
 
@@ -184,3 +188,57 @@ mergeado, el PR lo dice.
 
 - **L12** — Riesgo declarado de todo el módulo: **item 2 (seguridad)**. Se asignan roles y se escriben
   contraseñas. Cada PR lleva verificación independiente (`gentle-ai-verify`) y su veredicto en el PR.
+
+- **L13** — El alta responde `201` con el cuerpo de `UsuarioAdministradoDto` y **sin cabecera
+  `Location`**. `CreatedAtAction` necesita una acción que lea una cuenta por id, y `GET
+  api/usuarios/{id}` no existe en la parte 1: mandar un `Location` que responde 404 enseña al cliente
+  a seguir un enlace roto. Si la parte 2 agrega el detalle, se agrega el `Location` con él.
+
+- **L14** — La cuenta creada por administración nace **activa** (`activo = TRUE`), con `avatar_url` en
+  `NULL` y `password_hash` ya hasheado con `BCrypt.Net.BCrypt.HashPassword` (el mismo algoritmo que
+  verifica el login; hoy el repo sólo llamaba a `Verify`). El estado y el rol de una cuenta existente
+  se cambian en la parte 2 (#88), no acá.
+
+- **L15** — Las reglas compartidas con el registro (#68) viven en `Usuarios/ReglasDeUsuarios.cs`, como
+  `Archivos/ReglasDeArchivos.cs`: constantes de largo (nombre 1..100, email hasta 150, contraseña
+  8..72), `NormalizarEmail` (trim + minúsculas) y la lista de roles válidos. Los DTO de entrada
+  llevan las DataAnnotations —sobre el parámetro del record, sin `[property: …]`— y el controlador
+  sólo agrega lo que una anotación no puede decir: `rol_invalido` y `email_repetido`.
+
+- **L16** — El rol se compara **ordinal**, no por la intercalación del `ENUM`: `administrador` en
+  minúsculas es 400 `rol_invalido`. El `ENUM` de MySQL lo aceptaría resolviéndolo solo, y ése es
+  justamente el accidente que no queremos: un alta con un rol «parecido» cambia privilegios. El SPA
+  manda los valores exactos de `ROLES` en `lib/api/usuarios.ts`, así que el error sólo aparece si
+  alguien arma el cuerpo a mano.
+
+- **L17** — El formato del email es el de `[EmailAddress]` de .NET, que es laxo: acepta `a@b` (un solo
+  `@`, sin exigir punto ni dominio). No se inventó una regla más estricta porque ningún issue la
+  define; si #68 pide otra, se cambia en un solo lugar (el DTO del alta y el del registro comparten
+  `ReglasDeUsuarios`) y las dos puertas heredan el mismo criterio.
+
+- **L18** — La contraseña va de **8 a 72 bytes**, no de 8 a 100 caracteres: BCrypt.Net hashea como
+  máximo 72 bytes y trunca lo que sobra **en silencio**, así que aceptar más dejaría dos cuentas cuyas
+  contraseñas se autentican entre sí con sólo compartir los primeros 72 bytes. Lo encontró el
+  verificador independiente de #85 (aviso A1) y se corrigió antes de abrir el PR. No se puede
+  pre-hashear para saltar el límite: `BCrypt.Verify` es lo que valida los hashes `$2b$11$` del seed y
+  cualquier cambio de esquema rompería las cuentas existentes. El tope se expresa dos veces porque 72
+  caracteres no son 72 bytes en UTF-8: `[StringLength(72, MinimumLength = 8)]` y
+  `Usuarios/ContrasenaDeBcryptAttribute`, que mide con `Encoding.UTF8.GetByteCount`. El `maxlength` y
+  el texto de ayuda del formulario dicen lo mismo que el servidor.
+
+- **L19** — Revisión de seguridad del alta (#85): **APPROVED** con tres avisos. A1 (tope de BCrypt) se
+  corrigió y quedó en L18. A2: un cuerpo con campos de más (`activo`, `id`) se ignora en silencio y
+  responde 201 — no hay mass assignment porque el modelo se arma campo por campo; el contrato son
+  cuatro campos. A3: se agregaron las pruebas que faltaban (rol en minúsculas, tope de 72 caracteres,
+  tope de 72 bytes y email normalizado verificado por el listado, no por la columna).
+
+- **L20** — La re-verificación del fix de L18 también dio **APPROVED**, con tres avisos que quedan
+  **abiertos a propósito** y anotados para que no se pierdan:
+  1. No hay prueba del borde **aceptado** (una contraseña de exactamente 72 bytes entra) ni del texto
+     del rechazo por bytes; las dos pruebas nuevas afirman el campo, no el borde. Es la primera cosa
+     para agregar si alguien vuelve a tocar este límite.
+  2. El texto de ayuda del formulario dice «72 caracteres», pero la regla es de bytes: una contraseña
+     de 40 tildes pasa el `maxlength` del navegador y recién el 400 le enseña la regla real.
+  3. `Contratos/CredencialesDto.cs` (el **login**) sigue con tope de 100 caracteres y el texto viejo.
+     No es explotable —los hashes guardados ya derivan sólo de contraseñas de ≤72 bytes— y no se tocó
+     porque el login es de otro módulo; si se unifica, va con su propia prueba.

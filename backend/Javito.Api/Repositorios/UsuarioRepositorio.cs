@@ -15,6 +15,31 @@ public sealed class UsuarioRepositorio(IDbConnectionFactory fabrica) : IUsuarioR
     public Task<Usuario?> BuscarPorIdAsync(int id, CancellationToken cancellationToken = default) =>
         BuscarAsync("id = @valor", id, cancellationToken);
 
+    public async Task<int> CrearAsync(Usuario usuario, CancellationToken cancellationToken = default)
+    {
+        // El hash entra ya calculado y `avatar_url` nace en NULL: una cuenta creada desde
+        // administración no tiene imagen hasta que la suba. No hay columna de fecha de alta: el
+        // orden de alta lo da el id AUTO_INCREMENT.
+        const string sql = """
+            INSERT INTO usuario (rol, nombre, email, password_hash, avatar_url, activo)
+            VALUES (@rol, @nombre, @email, @password_hash, NULL, @activo)
+            """;
+
+        await using var conexion = await fabrica.AbrirAsync(cancellationToken);
+        await using var comando = new MySqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("@rol", usuario.Rol);
+        comando.Parameters.AddWithValue("@nombre", usuario.Nombre);
+        comando.Parameters.AddWithValue("@email", usuario.Email);
+        comando.Parameters.AddWithValue("@password_hash", usuario.PasswordHash);
+        comando.Parameters.AddWithValue("@activo", usuario.Activo);
+
+        await comando.ExecuteNonQueryAsync(cancellationToken);
+
+        // La fila recién insertada se lee de esta misma conexión: LAST_INSERT_ID() es por sesión.
+        await using var ultimoId = new MySqlCommand("SELECT LAST_INSERT_ID()", conexion);
+        return Convert.ToInt32(await ultimoId.ExecuteScalarAsync(cancellationToken));
+    }
+
     public async Task<bool> ActualizarAvatarAsync(
         int id,
         string? avatarUrl,
