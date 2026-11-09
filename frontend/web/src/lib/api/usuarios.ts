@@ -1,5 +1,5 @@
-// Módulo de usuarios de la administración (HU-USU-01 y HU-USU-02): declara el contrato y envuelve
-// `pedir`. Sin `fetch` propio ni validación de runtime: el contrato lo define la WebAPI, que es
+// Módulo de usuarios de la administración (HU-USU-01, HU-USU-02 y HU-USU-03): declara el contrato y
+// envuelve `pedir`. Sin `fetch` propio ni validación de runtime: el contrato lo define la WebAPI, que es
 // nuestra.
 
 import type { Pagina } from './pagina';
@@ -74,9 +74,10 @@ export type AltaDeUsuario = {
 };
 
 /**
- * Los códigos de negocio del alta, cada uno en su campo: un email repetido es un error del email y no
- * del formulario entero. `rol_invalido` no debería llegar desde el desplegable, pero si llega se
- * muestra donde se eligió el rol.
+ * Los códigos de negocio del alta y de la edición, cada uno en su campo: un email repetido es un error
+ * del email y no del formulario entero. `rol_invalido` no debería llegar desde el desplegable, pero si
+ * llega se muestra donde se eligió el rol. `no_encontrado` tampoco debería llegar desde la pantalla de
+ * edición —la cuenta se cargó antes—, y si llega no es de ningún campo: cae al mensaje general.
  */
 export const CAMPOS_POR_CODIGO_DE_USUARIO: Record<string, string> = {
 	email_repetido: 'email',
@@ -90,6 +91,34 @@ export const CAMPOS_POR_CODIGO_DE_USUARIO: Record<string, string> = {
 export function crear(datos: AltaDeUsuario): Promise<UsuarioAdministrado> {
 	return pedir<UsuarioAdministrado>('/api/usuarios', {
 		method: 'POST',
+		body: JSON.stringify(datos)
+	});
+}
+
+/**
+ * El cuerpo de la edición (HU-USU-03). Dos campos: el rol, el estado y la contraseña no se editan acá
+ * (S15 y S11), así que no viajan y la API no tiene dónde recibirlos.
+ */
+export type EdicionDeUsuario = {
+	nombre: string;
+	email: string;
+};
+
+/**
+ * El detalle de una cuenta, para precargar el formulario de edición. Es lo mismo que una fila del
+ * listado: la pantalla de edición necesita los datos actuales antes de mostrar el formulario.
+ */
+export function obtener(id: number): Promise<UsuarioAdministrado> {
+	return pedir<UsuarioAdministrado>(`/api/usuarios/${id}`);
+}
+
+/**
+ * Corrige el nombre y el email de una cuenta. Sólo Administración, igual que el resto del módulo: un
+ * Usuario recibe 403 y el SPA lo saca de la pantalla antes de pedir nada.
+ */
+export function editar(id: number, datos: EdicionDeUsuario): Promise<UsuarioAdministrado> {
+	return pedir<UsuarioAdministrado>(`/api/usuarios/${id}`, {
+		method: 'PUT',
 		body: JSON.stringify(datos)
 	});
 }
