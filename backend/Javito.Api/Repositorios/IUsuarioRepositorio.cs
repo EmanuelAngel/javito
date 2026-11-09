@@ -37,6 +37,17 @@ public interface IUsuarioRepositorio
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Corrige el nombre y el email de una cuenta y dice si encontró la fila. Son los dos únicos
+    /// campos que se escriben: el rol, el estado y el hash de la contraseña no se tocan desde acá
+    /// (S11 y S15), así que no hay forma de que una edición cambie privilegios por accidente.
+    /// </summary>
+    Task<bool> ActualizarAsync(
+        int id,
+        string nombre,
+        string email,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Deja el avatar de la cuenta en la ruta indicada (o en <c>null</c>) y dice si tocó la fila. El
     /// archivo anterior lo borra quien llama: el repositorio no conoce el disco.
     /// </summary>
