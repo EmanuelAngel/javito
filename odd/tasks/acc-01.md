@@ -15,8 +15,8 @@ Rama `feat/registro-publico`. Un Visitante crea su cuenta y queda con sesión in
 
 ## Tasks
 
-- T1 · S1-S8 · backend: endpoint + pruebas · commit: pendiente
-- T2 · S2, S4, S6 · SPA: `/registro`, enlace desde login, pruebas · commit: pendiente
+- T1 · S1-S8 · backend: endpoint + pruebas · commit: 950a9dc
+- T2 · S2, S4, S6 · SPA: `/registro`, enlace desde login, pruebas · commit: e0ec5d0
 
 ## Log
 
