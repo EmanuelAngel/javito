@@ -7,7 +7,7 @@ portada, que todos leen en un catálogo paginado. Es una SPA en SvelteKit que co
 ASP.NET Core con JWT, sobre MySQL.
 
 Proyecto Integrador Final de **Laboratorio 2** (Desarrollo de Software Full Stack).
-**Entrega: `2026-11-05`** · Modalidad individual · Angel Emanuel — emanuelangelsbr@gmail.com
+**Defensa: `2026-12-03`** · Modalidad individual · Angel Emanuel — emanuelangelsbr@gmail.com
 
 ---
 
@@ -296,6 +296,7 @@ notificaciones push ni temporizadores en tiempo real · requiere conexión a int
 
 ## Documentación
 
+- [Plan para la defensa](docs/proyecto/plan-defensa.md)
 - [Índice de documentación](docs/README.md)
 - [Propuesta completa (aprobada)](docs/proyecto/propuesta.md)
 - [Historias de usuario](docs/proyecto/historias-de-usuario.md)
