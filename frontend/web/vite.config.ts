@@ -53,6 +53,9 @@ export default defineConfig({
 
 	test: {
 		expect: { requireAssertions: true },
+		// Máquina chica (4 núcleos): sin cap, vitest lanza un worker por núcleo y satura la PC.
+		maxWorkers: 2,
+
 		projects: [
 			{
 				extends: './vite.config.ts',
