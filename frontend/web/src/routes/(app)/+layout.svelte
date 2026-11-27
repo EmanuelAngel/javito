@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import Avatar from '$lib/components/avatar.svelte';
 	import CambioDeTema from '$lib/components/cambio-de-tema.svelte';
+	import NavMobile from '$lib/components/nav-mobile.svelte';
 	import { sesion } from '$lib/sesion.svelte';
 	import type { LayoutProps } from './$types';
 
@@ -52,79 +53,86 @@
 			<a href="/hoy" class="text-lg font-semibold tracking-tight">Javito</a>
 
 			<div class="flex items-center gap-3">
-				<a
-					href={resolve('/(app)/habitos')}
-					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Hábitos
-				</a>
-				<a
-					href={resolve('/(app)/rutinas')}
-					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Rutinas
-				</a>
-				<a
-					href={resolve('/(app)/historial')}
-					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Historial
-				</a>
-				<!-- El catálogo lo lee cualquier usuario con sesión: no hay catálogo público, pero
-					 tampoco hace falta un rol. -->
-				<a
-					href={resolve('/(app)/articulos')}
-					class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Artículos
-				</a>
-				{#if data.usuario.rol === 'Administrador'}
-					<!-- Publicar es sólo de Administración. El servidor rechaza igual con 403; esconder el
-						 enlace sólo evita ofrecer un camino que termina en un error. -->
+				<!-- De md para arriba manda esta fila; abajo la reemplaza el drawer de NavMobile. -->
+				<nav aria-label="Navegación principal" class="hidden items-center gap-3 md:flex">
 					<a
-						href={resolve('/(app)/articulos/nuevo')}
+						href={resolve('/(app)/habitos')}
 						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
-						Publicar
+						Hábitos
 					</a>
 					<a
-						href={resolve('/(app)/admin/categorias')}
+						href={resolve('/(app)/rutinas')}
 						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
-						Categorías
-					</a>
-					<!-- «Artículos» a secas es el catálogo: el rótulo largo evita dos enlaces iguales. -->
-					<a
-						href={resolve('/(app)/admin/articulos')}
-						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-					>
-						Administrar artículos
+						Rutinas
 					</a>
 					<a
-						href={resolve('/(app)/admin/usuarios')}
+						href={resolve('/(app)/historial')}
 						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
-						Usuarios
+						Historial
 					</a>
-				{/if}
+					<!-- El catálogo lo lee cualquier usuario con sesión: no hay catálogo público, pero
+						 tampoco hace falta un rol. -->
+					<a
+						href={resolve('/(app)/articulos')}
+						class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Artículos
+					</a>
+					{#if data.usuario.rol === 'Administrador'}
+						<!-- Publicar es sólo de Administración. El servidor rechaza igual con 403; esconder el
+							 enlace sólo evita ofrecer un camino que termina en un error. -->
+						<a
+							href={resolve('/(app)/articulos/nuevo')}
+							class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Publicar
+						</a>
+						<a
+							href={resolve('/(app)/admin/categorias')}
+							class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Categorías
+						</a>
+						<!-- «Artículos» a secas es el catálogo: el rótulo largo evita dos enlaces iguales. -->
+						<a
+							href={resolve('/(app)/admin/articulos')}
+							class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Administrar artículos
+						</a>
+						<a
+							href={resolve('/(app)/admin/usuarios')}
+							class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Usuarios
+						</a>
+					{/if}
+				</nav>
 				<span class="hidden text-sm text-muted-foreground sm:inline">{usuario.nombre}</span>
-				<CambioDeTema />
-				<!-- El avatar es el acceso al perfil: es el gesto que la historia promete. -->
-				<a
-					href={resolve('/(app)/perfil')}
-					aria-label="Mi perfil"
-					class="rounded-full transition-opacity hover:opacity-80"
-				>
-					<Avatar nombre={usuario.nombre} avatarUrl={usuario.avatarUrl} />
-				</a>
-				<button
-					type="button"
-					onclick={salir}
-					class="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
-				>
-					<LogOutIcon class="size-4" />
-					Salir
-				</button>
+				<!-- Tema, avatar y Salir también son de la fila ancha: en mobile viven en el drawer. -->
+				<div class="hidden items-center gap-3 md:flex">
+					<CambioDeTema />
+					<!-- El avatar es el acceso al perfil: es el gesto que la historia promete. -->
+					<a
+						href={resolve('/(app)/perfil')}
+						aria-label="Mi perfil"
+						class="rounded-full transition-opacity hover:opacity-80"
+					>
+						<Avatar nombre={usuario.nombre} avatarUrl={usuario.avatarUrl} />
+					</a>
+					<button
+						type="button"
+						onclick={salir}
+						class="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
+					>
+						<LogOutIcon class="size-4" />
+						Salir
+					</button>
+				</div>
+				<NavMobile class="md:hidden" rol={data.usuario.rol} alSalir={salir} />
 			</div>
 		</div>
 	</header>
