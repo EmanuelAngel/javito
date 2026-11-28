@@ -10,6 +10,7 @@
 	import NewspaperIcon from '@lucide/svelte/icons/newspaper';
 	import PenLineIcon from '@lucide/svelte/icons/pen-line';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
+	import SunIcon from '@lucide/svelte/icons/sun';
 	import TagIcon from '@lucide/svelte/icons/tag';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import UserIcon from '@lucide/svelte/icons/user';
@@ -30,6 +31,9 @@
 	// Las rutas van con `resolve` y no como texto suelto: el route id dentro de (app) es el
 	// que conoce SvelteKit, y así el href sigue a la ruta si algún día se mueve.
 	const enlacesDelUsuario: Enlace[] = [
+		// «Hoy» va primero: es la pantalla a la que se vuelve todo el tiempo y en el ancho
+		// angosto sólo se llegaba tocando el logo, que no se lee como un enlace.
+		{ titulo: 'Hoy', href: resolve('/(app)/hoy'), icono: SunIcon },
 		{ titulo: 'Hábitos', href: resolve('/(app)/habitos'), icono: RepeatIcon },
 		{ titulo: 'Rutinas', href: resolve('/(app)/rutinas'), icono: LayersIcon },
 		{ titulo: 'Historial', href: resolve('/(app)/historial'), icono: ClockIcon },
