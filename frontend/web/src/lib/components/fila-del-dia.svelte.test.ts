@@ -1,4 +1,4 @@
-import { flushSync, mount } from 'svelte';
+﻿import { flushSync, mount } from 'svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { HabitoDelDia } from '$lib/api/dias';
 import FilaDelDia from './fila-del-dia.svelte';
@@ -66,7 +66,9 @@ describe('fila del día: progreso semanal', () => {
 		expect(elemento?.textContent?.trim()).toBe('1 / 3 esta semana');
 		expect(elemento?.querySelector('svg')).toBeNull();
 		expect(elemento?.hasAttribute('aria-label')).toBe(false);
-		expect(elemento?.className).toContain('bg-secondary');
+		// Sin cumplir la cuota el badge queda neutro: el rose lo pinta el acento, no el estado.
+		expect(elemento?.className).toContain('border-border');
+		expect(elemento?.className).not.toContain('bg-secondary');
 	});
 
 	it('al llegar a la cuota resalta el badge, suma la tilde y dice «cuota cumplida»', () => {

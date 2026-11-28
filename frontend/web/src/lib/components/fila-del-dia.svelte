@@ -67,7 +67,7 @@
 						{progreso}
 					</Badge>
 				{:else}
-					<Badge variant="secondary">{progreso}</Badge>
+					<Badge variant="outline">{progreso}</Badge>
 				{/if}
 			{:else}
 				<span>{progreso}</span>
