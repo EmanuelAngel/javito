@@ -2,7 +2,7 @@
 	import BuscadorDeHabitos from '$lib/components/buscador-de-habitos.svelte';
 	import RutinaDetalle from '$lib/components/rutina-detalle.svelte';
 	import RutinaForm from '$lib/components/rutina-form.svelte';
-	import RutinasLista from '$lib/components/rutinas-lista.svelte';
+	import SelectorDeRutinas from '$lib/components/selector-de-rutinas.svelte';
 	import { estadoDeRutinas } from '$lib/rutinas.svelte';
 	import type { PageProps } from './$types';
 
@@ -25,21 +25,26 @@
 	<div class="flex flex-col gap-6 lg:flex-row">
 		<section class="flex w-full flex-col gap-4 lg:w-80">
 			<RutinaForm {rutinas} />
+		</section>
 
+		<section class="flex flex-1 flex-col gap-6">
 			{#if rutinas.estado.rutinas.length === 0}
 				<p class="text-sm text-muted-foreground">
 					Todavía no tenés rutinas. Creá una para agrupar hábitos.
 				</p>
 			{:else}
-				<RutinasLista
+				<!-- Arriba del detalle y no del formulario: elegir qué rutina mirás es parte de leer, no
+				     del alta. -->
+				<SelectorDeRutinas
 					rutinas={rutinas.estado.rutinas}
 					seleccionada={rutinas.estado.detalle?.id ?? null}
-					alElegir={rutinas.elegir}
+					alElegir={(rutinaId) => {
+						if (rutinaId !== null) rutinas.elegir(rutinaId);
+					}}
+					etiqueta="Elegí una rutina"
 				/>
 			{/if}
-		</section>
 
-		<section class="flex flex-1 flex-col gap-6">
 			<RutinaDetalle
 				detalle={rutinas.estado.detalle}
 				enviando={rutinas.estado.enviando}

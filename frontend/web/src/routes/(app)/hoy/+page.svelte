@@ -10,7 +10,7 @@
 		EmptyTitle
 	} from '$lib/components/ui/empty/index.js';
 	import FilaDelDia from '$lib/components/fila-del-dia.svelte';
-	import FiltroDeRutina from '$lib/components/filtro-de-rutina.svelte';
+	import SelectorDeRutinas from '$lib/components/selector-de-rutinas.svelte';
 	import { diaLargo } from '$lib/fechas';
 	import { habitosDeLaRutina } from '$lib/filtro-por-rutina';
 	import { estadoDelDia } from '$lib/hoy.svelte';
@@ -48,10 +48,11 @@
 	</header>
 
 	{#if data.rutinas.length > 0}
-		<FiltroDeRutina
+		<SelectorDeRutinas
 			rutinas={data.rutinas}
-			rutinaId={data.rutina?.id ?? null}
+			seleccionada={data.rutina?.id ?? null}
 			alElegir={elegirRutina}
+			conTodos
 		/>
 	{/if}
 
