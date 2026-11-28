@@ -6,6 +6,19 @@
 	let { semana, hoy }: { semana: Semana; hoy: string } = $props();
 
 	const estados = $derived(estadosDeLaSemana(semana.dias, hoy));
+
+	// Hoy se marca con una superficie suave, no con un anillo: el anillo peleaba con el borde de cada
+	// círculo y a doce filas se leía como una alerta. Un día cumplido ya es el fuego más fuerte que
+	// hay, así que conserva su relleno y no suma marca.
+	function clases(estado: { cumplido: boolean; esHoy: boolean }): string {
+		if (estado.cumplido) {
+			return 'border-primary bg-primary text-primary-foreground';
+		}
+
+		return estado.esHoy
+			? 'border-transparent bg-primary/15 text-foreground'
+			: 'border-border text-muted-foreground';
+	}
 </script>
 
 <!--
@@ -19,11 +32,9 @@
 			que lo separa de los días anteriores. Sin marca queda en neutro: nunca en rojo.
 		-->
 		<span
-			class="flex size-6 items-center justify-center rounded-full border text-[0.65rem] font-medium {estado.cumplido
-				? 'border-primary bg-primary text-primary-foreground'
-				: 'border-border text-muted-foreground'} {estado.esHoy
-				? 'ring-2 ring-ring ring-offset-2 ring-offset-card'
-				: ''}"
+			class="flex size-6 items-center justify-center rounded-full border text-[0.65rem] font-medium {clases(
+				estado
+			)}"
 			role="img"
 			aria-label={estado.etiqueta}
 		>

@@ -3,6 +3,7 @@
 	import MinusIcon from '@lucide/svelte/icons/minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { HabitoDelDia } from '$lib/api/dias';
+	import ChipDeCategoria from '$lib/components/chip-de-categoria.svelte';
 	import SemanaDelHabito from '$lib/components/semana-del-habito.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -39,13 +40,19 @@
 	const etiqueta = $derived(habito.tipo === 'abstinencia' ? 'Hoy me mantuve' : 'Hecho');
 </script>
 
+<!--
+	En angosto la tarjeta se apila: el texto arriba a todo el ancho y la acción abajo, también a todo
+	el ancho. Con la fila compartida, el bloque de acción —que no encoge— le robaba el ancho al título
+	(lo truncaba) y a la semana (la aplastaba). Desde `sm` vuelve a ser una sola fila.
+-->
 <li
-	class="flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-5 py-4"
+	class="flex flex-col gap-4 rounded-xl border border-border bg-card px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-6"
 >
-	<div class="flex min-w-0 flex-col gap-1">
-		<span class="truncate font-medium">{habito.titulo}</span>
-		<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-			<span>{habito.categoria ?? 'Sin categoría'}</span>
+	<div class="flex min-w-0 flex-col gap-3">
+		<!-- Sin `truncate`: los títulos del seed son largos y a 390px tienen que envolver, no cortarse. -->
+		<span class="leading-snug font-medium text-pretty">{habito.titulo}</span>
+		<div class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground">
+			<ChipDeCategoria nombre={habito.categoria} />
 			{#if habito.frecuencia.tipo === 'semanal'}
 				<!-- Cumplida se distingue por el relleno y por la tilde, no sólo por el color (HU #75). -->
 				{#if cuotaCumplida}
@@ -68,7 +75,7 @@
 	</div>
 
 	{#if esContador}
-		<div class="flex shrink-0 items-center gap-2">
+		<div class="flex items-center justify-between gap-2 sm:shrink-0 sm:justify-start">
 			<Button
 				type="button"
 				variant="outline"
@@ -102,8 +109,14 @@
 	{:else}
 		<Button
 			type="button"
-			variant={hecho ? 'default' : 'outline'}
+			variant={hecho ? 'secondary' : 'outline'}
 			aria-pressed={hecho}
+			class={[
+				'w-full sm:w-auto',
+				// Completado no es una acción a repetir: tinte suave en vez del relleno primario, que a
+				// doce filas llenas se come la pantalla.
+				hecho ? 'bg-primary/15 text-foreground hover:bg-primary/20' : ''
+			]}
 			onclick={() => alternar(habito)}
 		>
 			<CheckIcon />

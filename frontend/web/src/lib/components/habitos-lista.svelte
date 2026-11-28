@@ -1,6 +1,7 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import type { Categoria } from '$lib/api/categorias';
 	import type { Habito } from '$lib/api/habitos';
+	import ChipDeCategoria from '$lib/components/chip-de-categoria.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -32,10 +33,10 @@
 		error: string;
 	} = $props();
 
-	// El nombre viaja por id: un hábito archivado puede apuntar a una categoría inactiva,
-	// y aun así se muestra su nombre.
-	function nombreDe(id: number | null): string {
-		return categorias.find((categoria) => categoria.id === id)?.nombre ?? 'Sin categoría';
+	// El nombre viaja por id: un hábito archivado puede apuntar a una categoría inactiva, y aun así se
+	// muestra su nombre. La ausencia la dibuja el chip, que es el único lugar que decide ese texto.
+	function categoriaDe(id: number | null): string | null {
+		return categorias.find((categoria) => categoria.id === id)?.nombre ?? null;
 	}
 
 	function frecuenciaDe(habito: Habito): string {
@@ -67,12 +68,14 @@
 				{#each activos as habito (habito.id)}
 					<li
 						data-test="fila-habito"
-						class="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4"
+						class="flex flex-col gap-4 rounded-xl border border-border bg-card px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-6"
 					>
-						<div class="flex min-w-0 flex-col gap-1">
-							<span class="truncate font-medium">{habito.titulo}</span>
-							<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-								<span>{nombreDe(habito.categoriaId)}</span>
+						<div class="flex min-w-0 flex-col gap-2.5">
+							<span class="leading-snug font-medium text-pretty">{habito.titulo}</span>
+							<div
+								class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground"
+							>
+								<ChipDeCategoria nombre={categoriaDe(habito.categoriaId)} />
 								<Badge variant="secondary">{frecuenciaDe(habito)}</Badge>
 								{#if habito.tipo === 'contador'}
 									<Badge variant="outline">meta {habito.meta} {habito.unidad}</Badge>
@@ -80,15 +83,25 @@
 							</div>
 						</div>
 
-						<div class="flex shrink-0 gap-2">
-							<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
-								Editar
-							</Button>
-							<!-- Archivar no borra nada (L9): por eso no pide confirmación y se deshace con Reactivar. -->
+						<!-- En angosto las dos acciones se reparten el ancho: son de dedo, no de mouse. -->
+						<div class="flex gap-2 sm:shrink-0">
 							<Button
 								type="button"
-								variant="ghost"
+								variant="outline"
 								size="sm"
+								class="flex-1 sm:flex-none"
+								onclick={() => alEditar(habito)}
+							>
+								Editar
+							</Button>
+							<!-- Archivar no borra nada (L9): por eso no pide confirmación y se deshace con
+								Reactivar. Va con el mismo borde que Editar: al compartir el ancho en el celular,
+								un control sin contorno se lee como texto suelto y no invita a tocarlo. -->
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								class="flex-1 sm:flex-none"
 								disabled={idCambiandoActivo === habito.id}
 								onclick={() => alArchivar(habito)}
 							>
@@ -115,26 +128,35 @@
 				{#each archivados as habito (habito.id)}
 					<li
 						data-test="fila-archivado"
-						class="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4 opacity-70"
+						class="flex flex-col gap-4 rounded-xl border border-border bg-card px-4 py-5 opacity-70 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-6"
 					>
-						<div class="flex min-w-0 flex-col gap-1">
-							<span class="truncate font-medium">{habito.titulo}</span>
-							<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-								<span>{nombreDe(habito.categoriaId)}</span>
+						<div class="flex min-w-0 flex-col gap-2.5">
+							<span class="leading-snug font-medium text-pretty">{habito.titulo}</span>
+							<div
+								class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground"
+							>
+								<ChipDeCategoria nombre={categoriaDe(habito.categoriaId)} />
 								<Badge variant="secondary">{frecuenciaDe(habito)}</Badge>
 								<Badge variant="outline">Archivado</Badge>
 							</div>
 						</div>
 
 						<!-- Un archivado también se edita (L5): lo que no puede es marcarse. -->
-						<div class="flex shrink-0 gap-2">
-							<Button type="button" variant="outline" size="sm" onclick={() => alEditar(habito)}>
+						<div class="flex gap-2 sm:shrink-0">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								class="flex-1 sm:flex-none"
+								onclick={() => alEditar(habito)}
+							>
 								Editar
 							</Button>
 							<Button
 								type="button"
 								variant="outline"
 								size="sm"
+								class="flex-1 sm:flex-none"
 								disabled={idCambiandoActivo === habito.id}
 								onclick={() => alReactivar(habito)}
 							>
