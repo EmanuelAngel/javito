@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -45,7 +45,7 @@
 </svelte:head>
 
 <div class="flex min-h-dvh flex-col">
-	<header class="border-b border-border bg-card">
+	<header class="sticky top-0 z-40 border-b border-border bg-card">
 		<div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
 			<!-- El route id dentro de (app) es /(app)/hoy: como no hay base path, el href va directo
 					;y la regla no-navigation-without-resolve queda desactivada -->
