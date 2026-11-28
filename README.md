@@ -208,13 +208,27 @@ Queda en `http://localhost:5173`. Sin sesión, el SPA lleva a `/login`: se entra
 [usuarios de prueba](#usuarios-de-prueba).
 
 El backend habilita exactamente ese origen desde `Cors:AllowedOrigins`
-(`backend/Javito.Api/appsettings.Development.json`). La política es **fail-closed**: sin orígenes
-configurados no habilita ninguno. La URL de la API vive en un único lugar:
+(`backend/Javito.Api/appsettings.Development.json`) y, en desarrollo, además acepta los orígenes de la
+red local (ver [probar desde el celular](#probar-desde-el-celular)). La política es **fail-closed**: sin
+orígenes configurados no habilita ninguno. La URL de la API vive en un único lugar:
 `frontend/web/src/lib/config.ts`.
 
 La **primera visita a cada pantalla** en `pnpm dev:web` tarda más que las siguientes: Vite compila cada
 módulo recién cuando se lo pide. Es un costo del servidor de desarrollo, no de la app; el build ya viene
 compilado y no lo tiene. De la segunda visita en adelante, cada pantalla responde al instante.
+
+### Probar desde el celular
+
+Con la PC y el celular en la misma red WiFi:
+
+```sh
+pnpm dev:api                              # escucha en 0.0.0.0:5256
+pnpm --dir frontend/web dev -- --host     # imprime también la URL http://192.168.x.x:5173
+```
+
+Abrí en el celular la URL de red que imprime Vite. El SPA le pide la API al mismo host de la página
+(`frontend/web/src/lib/config.ts`), así que no hay que cambiar la URL si el router cambia la IP. La
+primera vez, Windows pide permitir `dotnet` y `node` en la red privada.
 
 ### 6. Pruebas y formato
 

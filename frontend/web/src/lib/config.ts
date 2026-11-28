@@ -8,7 +8,18 @@
 // Este scaffold no adopta todavía la API nueva. La migración se evalúa en el hito de interfaz,
 // cuando haya un entorno donde se pueda verificar el valor en el navegador.
 // Ver odd/tasks/scaffold-monorepo.md, L9.
-export const API_URL = 'http://localhost:5256';
+/**
+ * La API corre en el mismo equipo que el SPA, así que su host es el de la página: `localhost` en la
+ * PC y la IP de la PC cuando el SPA se abre desde el celular (`pnpm dev:web -- --host`). Si el host
+ * quedara fijo en `localhost`, desde el celular apuntaría al propio celular. El puerto no se adivina.
+ */
+export function urlDeApi(host: string): string {
+	return `http://${host}:5256`;
+}
+
+const host = typeof location === 'undefined' ? 'localhost' : location.hostname;
+
+export const API_URL = urlDeApi(host);
 
 /**
  * Las rutas del almacén (`/uploads/avatares/…`) viajan relativas porque la base no sabe de puertos.

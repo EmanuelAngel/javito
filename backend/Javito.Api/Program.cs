@@ -1,5 +1,6 @@
 using Javito.Api.Archivos;
 using Javito.Api.Contratos;
+using Javito.Api.Cors;
 using Javito.Api.Datos;
 using Javito.Api.Repositorios;
 using Javito.Api.Seguridad;
@@ -102,6 +103,14 @@ builder.Services.AddCors(options =>
         if (origenesPermitidos.Length > 0)
         {
             policy.WithOrigins(origenesPermitidos).AllowAnyHeader().AllowAnyMethod();
+
+            // En desarrollo el SPA se abre desde el celular con la IP de la PC (`--host`): ese origen
+            // no está en la lista y cambia con el router. Fuera de desarrollo no se agrega nada.
+            if (builder.Environment.IsDevelopment())
+            {
+                policy.SetIsOriginAllowed(origen =>
+                    origenesPermitidos.Contains(origen) || OrigenesDeDesarrollo.EsDeLaRedLocal(origen));
+            }
         }
     });
 });
