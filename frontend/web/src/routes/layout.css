@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+﻿@import 'tailwindcss';
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/jetbrains-mono';
@@ -39,20 +39,18 @@
 	--card-foreground: #575279;
 	--popover: #fffaf3;
 	--popover-foreground: #575279;
-	/* Iris manda y rose acompaña: los dos van con tinta oscura porque sobre estos fondos el texto
-	   claro queda en 2.6–3.8:1 y no llega a AA. */
-	--primary: #907aa9;
-	--primary-foreground: #000000;
-	--secondary: #d7827e;
-	--secondary-foreground: #000000;
+	--primary: #d7827e;
+	--primary-foreground: #faf4ed;
+	--secondary: #f2e9e1;
+	--secondary-foreground: #575279;
 	--muted: #f2e9e1;
 	--muted-foreground: #797593;
 	--accent: #f2e9e1;
-	--accent-foreground: #907aa9;
+	--accent-foreground: #d7827e;
 	--destructive: #b4637a;
 	--border: #f2e9e1;
 	--input: #f2e9e1;
-	--ring: #907aa9;
+	--ring: #d7827e;
 
 	--radius: 0.625rem;
 }
@@ -81,18 +79,18 @@
 	--card-foreground: #eceaf6;
 	--popover: #0e0d15;
 	--popover-foreground: #eceaf6;
-	--primary: #c4a7e7;
+	--primary: #ebbcba;
 	--primary-foreground: #000000;
-	--secondary: #ebbcba;
-	--secondary-foreground: #000000;
+	--secondary: #171523;
+	--secondary-foreground: #eceaf6;
 	--muted: #171523;
 	--muted-foreground: #a39ec4;
 	--accent: #171523;
-	--accent-foreground: #c4a7e7;
+	--accent-foreground: #ebbcba;
 	--destructive: #eb6f92;
 	--border: #232038;
 	--input: #232038;
-	--ring: #c4a7e7;
+	--ring: #ebbcba;
 
 	--radius: 0.625rem;
 }
