@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import MinusIcon from '@lucide/svelte/icons/minus';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -58,7 +58,11 @@
 				{#if cuotaCumplida}
 					<!-- Mismo patrón que la cuadrícula semanal: un `span` genérico no expone su etiqueta a
 						 todos los lectores de pantalla; con `role="img"` sí, y la tilde es la señal visual. -->
-					<Badge role="img" aria-label="{progreso}, cuota cumplida">
+					<Badge
+						role="img"
+						aria-label="{progreso}, cuota cumplida"
+						class="bg-primary/15 text-foreground"
+					>
 						<CheckIcon aria-hidden="true" />
 						{progreso}
 					</Badge>
